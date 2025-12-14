@@ -173,4 +173,150 @@ public class EmpresaControllerTests {
                 .andExpect(status().isForbidden())
                 .andDo(print());
     }
+
+    @Test
+    @DisplayName("Buscar empresa por id com sucesso")
+    void testBuscarEmpresaPorIdComSucesso() throws Exception {
+        Empresa empresaSalva = empresaRepository.save(empresaPadrao);
+
+        String responseJsonString = driver.perform(get(URI_EMPRESAS + "/" + empresaSalva.getId())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andDo(print())
+                .andReturn().getResponse().getContentAsString();
+
+        Empresa resultado = objectMapper.readValue(responseJsonString, Empresa.class);
+
+        assertEquals(empresaSalva.getNome(), resultado.getNome());
+        assertEquals(empresaSalva.getCnpj(), resultado.getCnpj());
+    }
+
+    @Test
+    @DisplayName("Buscar empresa por id não encontrada")
+    void testBuscarEmpresaPorIdNaoEncontrada() throws Exception {
+        driver.perform(get(URI_EMPRESAS + "/99999")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("Listar empresas com sucesso")
+    void testListarEmpresasComSucesso() throws Exception {
+        empresaRepository.save(empresaPadrao);
+
+        driver.perform(get(URI_EMPRESAS)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("Criar empresa com nome vazio")
+    void testCriarEmpresaNomeVazio() throws Exception {
+        empresaPostPutRequestDTO.setNome("");
+
+        driver.perform(post(URI_EMPRESAS)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(empresaPostPutRequestDTO)))
+                .andExpect(status().isBadRequest())
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("Criar empresa com CNPJ vazio")
+    void testCriarEmpresaCnpjVazio() throws Exception {
+        empresaPostPutRequestDTO.setCnpj("");
+
+        driver.perform(post(URI_EMPRESAS)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(empresaPostPutRequestDTO)))
+                .andExpect(status().isBadRequest())
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("Alterar empresa não encontrada")
+    void testAlterarEmpresaNaoEncontrada() throws Exception {
+        EmpresaPostPutRequestDTO updateDTO = EmpresaPostPutRequestDTO.builder()
+                .nome("Empresa Atualizada")
+                .cnpj("98.765.432/0001-10")
+                .codigoAcesso("654321")
+                .senhaAdmin("admin123")
+                .build();
+
+        driver.perform(put(URI_EMPRESAS + "/99999")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateDTO)))
+                .andExpect(status().isNotFound())
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("Alterar empresa com senha de administrador incorreta")
+    void testAlterarEmpresaSenhaAdminIncorreta() throws Exception {
+        Empresa empresaSalva = empresaRepository.save(empresaPadrao);
+
+        EmpresaPostPutRequestDTO updateDTO = EmpresaPostPutRequestDTO.builder()
+                .nome("Empresa Atualizada")
+                .cnpj(empresaSalva.getCnpj())
+                .codigoAcesso(empresaSalva.getCodigoAcesso())
+                .senhaAdmin("senha_errada")
+                .build();
+
+        driver.perform(put(URI_EMPRESAS + "/" + empresaSalva.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateDTO)))
+                .andExpect(status().isForbidden())
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("Remover empresa não encontrada")
+    void testRemoverEmpresaNaoEncontrada() throws Exception {
+        EmpresaPostPutRequestDTO deleteDTO = EmpresaPostPutRequestDTO.builder()
+                .cnpj("12.345.678/0001-90")
+                .codigoAcesso("123456")
+                .senhaAdmin("admin123")
+                .build();
+
+        driver.perform(delete(URI_EMPRESAS + "/99999")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(deleteDTO)))
+                .andExpect(status().isNotFound())
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("Remover empresa com senha de administrador incorreta")
+    void testRemoverEmpresaSenhaAdminIncorreta() throws Exception {
+        Empresa empresaSalva = empresaRepository.save(empresaPadrao);
+
+        EmpresaPostPutRequestDTO deleteDTO = EmpresaPostPutRequestDTO.builder()
+                .cnpj(empresaSalva.getCnpj())
+                .codigoAcesso(empresaSalva.getCodigoAcesso())
+                .senhaAdmin("senha_errada")
+                .nome(empresaSalva.getNome())
+                .build();
+
+        driver.perform(delete(URI_EMPRESAS + "/" + empresaSalva.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(deleteDTO)))
+                .andExpect(status().isForbidden())
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("Criar empresa com CNPJ duplicado")
+    void testCriarEmpresaCnpjDuplicado() throws Exception {
+        empresaRepository.save(empresaPadrao);
+        
+        empresaPostPutRequestDTO.setCnpj(empresaPadrao.getCnpj());
+
+        driver.perform(post(URI_EMPRESAS)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(empresaPostPutRequestDTO)))
+                .andExpect(status().isBadRequest())
+                .andDo(print());
+    }
 }
