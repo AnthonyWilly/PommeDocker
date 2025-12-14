@@ -40,23 +40,26 @@ class ClienteServiceTests {
 
     @BeforeEach
     void setup() {
-        cliente = new Cliente();
-        cliente.setId(1L);
-        cliente.setNome("João da Silva");
-        cliente.setEndereco("Rua A, 123");
-        cliente.setCodigo("123456");
-        cliente.setPlano("BASICO");
+        cliente = Cliente.builder()
+                .id(1L)
+                .nome("João da Silva")
+                .endereco("Rua A, 123")
+                .codigo("123456")
+                .plano("BASICO")
+                .build();
 
-        clienteDTO = new ClientePostPutRequestDTO();
-        clienteDTO.setNome("João da Silva");
-        clienteDTO.setEndereco("Rua A, 123");
-        clienteDTO.setCodigoAcesso("123456");
-        clienteDTO.setPlano("BASICO");
+        clienteDTO = ClientePostPutRequestDTO.builder()
+                .nome("João da Silva")
+                .endereco("Rua A, 123")
+                .codigoAcesso("123456")
+                .plano("BASICO")
+                .build();
 
-        clienteResponseDTO = new ClienteResponseDTO();
-        clienteResponseDTO.setId(1L);
-        clienteResponseDTO.setNome("João da Silva");
-        clienteResponseDTO.setPlano("BASICO");
+        clienteResponseDTO = ClienteResponseDTO.builder()
+                .id(1L)
+                .nome("João da Silva")
+                .plano("BASICO")
+                .build();
     }
 
     @Test
@@ -82,19 +85,22 @@ class ClienteServiceTests {
     @DisplayName("Deve criar cliente com plano Premium")
     void deveCriarClientePlanoPremium() {
         // Arrange
-        ClientePostPutRequestDTO dtoPremium = new ClientePostPutRequestDTO();
-        dtoPremium.setNome("Maria Premium");
-        dtoPremium.setCodigoAcesso("654321");
-        dtoPremium.setPlano("PREMIUM");
+        ClientePostPutRequestDTO dtoPremium = ClientePostPutRequestDTO.builder()
+                .nome("Maria Premium")
+                .codigoAcesso("654321")
+                .plano("PREMIUM")
+                .build();
 
-        Cliente clientePremium = new Cliente();
-        clientePremium.setId(2L);
-        clientePremium.setNome("Maria Premium");
-        clientePremium.setPlano("PREMIUM");
+        Cliente clientePremium = Cliente.builder()
+                .id(2L)
+                .nome("Maria Premium")
+                .plano("PREMIUM")
+                .build();
 
-        ClienteResponseDTO responsePremium = new ClienteResponseDTO();
-        responsePremium.setId(2L);
-        responsePremium.setPlano("PREMIUM");
+        ClienteResponseDTO responsePremium = ClienteResponseDTO.builder()
+                .id(2L)
+                .plano("PREMIUM")
+                .build();
 
         when(modelMapper.map(dtoPremium, Cliente.class)).thenReturn(clientePremium);
         when(clienteRepository.save(clientePremium)).thenReturn(clientePremium);
