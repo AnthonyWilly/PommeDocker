@@ -3,6 +3,7 @@ package com.ufcg.psoft.commerce.controller;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.ufcg.psoft.commerce.dto.ClientePlanoDTO;
 import com.ufcg.psoft.commerce.dto.ClientePostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ClienteResponseDTO;
 import com.ufcg.psoft.commerce.exception.CustomErrorType;
@@ -41,21 +42,27 @@ public class ClienteControllerTests {
     Cliente cliente;
 
     ClientePostPutRequestDTO clientePostPutRequestDTO;
+    ClientePlanoDTO clientePlanoDTO;
 
     @BeforeEach
     void setup() {
-        // Object Mapper suporte para LocalDateTime
         objectMapper.registerModule(new JavaTimeModule());
         cliente = clienteRepository.save(Cliente.builder()
                 .nome("Cliente Um da Silva")
                 .endereco("Rua dos Testes, 123")
                 .codigo("123456")
+                .plano("Basico") 
                 .build()
         );
         clientePostPutRequestDTO = ClientePostPutRequestDTO.builder()
                 .nome(cliente.getNome())
                 .endereco(cliente.getEndereco())
-                .codigo(cliente.getCodigo())
+                .codigoAcesso(cliente.getCodigo())
+                .build();
+                
+        clientePlanoDTO = ClientePlanoDTO.builder()
+                .codigoAcesso(cliente.getCodigo())
+                .plano("Premium")
                 .build();
     }
 
@@ -71,8 +78,6 @@ public class ClienteControllerTests {
         @Test
         @DisplayName("Quando recuperamos um cliente com dados válidos")
         void quandoRecuperamosNomeDoClienteValido() throws Exception {
-
-            // Act
             String responseJsonString = driver.perform(get(URI_CLIENTES + "/" + cliente.getId()))
                     .andExpect(status().isOk())
                     .andDo(print())
@@ -80,17 +85,14 @@ public class ClienteControllerTests {
 
             Cliente resultado = objectMapper.readValue(responseJsonString, Cliente.ClienteBuilder.class).build();
 
-            // Assert
             assertEquals("Cliente Um da Silva", resultado.getNome());
         }
 
         @Test
         @DisplayName("Quando alteramos o nome do cliente com dados válidos")
         void quandoAlteramosNomeDoClienteValido() throws Exception {
-            // Arrange
             clientePostPutRequestDTO.setNome("Cliente Um Alterado");
 
-            // Act
             String responseJsonString = driver.perform(put(URI_CLIENTES + "/" + cliente.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .param("codigo", cliente.getCodigo())
@@ -101,17 +103,14 @@ public class ClienteControllerTests {
 
             Cliente resultado = objectMapper.readValue(responseJsonString, Cliente.ClienteBuilder.class).build();
 
-            // Assert
             assertEquals("Cliente Um Alterado", resultado.getNome());
         }
 
         @Test
         @DisplayName("Quando alteramos o nome do cliente nulo")
         void quandoAlteramosNomeDoClienteNulo() throws Exception {
-            // Arrange
             clientePostPutRequestDTO.setNome(null);
 
-            // Act
             String responseJsonString = driver.perform(put(URI_CLIENTES + "/" + cliente.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .param("codigo", cliente.getCodigo())
@@ -122,7 +121,6 @@ public class ClienteControllerTests {
 
             CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
 
-            // Assert
             assertAll(
                     () -> assertEquals("Erros de validacao encontrados", resultado.getMessage()),
                     () -> assertEquals("Nome obrigatorio", resultado.getErrors().get(0))
@@ -132,10 +130,8 @@ public class ClienteControllerTests {
         @Test
         @DisplayName("Quando alteramos o nome do cliente vazio")
         void quandoAlteramosNomeDoClienteVazio() throws Exception {
-            // Arrange
             clientePostPutRequestDTO.setNome("");
 
-            // Act
             String responseJsonString = driver.perform(put(URI_CLIENTES + "/" + cliente.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .param("codigo", cliente.getCodigo())
@@ -146,7 +142,6 @@ public class ClienteControllerTests {
 
             CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
 
-            // Assert
             assertAll(
                     () -> assertEquals("Erros de validacao encontrados", resultado.getMessage()),
                     () -> assertEquals("Nome obrigatorio", resultado.getErrors().get(0))
@@ -161,10 +156,8 @@ public class ClienteControllerTests {
         @Test
         @DisplayName("Quando alteramos o endereço do cliente com dados válidos")
         void quandoAlteramosEnderecoDoClienteValido() throws Exception {
-            // Arrange
             clientePostPutRequestDTO.setEndereco("Endereco Alterado");
 
-            // Act
             String responseJsonString = driver.perform(put(URI_CLIENTES + "/" + cliente.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .param("codigo", cliente.getCodigo())
@@ -175,17 +168,14 @@ public class ClienteControllerTests {
 
             ClienteResponseDTO resultado = objectMapper.readValue(responseJsonString, ClienteResponseDTO.ClienteResponseDTOBuilder.class).build();
 
-            // Assert
             assertEquals("Endereco Alterado", resultado.getEndereco());
         }
 
         @Test
         @DisplayName("Quando alteramos o endereço do cliente nulo")
         void quandoAlteramosEnderecoDoClienteNulo() throws Exception {
-            // Arrange
             clientePostPutRequestDTO.setEndereco(null);
 
-            // Act
             String responseJsonString = driver.perform(put(URI_CLIENTES + "/" + cliente.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .param("codigo", cliente.getCodigo())
@@ -196,7 +186,6 @@ public class ClienteControllerTests {
 
             CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
 
-            // Assert
             assertAll(
                     () -> assertEquals("Erros de validacao encontrados", resultado.getMessage()),
                     () -> assertEquals("Endereco obrigatorio", resultado.getErrors().get(0))
@@ -206,10 +195,8 @@ public class ClienteControllerTests {
         @Test
         @DisplayName("Quando alteramos o endereço do cliente vazio")
         void quandoAlteramosEnderecoDoClienteVazio() throws Exception {
-            // Arrange
             clientePostPutRequestDTO.setEndereco("");
 
-            // Act
             String responseJsonString = driver.perform(put(URI_CLIENTES + "/" + cliente.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .param("codigo", cliente.getCodigo())
@@ -220,7 +207,6 @@ public class ClienteControllerTests {
 
             CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
 
-            // Assert
             assertAll(
                     () -> assertEquals("Erros de validacao encontrados", resultado.getMessage()),
                     () -> assertEquals("Endereco obrigatorio", resultado.getErrors().get(0))
@@ -235,10 +221,8 @@ public class ClienteControllerTests {
         @Test
         @DisplayName("Quando alteramos o código de acesso do cliente nulo")
         void quandoAlteramosCodigoAcessoDoClienteNulo() throws Exception {
-            // Arrange
-            clientePostPutRequestDTO.setCodigo(null);
+            clientePostPutRequestDTO.setCodigoAcesso(null);
 
-            // Act
             String responseJsonString = driver.perform(put(URI_CLIENTES + "/" + cliente.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .param("codigo", cliente.getCodigo())
@@ -249,7 +233,6 @@ public class ClienteControllerTests {
 
             CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
 
-            // Assert
             assertAll(
                     () -> assertEquals("Erros de validacao encontrados", resultado.getMessage()),
                     () -> assertEquals("Codigo de acesso obrigatorio", resultado.getErrors().get(0))
@@ -259,10 +242,8 @@ public class ClienteControllerTests {
         @Test
         @DisplayName("Quando alteramos o código de acesso do cliente mais de 6 digitos")
         void quandoAlteramosCodigoAcessoDoClienteMaisDe6Digitos() throws Exception {
-            // Arrange
-            clientePostPutRequestDTO.setCodigo("1234567");
+            clientePostPutRequestDTO.setCodigoAcesso("1234567");
 
-            // Act
             String responseJsonString = driver.perform(put(URI_CLIENTES + "/" + cliente.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .param("codigo", cliente.getCodigo())
@@ -273,7 +254,6 @@ public class ClienteControllerTests {
 
             CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
 
-            // Assert
             assertAll(
                     () -> assertEquals("Erros de validacao encontrados", resultado.getMessage()),
                     () -> assertEquals("Codigo de acesso deve ter exatamente 6 digitos numericos", resultado.getErrors().get(0))
@@ -283,10 +263,8 @@ public class ClienteControllerTests {
         @Test
         @DisplayName("Quando alteramos o código de acesso do cliente menos de 6 digitos")
         void quandoAlteramosCodigoAcessoDoClienteMenosDe6Digitos() throws Exception {
-            // Arrange
-            clientePostPutRequestDTO.setCodigo("12345");
+            clientePostPutRequestDTO.setCodigoAcesso("12345");
 
-            // Act
             String responseJsonString = driver.perform(put(URI_CLIENTES + "/" + cliente.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .param("codigo", cliente.getCodigo())
@@ -297,7 +275,6 @@ public class ClienteControllerTests {
 
             CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
 
-            // Assert
             assertAll(
                     () -> assertEquals("Erros de validacao encontrados", resultado.getMessage()),
                     () -> assertEquals("Codigo de acesso deve ter exatamente 6 digitos numericos", resultado.getErrors().get(0))
@@ -307,10 +284,8 @@ public class ClienteControllerTests {
         @Test
         @DisplayName("Quando alteramos o código de acesso do cliente caracteres não numéricos")
         void quandoAlteramosCodigoAcessoDoClienteCaracteresNaoNumericos() throws Exception {
-            // Arrange
-            clientePostPutRequestDTO.setCodigo("a*c4e@");
+            clientePostPutRequestDTO.setCodigoAcesso("a*c4e@");
 
-            // Act
             String responseJsonString = driver.perform(put(URI_CLIENTES + "/" + cliente.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .param("codigo", cliente.getCodigo())
@@ -321,7 +296,6 @@ public class ClienteControllerTests {
 
             CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
 
-            // Assert
             assertAll(
                     () -> assertEquals("Erros de validacao encontrados", resultado.getMessage()),
                     () -> assertEquals("Codigo de acesso deve ter exatamente 6 digitos numericos", resultado.getErrors().get(0))
@@ -336,32 +310,29 @@ public class ClienteControllerTests {
         @Test
         @DisplayName("Quando buscamos por todos clientes salvos")
         void quandoBuscamosPorTodosClienteSalvos() throws Exception {
-            // Arrange
-            // Vamos ter 3 clientes no banco
             Cliente cliente1 = Cliente.builder()
                     .nome("Cliente Dois Almeida")
                     .endereco("Av. da Pits A, 100")
                     .codigo("246810")
+                    .plano("Basico")
                     .build();
             Cliente cliente2 = Cliente.builder()
                     .nome("Cliente Três Lima")
                     .endereco("Distrito dos Testadores, 200")
                     .codigo("135790")
+                    .plano("Premium")
                     .build();
             clienteRepository.saveAll(Arrays.asList(cliente1, cliente2));
 
-            // Act
             String responseJsonString = driver.perform(get(URI_CLIENTES)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(clientePostPutRequestDTO)))
-                    .andExpect(status().isOk()) // Codigo 200
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
                     .andDo(print())
                     .andReturn().getResponse().getContentAsString();
 
             List<Cliente> resultado = objectMapper.readValue(responseJsonString, new TypeReference<>() {
             });
 
-            // Assert
             assertAll(
                     () -> assertEquals(3, resultado.size())
             );
@@ -370,20 +341,14 @@ public class ClienteControllerTests {
         @Test
         @DisplayName("Quando buscamos um cliente salvo pelo id")
         void quandoBuscamosPorUmClienteSalvo() throws Exception {
-            // Arrange
-            // nenhuma necessidade além do setup()
-
-            // Act
             String responseJsonString = driver.perform(get(URI_CLIENTES + "/" + cliente.getId())
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(clientePostPutRequestDTO)))
-                    .andExpect(status().isOk()) // Codigo 200
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
                     .andDo(print())
                     .andReturn().getResponse().getContentAsString();
 
             ClienteResponseDTO resultado = objectMapper.readValue(responseJsonString, new TypeReference<>() {});
 
-            // Assert
             assertAll(
                     () -> assertEquals(cliente.getId().longValue(), resultado.getId().longValue()),
                     () -> assertEquals(cliente.getNome(), resultado.getNome())
@@ -393,20 +358,14 @@ public class ClienteControllerTests {
         @Test
         @DisplayName("Quando buscamos um cliente inexistente")
         void quandoBuscamosPorUmClienteInexistente() throws Exception {
-            // Arrange
-            // nenhuma necessidade além do setup()
-
-            // Act
             String responseJsonString = driver.perform(get(URI_CLIENTES + "/" + 999999999)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(clientePostPutRequestDTO)))
-                    .andExpect(status().isBadRequest()) // Codigo 400
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isBadRequest())
                     .andDo(print())
                     .andReturn().getResponse().getContentAsString();
 
             CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
 
-            // Assert
             assertAll(
                     () -> assertEquals("O cliente consultado nao existe!", resultado.getMessage())
             );
@@ -415,23 +374,19 @@ public class ClienteControllerTests {
         @Test
         @DisplayName("Quando criamos um novo cliente com dados válidos")
         void quandoCriarClienteValido() throws Exception {
-            // Arrange
-            // nenhuma necessidade além do setup()
-
-            // Act
             String responseJsonString = driver.perform(post(URI_CLIENTES)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(clientePostPutRequestDTO)))
-                    .andExpect(status().isCreated()) // Codigo 201
+                    .andExpect(status().isCreated())
                     .andDo(print())
                     .andReturn().getResponse().getContentAsString();
 
             Cliente resultado = objectMapper.readValue(responseJsonString, Cliente.ClienteBuilder.class).build();
 
-            // Assert
             assertAll(
                     () -> assertNotNull(resultado.getId()),
-                    () -> assertEquals(clientePostPutRequestDTO.getNome(), resultado.getNome())
+                    () -> assertEquals(clientePostPutRequestDTO.getNome(), resultado.getNome()),
+                    () -> assertEquals("Basico", resultado.getPlano())
             );
 
         }
@@ -439,21 +394,18 @@ public class ClienteControllerTests {
         @Test
         @DisplayName("Quando alteramos o cliente com dados válidos")
         void quandoAlteramosClienteValido() throws Exception {
-            // Arrange
             Long clienteId = cliente.getId();
 
-            // Act
             String responseJsonString = driver.perform(put(URI_CLIENTES + "/" + cliente.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .param("codigo", cliente.getCodigo())
                             .content(objectMapper.writeValueAsString(clientePostPutRequestDTO)))
-                    .andExpect(status().isOk()) // Codigo 200
+                    .andExpect(status().isOk())
                     .andDo(print())
                     .andReturn().getResponse().getContentAsString();
 
             Cliente resultado = objectMapper.readValue(responseJsonString, Cliente.ClienteBuilder.class).build();
 
-            // Assert
             assertAll(
                     () -> assertEquals(resultado.getId().longValue(), clienteId),
                     () -> assertEquals(clientePostPutRequestDTO.getNome(), resultado.getNome())
@@ -463,21 +415,16 @@ public class ClienteControllerTests {
         @Test
         @DisplayName("Quando alteramos o cliente inexistente")
         void quandoAlteramosClienteInexistente() throws Exception {
-            // Arrange
-            // nenhuma necessidade além do setup()
-
-            // Act
             String responseJsonString = driver.perform(put(URI_CLIENTES + "/" + 99999L)
                             .contentType(MediaType.APPLICATION_JSON)
                             .param("codigo", cliente.getCodigo())
                             .content(objectMapper.writeValueAsString(clientePostPutRequestDTO)))
-                    .andExpect(status().isBadRequest()) // Codigo 400
+                    .andExpect(status().isBadRequest())
                     .andDo(print())
                     .andReturn().getResponse().getContentAsString();
 
             CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
 
-            // Assert
             assertAll(
                     () -> assertEquals("O cliente consultado nao existe!", resultado.getMessage())
             );
@@ -486,21 +433,18 @@ public class ClienteControllerTests {
         @Test
         @DisplayName("Quando alteramos o cliente passando código de acesso inválido")
         void quandoAlteramosClienteCodigoAcessoInvalido() throws Exception {
-            // Arrange
             Long clienteId = cliente.getId();
 
-            // Act
             String responseJsonString = driver.perform(put(URI_CLIENTES + "/" + clienteId)
                             .contentType(MediaType.APPLICATION_JSON)
                             .param("codigo", "invalido")
                             .content(objectMapper.writeValueAsString(clientePostPutRequestDTO)))
-                    .andExpect(status().isBadRequest()) // Codigo 400
+                    .andExpect(status().isBadRequest())
                     .andDo(print())
                     .andReturn().getResponse().getContentAsString();
 
             CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
 
-            // Assert
             assertAll(
                     () -> assertEquals("Codigo de acesso invalido!", resultado.getMessage())
             );
@@ -509,38 +453,28 @@ public class ClienteControllerTests {
         @Test
         @DisplayName("Quando excluímos um cliente salvo")
         void quandoExcluimosClienteValido() throws Exception {
-            // Arrange
-            // nenhuma necessidade além do setup()
-
-            // Act
             String responseJsonString = driver.perform(delete(URI_CLIENTES + "/" + cliente.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .param("codigo", cliente.getCodigo()))
-                    .andExpect(status().isNoContent()) // Codigo 204
+                    .andExpect(status().isNoContent())
                     .andDo(print())
                     .andReturn().getResponse().getContentAsString();
 
-            // Assert
             assertTrue(responseJsonString.isBlank());
         }
 
         @Test
         @DisplayName("Quando excluímos um cliente inexistente")
         void quandoExcluimosClienteInexistente() throws Exception {
-            // Arrange
-            // nenhuma necessidade além do setup()
-
-            // Act
             String responseJsonString = driver.perform(delete(URI_CLIENTES + "/" + 999999)
                             .contentType(MediaType.APPLICATION_JSON)
                             .param("codigo", cliente.getCodigo()))
-                    .andExpect(status().isBadRequest()) // Codigo 400
+                    .andExpect(status().isBadRequest())
                     .andDo(print())
                     .andReturn().getResponse().getContentAsString();
 
             CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
 
-            // Assert
             assertAll(
                     () -> assertEquals("O cliente consultado nao existe!", resultado.getMessage())
             );
@@ -549,23 +483,75 @@ public class ClienteControllerTests {
         @Test
         @DisplayName("Quando excluímos um cliente salvo passando código de acesso inválido")
         void quandoExcluimosClienteCodigoAcessoInvalido() throws Exception {
-            // Arrange
-            // nenhuma necessidade além do setup()
-
-            // Act
             String responseJsonString = driver.perform(delete(URI_CLIENTES + "/" + cliente.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .param("codigo", "invalido"))
-                    .andExpect(status().isBadRequest()) // Codigo 400
+                    .andExpect(status().isBadRequest())
                     .andDo(print())
                     .andReturn().getResponse().getContentAsString();
 
             CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
 
-            // Assert
             assertAll(
                     () -> assertEquals("Codigo de acesso invalido!", resultado.getMessage())
             );
+        }
+    }
+
+    @Nested
+    @DisplayName("Conjunto de casos de verificação de Planos")
+    class ClienteVerificacaoPlanos {
+
+        @Test
+        @DisplayName("Quando alteramos o plano para Premium com dados válidos")
+        void quandoAlteramosPlanoParaPremium() throws Exception {
+            clientePlanoDTO.setPlano("Premium");
+
+            String responseJsonString = driver.perform(patch(URI_CLIENTES + "/" + cliente.getId() + "/plano")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(clientePlanoDTO)))
+                    .andExpect(status().isOk())
+                    .andDo(print())
+                    .andReturn().getResponse().getContentAsString();
+
+            ClienteResponseDTO resultado = objectMapper.readValue(responseJsonString, ClienteResponseDTO.class);
+
+            assertEquals("Premium", resultado.getPlano());
+        }
+
+        @Test
+        @DisplayName("Quando alteramos o plano para Basico com dados válidos")
+        void quandoAlteramosPlanoParaBasico() throws Exception {
+            cliente.setPlano("Premium");
+            clienteRepository.save(cliente);
+            clientePlanoDTO.setPlano("Basico");
+
+            String responseJsonString = driver.perform(patch(URI_CLIENTES + "/" + cliente.getId() + "/plano")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(clientePlanoDTO)))
+                    .andExpect(status().isOk())
+                    .andDo(print())
+                    .andReturn().getResponse().getContentAsString();
+
+            ClienteResponseDTO resultado = objectMapper.readValue(responseJsonString, ClienteResponseDTO.class);
+
+            assertEquals("Basico", resultado.getPlano());
+        }
+
+        @Test
+        @DisplayName("Quando tentamos alterar plano sem o plano no DTO")
+        void quandoAlteramosPlanoNulo() throws Exception {
+            clientePlanoDTO.setPlano(null);
+
+            String responseJsonString = driver.perform(patch(URI_CLIENTES + "/" + cliente.getId() + "/plano")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(clientePlanoDTO)))
+                    .andExpect(status().isBadRequest())
+                    .andReturn().getResponse().getContentAsString();
+
+            CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
+
+            assertTrue(resultado.getErrors().contains("Plano obrigatorio"));
         }
     }
 }
