@@ -3,7 +3,6 @@ package com.ufcg.psoft.commerce.controller;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.ufcg.psoft.commerce.dto.ClientePostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.TecnicoPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.TecnicoResponseDTO;
 import com.ufcg.psoft.commerce.exception.CustomErrorType;
@@ -97,7 +96,7 @@ public class TecnicoControllerTests {
         @DisplayName("Quando alteramos o nome do tecnico com dados válidos")
         void quandoAlteramosNomeDoTecnicoValido() throws Exception {
             // Arrange
-            tecnicoPostPutRequestDTO.setNome("Cliente Um Alterado");
+            tecnicoPostPutRequestDTO.setNome("Tecnico Um Alterado");
 
             // Act
             String responseJsonString = driver.perform(put(URI_TECNICOS + "/" + tecnico.getId())
@@ -416,7 +415,7 @@ public class TecnicoControllerTests {
 
         @Test
         @DisplayName("Quando alteramos o código de acesso do tecnico nulo")
-        void quandoAlteramosCodigoAcessoDoClienteNulo() throws Exception {
+        void quandoAlteramosCodigoAcessoDoTecnicoNulo() throws Exception {
             // Arrange
             tecnicoPostPutRequestDTO.setAcesso(null);
 
@@ -513,13 +512,12 @@ public class TecnicoControllerTests {
 
     @Nested
     @DisplayName("Conjunto de casos de verificação dos fluxos básicos API Rest")
-    class ClienteVerificacaoFluxosBasicosApiRest {
+    class TecnicoVerificacaoFluxosBasicosApiRest {
 
         @Test
-        @DisplayName("Quando buscamos por todos clientes salvos")
+        @DisplayName("Quando buscamos por todos tecnicos salvos")
         void quandoBuscamosPorTodosTecnicosSalvos() throws Exception {
             // Arrange
-            // Vamos ter 3 clientes no banco
             Tecnico tecnico1 = Tecnico.builder()
                     .nome("Tecnico Dois Almeida")
                     .tipoVeiculo(TipoVeiculo.MOTO)
@@ -601,7 +599,7 @@ public class TecnicoControllerTests {
 
         @Test
         @DisplayName("Quando criamos um novo tecnico com dados válidos")
-        void quandoCriarClienteValido() throws Exception {
+        void quandoCriarTecnicoValido() throws Exception {
             // Arrange
             // nenhuma necessidade além do setup()
 
@@ -625,7 +623,7 @@ public class TecnicoControllerTests {
 
         @Test
         @DisplayName("Quando alteramos o tecnico com dados válidos")
-        void quandoAlteramosClienteValido() throws Exception {
+        void quandoAlteramosTecnicoValido() throws Exception {
             // Arrange
             Long tecnicoId = tecnico.getId();
 
@@ -729,13 +727,13 @@ public class TecnicoControllerTests {
 
             // Assert
             assertAll(
-                    () -> assertEquals("O cliente consultado nao existe!", resultado.getMessage())
+                    () -> assertEquals("O tecnico consultado nao existe!", resultado.getMessage())
             );
         }
 
         @Test
-        @DisplayName("Quando excluímos um cliente salvo passando código de acesso inválido")
-        void quandoExcluimosClienteCodigoAcessoInvalido() throws Exception {
+        @DisplayName("Quando excluímos um tecnico salvo passando código de acesso inválido")
+        void quandoExcluimosTecnicoCodigoAcessoInvalido() throws Exception {
             // Arrange
             // nenhuma necessidade além do setup()
 
