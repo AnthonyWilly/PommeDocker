@@ -30,6 +30,10 @@ public class ClienteResponseDTO {
     @NotBlank(message = "Endereco obrigatorio")
     private String endereco;
 
+    @JsonProperty("tipoPlano")
+    @NotBlank(message = "Plano obrigatorio")
+    private String plano;
+
     public ClienteResponseDTO(Cliente cliente) {
         this.id = cliente.getId();
         this.nome = cliente.getNome();

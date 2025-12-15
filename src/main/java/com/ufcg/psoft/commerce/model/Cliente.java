@@ -28,7 +28,24 @@ public class Cliente {
     @Column(nullable = false)
     private String endereco;
 
+    @JsonProperty("tipoPlano")
+    @Column(nullable = false)
+    private String codigoPlano;
+
     @JsonIgnore
     @Column(nullable = false)
     private String codigo;
+
+    public void setPlanoPremium(String senha) {
+        this.setPlano("PREMIUM", senha);
+    }
+    public void setPlanoBasico(String senha) {
+        this.setPlano("BASICO", senha);
+    }
+    private void setPlano(String plano, String senha){
+        if (!this.codigo.equals(senha)) {
+            throw new IllegalArgumentException("Codigo de acesso invalido!");
+        }
+        this.codigoPlano = plano;
+    }
 }

@@ -68,4 +68,21 @@ public class ClienteController {
                 .status(HttpStatus.NO_CONTENT)
                 .body("");
     }
+    @PutMapping("/{id}/plano/premium")
+    public ResponseEntity<?> alterarPlanoPremium(
+            @PathVariable Long id,
+            @RequestParam String codigo) {
+
+        boolean ok = clienteService.setPlanoPremium(id, codigo);
+        return ResponseEntity.status(HttpStatus.OK).body(ok);
+    }
+
+    @PutMapping("/{id}/plano/basico")
+    public ResponseEntity<?> alterarPlanoBasico(
+            @PathVariable Long id,
+            @RequestParam String codigo) {
+
+        boolean ok = clienteService.setPlanoBasico(id, codigo);
+        return ResponseEntity.status(HttpStatus.OK).body(ok);
+    }
 }

@@ -2,15 +2,21 @@ package com.ufcg.psoft.commerce.service.cliente;
 
 import com.ufcg.psoft.commerce.exception.ClienteNaoExisteException;
 import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
+import com.ufcg.psoft.commerce.model.Plano;
+import com.ufcg.psoft.commerce.model.PlanoBasico;
+import com.ufcg.psoft.commerce.model.PlanoPremium;
 import com.ufcg.psoft.commerce.repository.ClienteRepository;
 import com.ufcg.psoft.commerce.dto.ClientePostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ClienteResponseDTO;
 import com.ufcg.psoft.commerce.model.Cliente;
+import jakarta.annotation.PostConstruct;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -20,6 +26,20 @@ public class ClienteServiceImpl implements ClienteService {
     ClienteRepository clienteRepository;
     @Autowired
     ModelMapper modelMapper;
+    @Autowired
+    private PlanoBasico planoBasico;
+
+    @Autowired
+    private PlanoPremium planoPremium;
+
+    // O mapa onde vamos guardar as referências
+    private Map<String, Plano> estrategias = new HashMap<>();
+
+    @PostConstruct
+    public void inicializarMapaDePlanos() {
+        estrategias.put("BASICO", planoBasico);
+        estrategias.put("PREMIUM", planoPremium);
+    }
 
     @Override
     public ClienteResponseDTO alterar(Long id, String codigoAcesso, ClientePostPutRequestDTO clientePostPutRequestDTO) {
@@ -69,4 +89,5 @@ public class ClienteServiceImpl implements ClienteService {
         Cliente cliente = clienteRepository.findById(id).orElseThrow(ClienteNaoExisteException::new);
         return new ClienteResponseDTO(cliente);
     }
+
 }
