@@ -534,7 +534,7 @@ public class TecnicoControllerTests {
                     .corVeiculo("Rosa")
                     .especialidade("Carpintaria")
                     .build();
-            TecnicoRepository.saveAll(Arrays.asList(tecnico1, tecnico2));
+            tecnicoRepository.saveAll(Arrays.asList(tecnico1, tecnico2));
             // Act
             String responseJsonString = driver.perform(get(URI_TECNICOS)
                             .contentType(MediaType.APPLICATION_JSON)
