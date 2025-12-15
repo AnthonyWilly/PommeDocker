@@ -19,6 +19,7 @@ public class ClienteResponseDTO {
 
     @JsonProperty("id")
     @Id
+    @NotBlank(message = "Id obrigatorio")
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long id;
 
@@ -30,7 +31,7 @@ public class ClienteResponseDTO {
     @NotBlank(message = "Endereco obrigatorio")
     private String endereco;
 
-    @JsonProperty("tipoPlano")
+    @JsonProperty("plano")
     @NotBlank(message = "Plano obrigatorio")
     private String plano;
 

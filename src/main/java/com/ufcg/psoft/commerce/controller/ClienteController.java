@@ -1,6 +1,7 @@
 package com.ufcg.psoft.commerce.controller;
 
 import com.ufcg.psoft.commerce.dto.ClientePostPutRequestDTO;
+import com.ufcg.psoft.commerce.dto.ClienteResponseDTO;
 import com.ufcg.psoft.commerce.service.cliente.ClienteService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,8 +74,8 @@ public class ClienteController {
             @PathVariable Long id,
             @RequestParam String codigo) {
 
-        boolean ok = clienteService.setPlanoPremium(id, codigo);
-        return ResponseEntity.status(HttpStatus.OK).body(ok);
+        ClienteResponseDTO ok = clienteService.setPlanoPremium(id, codigo);
+        return ResponseEntity.ok(ok);
     }
 
     @PutMapping("/{id}/plano/basico")
@@ -82,7 +83,7 @@ public class ClienteController {
             @PathVariable Long id,
             @RequestParam String codigo) {
 
-        boolean ok = clienteService.setPlanoBasico(id, codigo);
-        return ResponseEntity.status(HttpStatus.OK).body(ok);
+        ClienteResponseDTO ok = clienteService.setPlanoBasico(id, codigo);
+        return ResponseEntity.ok(ok);
     }
 }

@@ -4,5 +4,5 @@ import java.math.BigDecimal;
 
 public interface Plano {
     String getPlano();
-    BigDecimal getPreco();
+    BigDecimal getValorDesconto();
 }

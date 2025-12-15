@@ -37,10 +37,10 @@ public class Cliente {
     private String codigo;
 
     public void setPlanoPremium(String senha) {
-        this.setPlano("PREMIUM", senha);
+        this.setPlano("Premium", senha);
     }
     public void setPlanoBasico(String senha) {
-        this.setPlano("BASICO", senha);
+        this.setPlano("Basico", senha);
     }
     private void setPlano(String plano, String senha){
         if (!this.codigo.equals(senha)) {
