@@ -52,7 +52,7 @@ public class TecnicoControllerTests {
         tecnico = tecnicoRepository.save(Tecnico.builder()
                 .nome("Tecnico Um da Silva")
                 .tipoVeiculo(TipoVeiculo.MOTO)
-                .placaVeiculo("PlacaDoCarro")
+                .placaVeiculo("ABC1D23")
                 .corVeiculo("Verde")
                 .acesso("123456")
                 .especialidade("Consertos")
@@ -220,7 +220,7 @@ public class TecnicoControllerTests {
         @DisplayName("Quando alteramos a placa do veiculo do tecnico com dados válidos")
         void quandoAlteramosPlacaDoTecnicoValida() throws Exception {
             // Arrange
-            tecnicoPostPutRequestDTO.setPlacaVeiculo("ABC1D23");
+            tecnicoPostPutRequestDTO.setPlacaVeiculo("ABG1D23");
 
             // Act
             String responseJsonString = driver.perform(put(URI_TECNICOS + "/" + tecnico.getAcesso())
@@ -234,7 +234,7 @@ public class TecnicoControllerTests {
             TecnicoResponseDTO resultado = objectMapper.readValue(responseJsonString, TecnicoResponseDTO.TecnicoResponseDTOBuilder.class).build();
 
             // Assert
-            assertEquals("ABC1D23", resultado.getPlacaVeiculo());
+            assertEquals("ABG1D23", resultado.getPlacaVeiculo());
         }
 
         @Test
@@ -262,6 +262,27 @@ public class TecnicoControllerTests {
         }
     }
 
+    @Test
+    @DisplayName("Quando alteramos uma placa de carro inválida")
+    void quandoExcluimosTecnicoCodigoAcessoInvalido() throws Exception {
+        // Arrange
+        // nenhuma necessidade além do setup()
+
+        // Act
+        String responseJsonString = driver.perform(delete(URI_TECNICOS + "/" + tecnico.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .param("placaVeiculo", "invalido"))
+                .andExpect(status().isBadRequest()) // Codigo 400
+                .andDo(print())
+                .andReturn().getResponse().getContentAsString();
+
+        CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
+
+        // Assert
+        assertAll(
+                () -> assertEquals("Placa do veiculo inválida", resultado.getMessage())
+        );
+    }
     @Nested
     @DisplayName("Conjunto de casos de verificação da cor do veiculo")
     class TecnicoVerificacaoCorVeiculo {
