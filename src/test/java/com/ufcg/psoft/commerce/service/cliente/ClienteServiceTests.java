@@ -1,5 +1,6 @@
 package com.ufcg.psoft.commerce.service.cliente;
 
+import com.ufcg.psoft.commerce.dto.ClientePlanoDTO;
 import com.ufcg.psoft.commerce.dto.ClientePostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ClienteResponseDTO;
 import com.ufcg.psoft.commerce.exception.ClienteNaoExisteException;
@@ -23,6 +24,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("Testes do Service de Clientes")
 class ClienteServiceTests {
 
     @Mock
@@ -37,104 +39,169 @@ class ClienteServiceTests {
     Cliente cliente;
     ClientePostPutRequestDTO clienteDTO;
     ClienteResponseDTO clienteResponseDTO;
+    ClientePlanoDTO clientePlanoDTO;
 
     @BeforeEach
     void setup() {
-        cliente = new Cliente();
-        cliente.setId(1L);
-        cliente.setNome("João da Silva");
-        cliente.setEndereco("Rua A, 123");
-        cliente.setCodigo("123456");
-        cliente.setPlano("BASICO");
+        cliente = Cliente.builder()
+                .id(1L)
+                .nome("João da Silva")
+                .endereco("Rua A, 123")
+                .codigo("123456")
+                .plano("Basico")
+                .build();
 
-        clienteDTO = new ClientePostPutRequestDTO();
-        clienteDTO.setNome("João da Silva");
-        clienteDTO.setEndereco("Rua A, 123");
-        clienteDTO.setCodigoAcesso("123456");
-        clienteDTO.setPlano("BASICO");
+        clienteDTO = ClientePostPutRequestDTO.builder()
+                .nome("João da Silva")
+                .endereco("Rua A, 123")
+                .codigoAcesso("123456")
+                .build();
 
-        clienteResponseDTO = new ClienteResponseDTO();
-        clienteResponseDTO.setId(1L);
-        clienteResponseDTO.setNome("João da Silva");
-        clienteResponseDTO.setPlano("BASICO");
+        clienteResponseDTO = ClienteResponseDTO.builder()
+                .id(1L)
+                .nome("João da Silva")
+                .plano("Basico")
+                .build();
+        
+        clientePlanoDTO = ClientePlanoDTO.builder()
+                .codigoAcesso("123456")
+                .plano("Premium")
+                .build();
     }
 
     @Test
-    @DisplayName("Deve criar cliente com plano Básico (Padrão)")
-    void deveCriarClientePlanoBasico() {
-        // Arrange
-        clienteDTO.setPlano("BASICO");
-        
+    @DisplayName("Deve criar cliente com plano padrao Basico")
+    void deveCriarClientePlanoPadrao() {
         when(modelMapper.map(clienteDTO, Cliente.class)).thenReturn(cliente);
         when(clienteRepository.save(cliente)).thenReturn(cliente);
         when(modelMapper.map(cliente, ClienteResponseDTO.class)).thenReturn(clienteResponseDTO);
 
-        // Act
         ClienteResponseDTO resultado = clienteService.criar(clienteDTO);
 
-        // Assert
         assertNotNull(resultado);
-        assertEquals("BASICO", resultado.getPlano());
+        assertEquals("Basico", resultado.getPlano());
         verify(clienteRepository, times(1)).save(cliente);
     }
 
     @Test
-    @DisplayName("Deve criar cliente com plano Premium")
-    void deveCriarClientePlanoPremium() {
-        // Arrange
-        ClientePostPutRequestDTO dtoPremium = new ClientePostPutRequestDTO();
-        dtoPremium.setNome("Maria Premium");
-        dtoPremium.setCodigoAcesso("654321");
-        dtoPremium.setPlano("PREMIUM");
+    @DisplayName("Deve alterar todos os dados do cliente (exceto plano)")
+    void deveAlterarClienteCompleto() {
+        ClientePostPutRequestDTO dtoAtualizacao = ClientePostPutRequestDTO.builder()
+                .nome("João Atualizado")
+                .endereco("Rua Nova, 999")
+                .codigoAcesso("123456")
+                .build();
 
-        Cliente clientePremium = new Cliente();
-        clientePremium.setId(2L);
-        clientePremium.setNome("Maria Premium");
-        clientePremium.setPlano("PREMIUM");
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente));
+        
+        doAnswer(invocation -> {
+            Cliente entity = invocation.getArgument(1);
+            entity.setNome("João Atualizado");
+            entity.setEndereco("Rua Nova, 999");
+            return null;
+        }).when(modelMapper).map(dtoAtualizacao, cliente);
 
-        ClienteResponseDTO responsePremium = new ClienteResponseDTO();
-        responsePremium.setId(2L);
-        responsePremium.setPlano("PREMIUM");
+        when(clienteRepository.save(cliente)).thenReturn(cliente);
+        
+        ClienteResponseDTO responseAtualizado = ClienteResponseDTO.builder()
+                .nome("João Atualizado")
+                .endereco("Rua Nova, 999")
+                .plano("Basico")
+                .build();
+        when(modelMapper.map(cliente, ClienteResponseDTO.class)).thenReturn(responseAtualizado);
 
-        when(modelMapper.map(dtoPremium, Cliente.class)).thenReturn(clientePremium);
-        when(clienteRepository.save(clientePremium)).thenReturn(clientePremium);
-        when(modelMapper.map(clientePremium, ClienteResponseDTO.class)).thenReturn(responsePremium);
+        ClienteResponseDTO resultado = clienteService.alterar(1L, "123456", dtoAtualizacao);
 
-        // Act
-        ClienteResponseDTO resultado = clienteService.criar(dtoPremium);
-
-        // Assert
-        assertNotNull(resultado);
-        assertEquals("PREMIUM", resultado.getPlano());
-        verify(clienteRepository, times(1)).save(clientePremium);
+        assertEquals("João Atualizado", resultado.getNome());
+        assertEquals("Rua Nova, 999", resultado.getEndereco());
+        verify(clienteRepository, times(1)).save(cliente);
     }
 
     @Test
-    @DisplayName("Deve alterar cliente com código de acesso correto")
-    void deveAlterarCliente() {
-        // Arrange
+    @DisplayName("Deve alterar apenas o Nome do cliente")
+    void deveAlterarApenasNome() {
+        ClientePostPutRequestDTO dtoSoNome = ClientePostPutRequestDTO.builder()
+                .nome("Nome Novo Só")
+                .codigoAcesso("123456")
+                .build();
+
         when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente));
-        
-        doNothing().when(modelMapper).map(clienteDTO, cliente);
-        
+
+        doAnswer(invocation -> {
+            Cliente entity = invocation.getArgument(1);
+            entity.setNome("Nome Novo Só");
+            return null;
+        }).when(modelMapper).map(dtoSoNome, cliente);
+
         when(clienteRepository.save(cliente)).thenReturn(cliente);
         when(modelMapper.map(cliente, ClienteResponseDTO.class)).thenReturn(clienteResponseDTO);
 
-        // Act
-        ClienteResponseDTO resultado = clienteService.alterar(1L, "123456", clienteDTO);
+        clienteService.alterar(1L, "123456", dtoSoNome);
 
-        // Assert
-        assertNotNull(resultado);
         verify(clienteRepository, times(1)).save(cliente);
+    }
+
+    @Test
+    @DisplayName("Deve alterar apenas o Endereço do cliente")
+    void deveAlterarApenasEndereco() {
+        ClientePostPutRequestDTO dtoSoEndereco = ClientePostPutRequestDTO.builder()
+                .endereco("Endereço Novo Só")
+                .codigoAcesso("123456")
+                .build();
+
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente));
+
+        doAnswer(invocation -> {
+            Cliente entity = invocation.getArgument(1);
+            entity.setEndereco("Endereço Novo Só");
+            return null;
+        }).when(modelMapper).map(dtoSoEndereco, cliente);
+
+        when(clienteRepository.save(cliente)).thenReturn(cliente);
+        when(modelMapper.map(cliente, ClienteResponseDTO.class)).thenReturn(clienteResponseDTO);
+
+        clienteService.alterar(1L, "123456", dtoSoEndereco);
+
+        verify(clienteRepository, times(1)).save(cliente);
+    }
+
+    @Test
+    @DisplayName("Deve atualizar plano para Premium")
+    void deveAtualizarPlanoParaPremium() {
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente));
+        when(clienteRepository.save(cliente)).thenReturn(cliente);
+        
+        ClienteResponseDTO responsePremium = ClienteResponseDTO.builder().plano("Premium").build();
+        when(modelMapper.map(cliente, ClienteResponseDTO.class)).thenReturn(responsePremium);
+
+        ClienteResponseDTO resultado = clienteService.atualizarPlano(1L, "123456", clientePlanoDTO);
+
+        assertEquals("Premium", resultado.getPlano());
+        verify(clienteRepository, times(1)).save(cliente);
+    }
+
+    @Test
+    @DisplayName("Deve atualizar plano para Basico")
+    void deveAtualizarPlanoParaBasico() {
+        cliente.setPlano("Premium");
+        clientePlanoDTO.setPlano("Basico");
+        
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente));
+        when(clienteRepository.save(cliente)).thenReturn(cliente);
+        
+        ClienteResponseDTO responseBasico = ClienteResponseDTO.builder().plano("Basico").build();
+        when(modelMapper.map(cliente, ClienteResponseDTO.class)).thenReturn(responseBasico);
+
+        ClienteResponseDTO resultado = clienteService.atualizarPlano(1L, "123456", clientePlanoDTO);
+
+        assertEquals("Basico", resultado.getPlano());
     }
 
     @Test
     @DisplayName("Deve falhar ao alterar cliente com código incorreto")
     void deveFalharAlterarCodigoIncorreto() {
-        // Arrange
         when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente));
 
-        // Act & Assert
         assertThrows(CodigoDeAcessoInvalidoException.class, () -> 
             clienteService.alterar(1L, "000000", clienteDTO)
         );
@@ -144,10 +211,8 @@ class ClienteServiceTests {
     @Test
     @DisplayName("Deve falhar ao alterar cliente inexistente")
     void deveFalharAlterarClienteInexistente() {
-        // Arrange
         when(clienteRepository.findById(1L)).thenReturn(Optional.empty());
 
-        // Act & Assert
         assertThrows(ClienteNaoExisteException.class, () -> 
             clienteService.alterar(1L, "123456", clienteDTO)
         );
@@ -156,23 +221,18 @@ class ClienteServiceTests {
     @Test
     @DisplayName("Deve remover cliente com código de acesso correto")
     void deveRemoverCliente() {
-        // Arrange
         when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente));
 
-        // Act
         clienteService.remover(1L, "123456");
 
-        // Assert
         verify(clienteRepository, times(1)).delete(cliente);
     }
 
     @Test
     @DisplayName("Deve falhar ao remover cliente com código incorreto")
     void deveFalharRemoverCodigoIncorreto() {
-        // Arrange
         when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente));
 
-        // Act & Assert
         assertThrows(CodigoDeAcessoInvalidoException.class, () -> 
             clienteService.remover(1L, "999999")
         );
@@ -182,13 +242,10 @@ class ClienteServiceTests {
     @Test
     @DisplayName("Deve recuperar cliente pelo ID")
     void deveRecuperarCliente() {
-        // Arrange
         when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente));
 
-        // Act
         ClienteResponseDTO resultado = clienteService.recuperar(1L);
 
-        // Assert
         assertNotNull(resultado);
         assertEquals(cliente.getNome(), resultado.getNome());
     }
@@ -196,10 +253,8 @@ class ClienteServiceTests {
     @Test
     @DisplayName("Deve falhar ao recuperar cliente inexistente")
     void deveFalharRecuperarInexistente() {
-        // Arrange
         when(clienteRepository.findById(1L)).thenReturn(Optional.empty());
 
-        // Act & Assert
         assertThrows(ClienteNaoExisteException.class, () -> 
             clienteService.recuperar(1L)
         );
@@ -208,13 +263,10 @@ class ClienteServiceTests {
     @Test
     @DisplayName("Deve listar todos os clientes")
     void deveListarClientes() {
-        // Arrange
         when(clienteRepository.findAll()).thenReturn(List.of(cliente));
 
-        // Act
         List<ClienteResponseDTO> resultado = clienteService.listar();
 
-        // Assert
         assertFalse(resultado.isEmpty());
         assertEquals(1, resultado.size());
     }
@@ -222,13 +274,10 @@ class ClienteServiceTests {
     @Test
     @DisplayName("Deve listar clientes por nome")
     void deveListarClientesPorNome() {
-        // Arrange
         when(clienteRepository.findByNomeContaining("João")).thenReturn(List.of(cliente));
 
-        // Act
         List<ClienteResponseDTO> resultado = clienteService.listarPorNome("João");
 
-        // Assert
         assertFalse(resultado.isEmpty());
         assertEquals("João da Silva", resultado.get(0).getNome());
     }
