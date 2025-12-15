@@ -72,18 +72,18 @@ public class ClienteController {
     @PutMapping("/{id}/plano/premium")
     public ResponseEntity<?> alterarPlanoPremium(
             @PathVariable Long id,
-            @RequestParam String codigo) {
+            @RequestBody @Valid ClientePostPutRequestDTO dto) {
 
-        ClienteResponseDTO ok = clienteService.setPlanoPremium(id, codigo);
+        ClienteResponseDTO ok = clienteService.setPlanoPremium(id, dto.getCodigo());
         return ResponseEntity.ok(ok);
     }
 
     @PutMapping("/{id}/plano/basico")
     public ResponseEntity<?> alterarPlanoBasico(
             @PathVariable Long id,
-            @RequestParam String codigo) {
+            @RequestBody @Valid ClientePostPutRequestDTO dto) {
 
-        ClienteResponseDTO ok = clienteService.setPlanoBasico(id, codigo);
+        ClienteResponseDTO ok = clienteService.setPlanoBasico(id, dto.getCodigo());
         return ResponseEntity.ok(ok);
     }
 }
