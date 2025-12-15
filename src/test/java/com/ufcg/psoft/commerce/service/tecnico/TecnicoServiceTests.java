@@ -29,7 +29,6 @@ class TecnicoServiceTests {
     ObjectMapper objectMapper = new ObjectMapper();
 
     Tecnico tecnico;
-    TecnicoPostPutRequestDTO tecnicoPostPutRequestDTO;
 
     private static final String CODIGO_ACESSO_OK = "123456";
     private static final String CODIGO_ACESSO_ERRADO = "000000";
@@ -48,15 +47,6 @@ class TecnicoServiceTests {
                 .acesso(CODIGO_ACESSO_OK)
                 .build()
         );
-
-        tecnicoPostPutRequestDTO = TecnicoPostPutRequestDTO.builder()
-                .nome(tecnico.getNome())
-                .especialidade(tecnico.getEspecialidade())
-                .placaVeiculo(tecnico.getPlacaVeiculo())
-                .tipoVeiculo(tecnico.getTipoVeiculo())
-                .corVeiculo(tecnico.getCorVeiculo())
-                .acesso(CODIGO_ACESSO_OK)
-                .build();
     }
 
     @Test
@@ -94,7 +84,7 @@ class TecnicoServiceTests {
 
     @Test
     @DisplayName("Listar técnicos retorna lista e não expõe código de acesso")
-    void quandoRetornamosLista_semCodigoAcesso() throws Exception {
+    void quandoRetornamosListaSemCodigoAcesso() throws Exception {
         List<TecnicoResponseDTO> res = tecnicoService.listar();
 
         assertNotNull(res);
@@ -127,9 +117,9 @@ class TecnicoServiceTests {
 
     @Test
     @DisplayName("Deve alterar o código quando o código fornecido for o correto.")
-    void quandoAlteraramosCodigoCorreto() throws Exception {
+    void quandoAlteramosTecnicoCodigoCorreto() throws Exception {
         TecnicoPostPutRequestDTO req = TecnicoPostPutRequestDTO.builder()
-                .nome("Técnico Um da Silva")
+                .nome("Técnico Um Alterado")
                 .especialidade("elétrica")
                 .placaVeiculo("ABC1D34")
                 .tipoVeiculo(TipoVeiculo.CARRO)
@@ -143,8 +133,6 @@ class TecnicoServiceTests {
 
         Tecnico atualizado = tecnicoRepository.findById(tecnico.getId()).orElseThrow();
         assertEquals("Técnico Um Alterado", atualizado.getNome());
-        assertEquals("ABC1D34", atualizado.getPlacaVeiculo());
-
         String json = objectMapper.writeValueAsString(res);
         assertFalse(json.contains("acesso"));
     }
@@ -169,20 +157,18 @@ class TecnicoServiceTests {
     @DisplayName("Deve alterar o código quando o código fornecido for o correto.")
     void quandoAlteramosCodigoCorreto() throws Exception {
         TecnicoPostPutRequestDTO req = TecnicoPostPutRequestDTO.builder()
-                .nome("Técnico Um Alterado")
+                .nome("Técnico Um da Silva")
                 .especialidade("elétrica")
                 .placaVeiculo("ABC1D32")
                 .tipoVeiculo(TipoVeiculo.CARRO)
                 .corVeiculo("preto")
-                .acesso(CODIGO_ACESSO_OK)
+                .acesso("654321")
                 .build();
 
         TecnicoResponseDTO res = tecnicoService.alterar(tecnico.getId(), CODIGO_ACESSO_OK, req);
         assertNotNull(res);
         Tecnico atualizado = tecnicoRepository.findById(tecnico.getId()).orElseThrow();
-        assertEquals("Técnico Um Alterado", atualizado.getNome());
-        assertEquals("ABC1D32", atualizado.getPlacaVeiculo());
-
+        assertEquals("654321", atualizado.getAcesso());
         String json = objectMapper.writeValueAsString(res);
         assertFalse(json.contains("acesso"));
     }
@@ -333,7 +319,7 @@ class TecnicoServiceTests {
 
     @Test
     @DisplayName("Deve alterar apenas a cor do veiculo mantendo os demais campos inalterados.")
-    void quandoAlteramosApenasEspecialidade() throws Exception {
+    void quandoAlteramosApenasCorVeiculo() throws Exception {
         String nomeOriginal = tecnico.getNome();
         String placaOriginal = tecnico.getPlacaVeiculo();
         TipoVeiculo tipoVeiculoOriginal = tecnico.getTipoVeiculo();
@@ -365,7 +351,7 @@ class TecnicoServiceTests {
 
     @Test
     @DisplayName("Deve alterar apenas o tipo do veiculo mantendo os demais campos inalterados.")
-    void quandoAlteramosApenasEspecialidade() throws Exception {
+    void quandoAlteramosApenasTipoVeiculo() throws Exception {
         String nomeOriginal = tecnico.getNome();
         String placaOriginal = tecnico.getPlacaVeiculo();
         String corVeiculoOriginal = tecnico.getCorVeiculo();

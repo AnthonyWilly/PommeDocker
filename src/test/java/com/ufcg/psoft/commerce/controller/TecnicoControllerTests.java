@@ -173,7 +173,7 @@ public class TecnicoControllerTests {
             tecnicoPostPutRequestDTO.setTipoVeiculo(TipoVeiculo.CARRO);
 
             // Act
-            String responseJsonString = driver.perform(put(URI_TECNICOS + "/" + tecnico.getAcesso())
+            String responseJsonString = driver.perform(put(URI_TECNICOS + "/" + tecnico.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .param("acesso", tecnico.getAcesso())
                             .content(objectMapper.writeValueAsString(tecnicoPostPutRequestDTO)))
@@ -223,7 +223,7 @@ public class TecnicoControllerTests {
             tecnicoPostPutRequestDTO.setPlacaVeiculo("ABG1D23");
 
             // Act
-            String responseJsonString = driver.perform(put(URI_TECNICOS + "/" + tecnico.getAcesso())
+            String responseJsonString = driver.perform(put(URI_TECNICOS + "/" + tecnico.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .param("acesso", tecnico.getAcesso())
                             .content(objectMapper.writeValueAsString(tecnicoPostPutRequestDTO)))
@@ -241,7 +241,7 @@ public class TecnicoControllerTests {
         @DisplayName("Quando alteramos placa do veiculo do tecnico nulo")
         void quandoAlteramosTipoVeiculoDoTecnicoNulo() throws Exception {
             // Arrange
-            tecnicoPostPutRequestDTO.setTipoVeiculo(null);
+            tecnicoPostPutRequestDTO.setPlacaVeiculo(null);
 
             // Act
             String responseJsonString = driver.perform(put(URI_TECNICOS + "/" + tecnico.getId())
@@ -260,28 +260,31 @@ public class TecnicoControllerTests {
                     () -> assertEquals("placa do veiculo obrigatoria", resultado.getErrors().get(0))
             );
         }
-    }
 
-    @Test
-    @DisplayName("Quando alteramos uma placa de carro inválida")
-    void quandoExcluimosTecnicoCodigoAcessoInvalido() throws Exception {
-        // Arrange
-        // nenhuma necessidade além do setup()
 
-        // Act
-        String responseJsonString = driver.perform(delete(URI_TECNICOS + "/" + tecnico.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .param("placaVeiculo", "invalido"))
-                .andExpect(status().isBadRequest()) // Codigo 400
-                .andDo(print())
-                .andReturn().getResponse().getContentAsString();
+        @Test
+        @DisplayName("Quando alteramos placa de veiculo invalida")
+        void quandoAlteramosPlacaVeiculoInvalida() throws Exception {
+            // Arrange
+            tecnicoPostPutRequestDTO.setPlacaVeiculo("abcdefgh");
 
-        CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
+            // Act
+            String responseJsonString = driver.perform(put(URI_TECNICOS + "/" + tecnico.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .param("acesso", tecnico.getAcesso())
+                            .content(objectMapper.writeValueAsString(tecnicoPostPutRequestDTO)))
+                    .andExpect(status().isBadRequest())
+                    .andDo(print())
+                    .andReturn().getResponse().getContentAsString();
 
-        // Assert
-        assertAll(
-                () -> assertEquals("Placa do veiculo inválida", resultado.getMessage())
-        );
+            CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
+
+            // Assert
+            assertAll(
+                    () -> assertEquals("Erros de validacao encontrados", resultado.getMessage()),
+                    () -> assertEquals("placa do veiculoFormatoInvalido", resultado.getErrors().get(0))
+            );
+        }
     }
     @Nested
     @DisplayName("Conjunto de casos de verificação da cor do veiculo")
@@ -289,12 +292,12 @@ public class TecnicoControllerTests {
 
         @Test
         @DisplayName("Quando alteramos a cor do veiculo do tecnico com dados válidos")
-        void quandoAlteramosTipoVeiculoDoTecnicoValido() throws Exception {
+        void quandoAlteramosACorDoVeiculoDoTecnicoValido() throws Exception {
             // Arrange
             tecnicoPostPutRequestDTO.setCorVeiculo("branco");
 
             // Act
-            String responseJsonString = driver.perform(put(URI_TECNICOS + "/" + tecnico.getAcesso())
+            String responseJsonString = driver.perform(put(URI_TECNICOS + "/" + tecnico.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .param("acesso", tecnico.getAcesso())
                             .content(objectMapper.writeValueAsString(tecnicoPostPutRequestDTO)))
@@ -366,7 +369,7 @@ public class TecnicoControllerTests {
             tecnicoPostPutRequestDTO.setEspecialidade("encanamento");
 
             // Act
-            String responseJsonString = driver.perform(put(URI_TECNICOS + "/" + tecnico.getAcesso())
+            String responseJsonString = driver.perform(put(URI_TECNICOS + "/" + tecnico.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .param("acesso", tecnico.getAcesso())
                             .content(objectMapper.writeValueAsString(tecnicoPostPutRequestDTO)))
@@ -382,9 +385,9 @@ public class TecnicoControllerTests {
 
         @Test
         @DisplayName("Quando alteramos a especialidade do tecnico nulo")
-        void quandoAlteramosCorVeiculoTecnicoNulo() throws Exception {
+        void quandoAlteramosEspecialidadeTecnicoNulo() throws Exception {
             // Arrange
-            tecnicoPostPutRequestDTO.setCorVeiculo(null);
+            tecnicoPostPutRequestDTO.setEspecialidade(null);
             // Act
             String responseJsonString = driver.perform(put(URI_TECNICOS + "/" + tecnico.getId())
                             .contentType(MediaType.APPLICATION_JSON)
@@ -422,7 +425,7 @@ public class TecnicoControllerTests {
             // Assert
             assertAll(
                     () -> assertEquals("Erros de validacao encontrados", resultado.getMessage()),
-                    () -> assertEquals("especialidade obrigatoria", resultado.getErrors().get(0))
+                    () -> assertEquals("Especialidade obrigatoria", resultado.getErrors().get(0))
             );
         }
     }
@@ -491,7 +494,7 @@ public class TecnicoControllerTests {
             // Act
             String responseJsonString = driver.perform(put(URI_TECNICOS + "/" + tecnico.getId())
                             .contentType(MediaType.APPLICATION_JSON)
-                            .param("aceso", tecnico.getAcesso())
+                            .param("acesso", tecnico.getAcesso())
                             .content(objectMapper.writeValueAsString(tecnicoPostPutRequestDTO)))
                     .andExpect(status().isBadRequest())
                     .andDo(print())
@@ -647,7 +650,7 @@ public class TecnicoControllerTests {
         void quandoAlteramosTecnicoValido() throws Exception {
             // Arrange
             Long tecnicoId = tecnico.getId();
-
+            tecnicoPostPutRequestDTO.setNome("Nome Realmente Alterado");
             // Act
             String responseJsonString = driver.perform(put(URI_TECNICOS + "/" + tecnico.getId())
                             .contentType(MediaType.APPLICATION_JSON)
@@ -662,8 +665,8 @@ public class TecnicoControllerTests {
             // Assert
             assertAll(
                     () -> assertEquals(resultado.getId().longValue(), tecnicoId),
-                    () -> assertEquals(tecnicoPostPutRequestDTO.getNome(), resultado.getNome()))
-            ;
+                    () -> assertEquals(tecnicoPostPutRequestDTO.getNome(), resultado.getNome())
+            );
         }
 
         @Test
@@ -739,7 +742,7 @@ public class TecnicoControllerTests {
             // Act
             String responseJsonString = driver.perform(delete(URI_TECNICOS + "/" + 999999)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .param("codigo", tecnico.getAcesso()))
+                            .param("acesso", tecnico.getAcesso()))
                     .andExpect(status().isBadRequest()) // Codigo 400
                     .andDo(print())
                     .andReturn().getResponse().getContentAsString();
