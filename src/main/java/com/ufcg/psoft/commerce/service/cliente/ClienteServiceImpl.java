@@ -55,6 +55,7 @@ public class ClienteServiceImpl implements ClienteService {
     @Override
     public ClienteResponseDTO criar(ClientePostPutRequestDTO clientePostPutRequestDTO) {
         Cliente cliente = modelMapper.map(clientePostPutRequestDTO, Cliente.class);
+        cliente.setPlanoBasico(clientePostPutRequestDTO.getCodigo());
         clienteRepository.save(cliente);
         return modelMapper.map(cliente, ClienteResponseDTO.class);
     }
