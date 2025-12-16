@@ -43,8 +43,9 @@ public class ClienteResponseDTO {
         this.nome = cliente.getNome();
         this.endereco = cliente.getEndereco();
         this.planoAtual = cliente.getPlanoAtual();
-        this.proxPlano = cliente.proxPlano;
+        this.proxPlano = cliente.getProxPlano();
     }
 }
+
 
 
