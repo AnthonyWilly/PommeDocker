@@ -54,6 +54,6 @@ public class Cliente {
         if (!this.codigo.equals(senha)) {
             throw new IllegalArgumentException("Codigo de acesso invalido!");
         }
-        this.codigoPlano = plano;
+        this.proxPlano = plano;
     }
 }
