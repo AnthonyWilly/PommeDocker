@@ -1,7 +1,4 @@
 package com.ufcg.psoft.commerce.service.cliente;
-
-
-import com.ufcg.psoft.commerce.dto.ClientePlanoDTO;
 import com.ufcg.psoft.commerce.dto.ClientePostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ClienteResponseDTO;
 import com.ufcg.psoft.commerce.exception.ClienteNaoExisteException;
@@ -47,8 +44,6 @@ class ClienteServiceTests {
    Cliente cliente;
    ClientePostPutRequestDTO clienteDTO;
    ClienteResponseDTO clienteResponseDTO;
-   ClientePlanoDTO clientePlanoDTO;
-
 
    @BeforeEach
    void setup() {
@@ -64,7 +59,7 @@ class ClienteServiceTests {
        clienteDTO = ClientePostPutRequestDTO.builder()
                .nome("João da Silva")
                .endereco("Rua A, 123")
-               .codigoAcesso("123456")
+               .codigo("123456")
                .build();
 
 
@@ -72,11 +67,6 @@ class ClienteServiceTests {
                .id(1L)
                .nome("João da Silva")
                .plano("Basico")
-               .build();
-      
-       clientePlanoDTO = ClientePlanoDTO.builder()
-               .codigoAcesso("123456")
-               .plano("Premium")
                .build();
    }
 
@@ -104,7 +94,7 @@ class ClienteServiceTests {
        ClientePostPutRequestDTO dtoAtualizacao = ClientePostPutRequestDTO.builder()
                .nome("João Atualizado")
                .endereco("Rua Nova, 999")
-               .codigoAcesso("123456")
+               .codigo("123456")
                .build();
 
 
@@ -142,7 +132,7 @@ class ClienteServiceTests {
    void deveAlterarApenasNome() {
        ClientePostPutRequestDTO dtoSoNome = ClientePostPutRequestDTO.builder()
                .nome("Nome Novo Só")
-               .codigoAcesso("123456")
+               .codigo("123456")
                .build();
 
 
@@ -172,7 +162,7 @@ class ClienteServiceTests {
    void deveAlterarApenasEndereco() {
        ClientePostPutRequestDTO dtoSoEndereco = ClientePostPutRequestDTO.builder()
                .endereco("Endereço Novo Só")
-               .codigoAcesso("123456")
+               .codigo("123456")
                .build();
 
 
@@ -197,42 +187,40 @@ class ClienteServiceTests {
    }
 
 
-   @Test
-   @DisplayName("Deve atualizar plano para Premium")
-   void deveAtualizarPlanoParaPremium() {
-       when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente));
-       when(clienteRepository.save(cliente)).thenReturn(cliente);
-      
-       ClienteResponseDTO responsePremium = ClienteResponseDTO.builder().plano("Premium").build();
-       when(modelMapper.map(cliente, ClienteResponseDTO.class)).thenReturn(responsePremium);
+    @Test
+    @DisplayName("Deve setar plano Premium e salvar histórico")
+    void deveSetarPlanoPremium() {
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente));
+        when(clienteRepository.save(any(Cliente.class))).thenAnswer(invocation -> {
+            Cliente c = invocation.getArgument(0);
+            c.setPlanoAtual("Premium");
+            return c;
+        });
+        ClienteResponseDTO responsePremium = ClienteResponseDTO.builder().plano("Premium").build();
+        when(modelMapper.map(any(Cliente.class), eq(ClienteResponseDTO.class))).thenReturn(responsePremium);
+        ClienteResponseDTO resultado = clienteService.setPlanoPremium(1L, "123456");
+        assertEquals("Premium", resultado.getPlanoAtual());
+        verify(clienteRepository, times(1)).save(cliente);
+        verify(historicoRepository, times(1)).save(any());
+    }
 
 
-       ClienteResponseDTO resultado = clienteService.atualizarPlano(1L, "123456", clientePlanoDTO);
-
-
-       assertEquals("Premium", resultado.getPlano());
-       verify(clienteRepository, times(1)).save(cliente);
-   }
-
-
-   @Test
-   @DisplayName("Deve atualizar plano para Basico")
-   void deveAtualizarPlanoParaBasico() {
-       cliente.setPlano("Premium");
-       clientePlanoDTO.setPlano("Basico");
-      
-       when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente));
-       when(clienteRepository.save(cliente)).thenReturn(cliente);
-      
-       ClienteResponseDTO responseBasico = ClienteResponseDTO.builder().plano("Basico").build();
-       when(modelMapper.map(cliente, ClienteResponseDTO.class)).thenReturn(responseBasico);
-
-
-       ClienteResponseDTO resultado = clienteService.atualizarPlano(1L, "123456", clientePlanoDTO);
-
-
-       assertEquals("Basico", resultado.getPlano());
-   }
+    @Test
+    @DisplayName("Deve setar plano basico e salvar histórico")
+    void deveSetarPlanoBasico() {
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente));
+        when(clienteRepository.save(any(Cliente.class))).thenAnswer(invocation -> {
+            Cliente c = invocation.getArgument(0);
+            c.setPlanoAtual("Basico");
+            return c;
+        });
+        ClienteResponseDTO responseBasico = ClienteResponseDTO.builder().plano("Basico").build();
+        when(modelMapper.map(any(Cliente.class), eq(ClienteResponseDTO.class))).thenReturn(responsePremium);
+        ClienteResponseDTO resultado = clienteService.setPlanoBasico(1L, "123456");
+        assertEquals("Basico", resultado.getPlano());
+        verify(clienteRepository, times(1)).save(cliente);
+        verify(historicoRepository, times(1)).save(any());
+    }
 
 
    @Test

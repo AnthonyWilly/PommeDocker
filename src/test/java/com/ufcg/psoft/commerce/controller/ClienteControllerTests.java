@@ -221,7 +221,7 @@ public class ClienteControllerTests {
         @Test
         @DisplayName("Quando alteramos o código de acesso do cliente nulo")
         void quandoAlteramosCodigoAcessoDoClienteNulo() throws Exception {
-            clientePostPutRequestDTO.setCodigoAcesso(null);
+            clientePostPutRequestDTO.setCodigo(null);
 
             String responseJsonString = driver.perform(put(URI_CLIENTES + "/" + cliente.getId())
                             .contentType(MediaType.APPLICATION_JSON)
@@ -242,7 +242,7 @@ public class ClienteControllerTests {
         @Test
         @DisplayName("Quando alteramos o código de acesso do cliente mais de 6 digitos")
         void quandoAlteramosCodigoAcessoDoClienteMaisDe6Digitos() throws Exception {
-            clientePostPutRequestDTO.setCodigoAcesso("1234567");
+            clientePostPutRequestDTO.setCodigo("1234567");
 
             String responseJsonString = driver.perform(put(URI_CLIENTES + "/" + cliente.getId())
                             .contentType(MediaType.APPLICATION_JSON)
@@ -263,7 +263,7 @@ public class ClienteControllerTests {
         @Test
         @DisplayName("Quando alteramos o código de acesso do cliente menos de 6 digitos")
         void quandoAlteramosCodigoAcessoDoClienteMenosDe6Digitos() throws Exception {
-            clientePostPutRequestDTO.setCodigoAcesso("12345");
+            clientePostPutRequestDTO.setCodigo("12345");
 
             String responseJsonString = driver.perform(put(URI_CLIENTES + "/" + cliente.getId())
                             .contentType(MediaType.APPLICATION_JSON)
@@ -284,7 +284,7 @@ public class ClienteControllerTests {
         @Test
         @DisplayName("Quando alteramos o código de acesso do cliente caracteres não numéricos")
         void quandoAlteramosCodigoAcessoDoClienteCaracteresNaoNumericos() throws Exception {
-            clientePostPutRequestDTO.setCodigoAcesso("a*c4e@");
+            clientePostPutRequestDTO.setCodigo("a*c4e@");
 
             String responseJsonString = driver.perform(put(URI_CLIENTES + "/" + cliente.getId())
                             .contentType(MediaType.APPLICATION_JSON)
@@ -314,13 +314,13 @@ public class ClienteControllerTests {
                     .nome("Cliente Dois Almeida")
                     .endereco("Av. da Pits A, 100")
                     .codigo("246810")
-                    .plano("Basico")
+                    .planoAtual("Basico")
                     .build();
             Cliente cliente2 = Cliente.builder()
                     .nome("Cliente Três Lima")
                     .endereco("Distrito dos Testadores, 200")
                     .codigo("135790")
-                    .plano("Premium")
+                    .planoAtual("Premium")
                     .build();
             clienteRepository.saveAll(Arrays.asList(cliente1, cliente2));
 
@@ -503,55 +503,47 @@ public class ClienteControllerTests {
     class ClienteVerificacaoPlanos {
 
         @Test
-        @DisplayName("Quando alteramos o plano para Premium com dados válidos")
+        @DisplayName("Deve alterar o plano para Premium com dados Validos")
         void quandoAlteramosPlanoParaPremium() throws Exception {
-            clientePlanoDTO.setPlano("Premium");
-
-            String responseJsonString = driver.perform(patch(URI_CLIENTES + "/" + cliente.getId() + "/plano")
+            String uri = URI_CLIENTES + "/" + cliente.getId() + "/plano/premium";
+            String responseJsonString = driver.perform(put(uri)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(clientePlanoDTO)))
-                    .andExpect(status().isOk())
+                            .content(objectMapper.writeValueAsString(clientePostPutRequestDTO)))
+                    .andExpect(status().isOk()) //
                     .andDo(print())
                     .andReturn().getResponse().getContentAsString();
 
             ClienteResponseDTO resultado = objectMapper.readValue(responseJsonString, ClienteResponseDTO.class);
-
-            assertEquals("Premium", resultado.getPlano());
+            assertEquals("Premium", resultado.getPlanoAtual());
         }
 
         @Test
-        @DisplayName("Quando alteramos o plano para Basico com dados válidos")
-        void quandoAlteramosPlanoParaBasico() throws Exception {
-            cliente.setPlano("Premium");
-            clienteRepository.save(cliente);
-            clientePlanoDTO.setPlano("Basico");
-
-            String responseJsonString = driver.perform(patch(URI_CLIENTES + "/" + cliente.getId() + "/plano")
+        @DisplayName("Deve alterar o plano para Premium com dados Validos")
+        void quandoAlteramosPlanoParaPremium() throws Exception {
+            String uri = URI_CLIENTES + "/" + cliente.getId() + "/plano/basico";
+            String responseJsonString = driver.perform(put(uri)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(clientePlanoDTO)))
-                    .andExpect(status().isOk())
+                            .content(objectMapper.writeValueAsString(clientePostPutRequestDTO)))
+                    .andExpect(status().isOk()) //
                     .andDo(print())
                     .andReturn().getResponse().getContentAsString();
 
             ClienteResponseDTO resultado = objectMapper.readValue(responseJsonString, ClienteResponseDTO.class);
-
-            assertEquals("Basico", resultado.getPlano());
+            assertEquals("Basico", resultado.getPlanoAtual());
         }
-
         @Test
-        @DisplayName("Quando tentamos alterar plano sem o plano no DTO")
-        void quandoAlteramosPlanoNulo() throws Exception {
-            clientePlanoDTO.setPlano(null);
-
-            String responseJsonString = driver.perform(patch(URI_CLIENTES + "/" + cliente.getId() + "/plano")
+        @DisplayName("Deve falhar ao alterar plano de cliente inexistente")
+        void quandoAlteramosPlanoClienteInexistente() throws Exception {
+            Long idInexistente = 999999L;
+            String uri = URI_CLIENTES + "/" + idInexistente + "/plano/premium";
+            String responseJsonString = driver.perform(put(uri)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(clientePlanoDTO)))
-                    .andExpect(status().isBadRequest())
+                            .content(objectMapper.writeValueAsString(clientePostPutRequestDTO)))
+                    .andExpect(status().isBadRequest()) //
+                    .andDo(print())
                     .andReturn().getResponse().getContentAsString();
-
             CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
-
-            assertTrue(resultado.getErrors().contains("Plano obrigatorio"));
+            assertEquals("O cliente consultado nao existe!", resultado.getMessage());
         }
     }
 }
