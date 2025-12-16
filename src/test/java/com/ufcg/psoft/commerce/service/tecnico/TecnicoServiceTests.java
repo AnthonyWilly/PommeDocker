@@ -28,6 +28,7 @@ class TecnicoServiceTests {
 
     ObjectMapper objectMapper = new ObjectMapper();
 
+    TecnicoPostPutRequestDTO tecnicoDTO;
     Tecnico tecnico;
 
     private static final String CODIGO_ACESSO_OK = "123456";
@@ -47,22 +48,21 @@ class TecnicoServiceTests {
                 .acesso(CODIGO_ACESSO_OK)
                 .build()
         );
+        tecnicoDTO = TecnicoPostPutRequestDTO.builder()
+                .nome("Técnico Um da Silva")
+                .especialidade("elétrica")
+                .placaVeiculo("ABC1D34")
+                .tipoVeiculo(TipoVeiculo.CARRO)
+                .corVeiculo("preto")
+                .acesso(CODIGO_ACESSO_OK)
+                .build();
     }
 
     @Test
     @DisplayName("O técnico não deve exibir o código de acesso nas leituras")
     void quandoCriamosTecnicoNaoExibimosCodigoNasLeituras() throws Exception {
-        TecnicoPostPutRequestDTO req = TecnicoPostPutRequestDTO.builder()
-                .nome("Técnica Ana Souza")
-                .especialidade("hidráulica")
-                .placaVeiculo("ABC3D09")
-                .tipoVeiculo(TipoVeiculo.MOTO)
-                .corVeiculo("azul")
-                .acesso("654321")
-                .build();
 
-        TecnicoResponseDTO res = tecnicoService.criar(req);
-
+        TecnicoResponseDTO res = tecnicoService.criar(tecnicoDTO);
         assertNotNull(res);
         String json = objectMapper.writeValueAsString(res);
         assertFalse(json.contains("acesso"));
@@ -72,7 +72,6 @@ class TecnicoServiceTests {
     @DisplayName("Leitura de técnico retorna dados e não expõe código")
     void quandoRetornamosTecnicoValido() {
         TecnicoResponseDTO res = tecnicoService.recuperar(tecnico.getId());
-
         assertNotNull(res);
         assertEquals(tecnico.getId(), res.getId());
         assertEquals(tecnico.getNome(), res.getNome());
@@ -116,23 +115,16 @@ class TecnicoServiceTests {
     }
 
     @Test
-    @DisplayName("Deve alterar o código quando o código fornecido for o correto.")
+    @DisplayName("Deve alterar nome quando o código fornecido for o correto.")
     void quandoAlteramosTecnicoCodigoCorreto() throws Exception {
-        TecnicoPostPutRequestDTO req = TecnicoPostPutRequestDTO.builder()
-                .nome("Técnico Um Alterado")
-                .especialidade("elétrica")
-                .placaVeiculo("ABC1D34")
-                .tipoVeiculo(TipoVeiculo.CARRO)
-                .corVeiculo("preto")
-                .acesso(CODIGO_ACESSO_OK)
-                .build();
+        tecnicoDTO.setNome("Técnico Um da Silva");
 
-        TecnicoResponseDTO res = tecnicoService.alterar(tecnico.getId(), CODIGO_ACESSO_OK, req);
+        TecnicoResponseDTO res = tecnicoService.alterar(tecnico.getId(), CODIGO_ACESSO_OK, tecnicoDTO);
 
         assertNotNull(res);
 
         Tecnico atualizado = tecnicoRepository.findById(tecnico.getId()).orElseThrow();
-        assertEquals("Técnico Um Alterado", atualizado.getNome());
+        assertEquals("Técnico Um da Silva", atualizado.getNome());
         String json = objectMapper.writeValueAsString(res);
         assertFalse(json.contains("acesso"));
     }
@@ -140,32 +132,16 @@ class TecnicoServiceTests {
     @Test
     @DisplayName("Quando o código estiver errado, não deve ser possível alterar o código")
     void quandoAlteramosCodigoErrado() {
-        TecnicoPostPutRequestDTO req = TecnicoPostPutRequestDTO.builder()
-                .nome("Tecnico Um da Silva")
-                .especialidade("elétrica")
-                .placaVeiculo("ABC1D34")
-                .tipoVeiculo(TipoVeiculo.CARRO)
-                .corVeiculo("preto")
-                .acesso(CODIGO_ACESSO_OK)
-                .build();
-
         assertThrows(RuntimeException.class,
-                () -> tecnicoService.alterar(tecnico.getId(), CODIGO_ACESSO_ERRADO, req));
+                () -> tecnicoService.alterar(tecnico.getId(), CODIGO_ACESSO_ERRADO, tecnicoDTO));
     }
 
     @Test
     @DisplayName("Deve alterar o código quando o código fornecido for o correto.")
     void quandoAlteramosCodigoCorreto() throws Exception {
-        TecnicoPostPutRequestDTO req = TecnicoPostPutRequestDTO.builder()
-                .nome("Técnico Um da Silva")
-                .especialidade("elétrica")
-                .placaVeiculo("ABC1D32")
-                .tipoVeiculo(TipoVeiculo.CARRO)
-                .corVeiculo("preto")
-                .acesso("654321")
-                .build();
+        tecnicoDTO.setAcesso("654321");
 
-        TecnicoResponseDTO res = tecnicoService.alterar(tecnico.getId(), CODIGO_ACESSO_OK, req);
+        TecnicoResponseDTO res = tecnicoService.alterar(tecnico.getId(), CODIGO_ACESSO_OK, tecnicoDTO);
         assertNotNull(res);
         Tecnico atualizado = tecnicoRepository.findById(tecnico.getId()).orElseThrow();
         assertEquals("654321", atualizado.getAcesso());
@@ -198,16 +174,8 @@ class TecnicoServiceTests {
         String corVeiculoOriginal = tecnico.getCorVeiculo();
 
         String novoCodigoAcesso = "183476";
-
-        TecnicoPostPutRequestDTO req = TecnicoPostPutRequestDTO.builder()
-                .nome(nomeOriginal)
-                .especialidade(especialidadeOriginal)
-                .placaVeiculo(placaOriginal)
-                .tipoVeiculo(tipoVeiculoOriginal)
-                .corVeiculo(corVeiculoOriginal)
-                .acesso(novoCodigoAcesso)
-                .build();
-        TecnicoResponseDTO res = tecnicoService.alterar(tecnico.getId(), CODIGO_ACESSO_OK, req);
+        tecnicoDTO.setAcesso(novoCodigoAcesso);
+        TecnicoResponseDTO res = tecnicoService.alterar(tecnico.getId(), CODIGO_ACESSO_OK, tecnicoDTO);
         assertNotNull(res);
         Tecnico atualizado = tecnicoRepository.findById(tecnico.getId()).orElseThrow();
         assertEquals(novoCodigoAcesso, atualizado.getAcesso());
@@ -231,16 +199,8 @@ class TecnicoServiceTests {
         String acessoOriginal = tecnico.getAcesso();
 
         String novaPlacaVeiculo = "ABG1E34";
-
-        TecnicoPostPutRequestDTO req = TecnicoPostPutRequestDTO.builder()
-                .nome(nomeOriginal)
-                .especialidade(especialidadeOriginal)
-                .placaVeiculo(novaPlacaVeiculo)
-                .tipoVeiculo(tipoVeiculoOriginal)
-                .corVeiculo(corVeiculoOriginal)
-                .acesso(acessoOriginal)
-                .build();
-        TecnicoResponseDTO res = tecnicoService.alterar(tecnico.getId(), CODIGO_ACESSO_OK, req);
+        tecnicoDTO.setPlacaVeiculo(novaPlacaVeiculo);
+        TecnicoResponseDTO res = tecnicoService.alterar(tecnico.getId(), CODIGO_ACESSO_OK, tecnicoDTO);
         assertNotNull(res);
         Tecnico atualizado = tecnicoRepository.findById(tecnico.getId()).orElseThrow();
         assertEquals(novaPlacaVeiculo, atualizado.getPlacaVeiculo());
@@ -263,16 +223,8 @@ class TecnicoServiceTests {
         String acessoOriginal = tecnico.getAcesso();
 
         String novoNome = "Tecnico Um Alterado";
-
-        TecnicoPostPutRequestDTO req = TecnicoPostPutRequestDTO.builder()
-                .nome(novoNome)
-                .especialidade(especialidadeOriginal)
-                .placaVeiculo(placaOriginal)
-                .tipoVeiculo(tipoVeiculoOriginal)
-                .corVeiculo(corVeiculoOriginal)
-                .acesso(acessoOriginal)
-                .build();
-        TecnicoResponseDTO res = tecnicoService.alterar(tecnico.getId(), CODIGO_ACESSO_OK, req);
+        tecnicoDTO.setNome(novoNome);
+        TecnicoResponseDTO res = tecnicoService.alterar(tecnico.getId(), CODIGO_ACESSO_OK, tecnicoDTO);
         assertNotNull(res);
         Tecnico atualizado = tecnicoRepository.findById(tecnico.getId()).orElseThrow();
         assertEquals(novoNome, atualizado.getNome());
@@ -295,16 +247,9 @@ class TecnicoServiceTests {
         String acessoOriginal = tecnico.getAcesso();
 
         String novaEspecialidade = "Cozinhar";
+        tecnicoDTO.setEspecialidade(novaEspecialidade);
 
-        TecnicoPostPutRequestDTO req = TecnicoPostPutRequestDTO.builder()
-                .nome(nomeOriginal)
-                .especialidade(novaEspecialidade)
-                .placaVeiculo(placaOriginal)
-                .tipoVeiculo(tipoVeiculoOriginal)
-                .corVeiculo(corVeiculoOriginal)
-                .acesso(acessoOriginal)
-                .build();
-        TecnicoResponseDTO res = tecnicoService.alterar(tecnico.getId(), CODIGO_ACESSO_OK, req);
+        TecnicoResponseDTO res = tecnicoService.alterar(tecnico.getId(), CODIGO_ACESSO_OK, tecnicoDTO);
         assertNotNull(res);
         Tecnico atualizado = tecnicoRepository.findById(tecnico.getId()).orElseThrow();
         assertEquals(nomeOriginal, atualizado.getNome());
@@ -327,16 +272,8 @@ class TecnicoServiceTests {
         String acessoOriginal = tecnico.getAcesso();
 
         String novaCor = "verde";
-
-        TecnicoPostPutRequestDTO req = TecnicoPostPutRequestDTO.builder()
-                .nome(nomeOriginal)
-                .especialidade(especialidadeOriginal)
-                .placaVeiculo(placaOriginal)
-                .tipoVeiculo(tipoVeiculoOriginal)
-                .corVeiculo(novaCor)
-                .acesso(acessoOriginal)
-                .build();
-        TecnicoResponseDTO res = tecnicoService.alterar(tecnico.getId(), CODIGO_ACESSO_OK, req);
+        tecnicoDTO.setCorVeiculo(novaCor);
+        TecnicoResponseDTO res = tecnicoService.alterar(tecnico.getId(), CODIGO_ACESSO_OK, tecnicoDTO);
         assertNotNull(res);
         Tecnico atualizado = tecnicoRepository.findById(tecnico.getId()).orElseThrow();
         assertEquals(nomeOriginal, atualizado.getNome());
@@ -359,16 +296,8 @@ class TecnicoServiceTests {
         String acessoOriginal = tecnico.getAcesso();
 
         TipoVeiculo novoTipo = TipoVeiculo.MOTO;
-
-        TecnicoPostPutRequestDTO req = TecnicoPostPutRequestDTO.builder()
-                .nome(nomeOriginal)
-                .especialidade(especialidadeOriginal)
-                .placaVeiculo(placaOriginal)
-                .tipoVeiculo(novoTipo)
-                .corVeiculo(corVeiculoOriginal)
-                .acesso(acessoOriginal)
-                .build();
-        TecnicoResponseDTO res = tecnicoService.alterar(tecnico.getId(), CODIGO_ACESSO_OK, req);
+        tecnicoDTO.setTipoVeiculo(novoTipo);
+        TecnicoResponseDTO res = tecnicoService.alterar(tecnico.getId(), CODIGO_ACESSO_OK, tecnicoDTO);
         assertNotNull(res);
         Tecnico atualizado = tecnicoRepository.findById(tecnico.getId()).orElseThrow();
         assertEquals(nomeOriginal, atualizado.getNome());
