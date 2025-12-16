@@ -32,6 +32,9 @@ class ClienteServiceTests {
    @Mock
    ClienteRepository clienteRepository;
 
+   @Mock
+   Object historicoRepository;
+
 
    @Mock
    ModelMapper modelMapper;
