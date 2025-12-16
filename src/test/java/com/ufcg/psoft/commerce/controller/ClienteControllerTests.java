@@ -1,5 +1,31 @@
 package com.ufcg.psoft.commerce.controller;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.util.Arrays;
+import java.util.List;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -7,21 +33,10 @@ import com.ufcg.psoft.commerce.dto.ClientePostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ClienteResponseDTO;
 import com.ufcg.psoft.commerce.exception.CustomErrorType;
 import com.ufcg.psoft.commerce.model.Cliente;
+import com.ufcg.psoft.commerce.model.HistoricoPlano;
 import com.ufcg.psoft.commerce.repository.ClienteRepository;
-import org.junit.jupiter.api.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-
-import java.util.Arrays;
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import com.ufcg.psoft.commerce.repository.HistoricoPlanoRepository;
+import com.ufcg.psoft.commerce.service.cliente.ClienteService;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -29,12 +44,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class ClienteControllerTests {
 
     final String URI_CLIENTES = "/clientes";
+    final String URI_PLANO = "/plano";
 
     @Autowired
     MockMvc driver;
 
     @Autowired
     ClienteRepository clienteRepository;
+
+    @Autowired
+    ClienteService clienteService;
+
+    @Autowired
+    HistoricoPlanoRepository historicoRepository; 
 
     ObjectMapper objectMapper = new ObjectMapper();
 
@@ -567,5 +589,195 @@ public class ClienteControllerTests {
                     () -> assertEquals("Codigo de acesso invalido!", resultado.getMessage())
             );
         }
+    }
+
+    @Nested
+    @DisplayName("Conjunto de casos de verificação de mudança de plano")
+    class ClienteAlterarPlano {
+
+        @Test
+        @DisplayName("Altera o plano para Premium com sucesso")
+        void alteraParaPremiumComSucesso() throws Exception {
+                
+                // Arrange
+                historicoRepository.deleteAll();
+
+                String planoAlvo = "Premium";
+
+                // Act
+                String responseJsonString = driver.perform(patch(URI_CLIENTES + "/" + cliente.getId() + URI_PLANO) 
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .param("codigo", cliente.getCodigo())
+                                .param("tipoPlano", planoAlvo))
+                        .andExpect(status().isOk())
+                        .andDo(print())
+                        .andReturn().getResponse().getContentAsString();
+
+                Cliente resultado = objectMapper.readValue(responseJsonString, Cliente.class); 
+
+                //Assert
+                List<HistoricoPlano> historico = historicoRepository.findAllByClienteIdOrderByDataAlteracaoDesc(cliente.getId());
+                assertAll(
+                        () -> assertTrue(resultado.getPlano().getClass().getSimpleName().contains(planoAlvo)), 
+                        () -> assertEquals(1, historico.size(), "Deve ter criado 1 registro de histórico"),
+                        () -> assertEquals("PlanoPremium", historico.get(0).getTipoPlano(), "O histórico deve registrar o tipo novo") 
+                );
+
+        }
+
+        @Test
+        @DisplayName("Altera o plano para Basico com sucesso")
+        void alteraParaBasicoComSucesso() throws Exception {
+                // Arrange
+                clienteService.setPlanoPremium(cliente.getId(), cliente.getCodigo());
+                historicoRepository.deleteAll();
+
+                String planoAlvo = "Basico";
+
+                // Act
+                String responseJsonString = driver.perform(patch(URI_CLIENTES + "/" + cliente.getId() + URI_PLANO) 
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .param("codigo", cliente.getCodigo())
+                                .param("tipoPlano", planoAlvo))
+                        .andExpect(status().isOk())
+                        .andDo(print())
+                        .andReturn().getResponse().getContentAsString();
+
+                Cliente resultado = objectMapper.readValue(responseJsonString, Cliente.class); 
+
+                //Assert
+                List<HistoricoPlano> historico = historicoRepository.findAllByClienteIdOrderByDataAlteracaoDesc(cliente.getId());
+                assertAll(
+                        () -> assertTrue(resultado.getPlano().getClass().getSimpleName().contains(planoAlvo)), 
+                        () -> assertEquals(1, historico.size(), "Deve ter criado 1 registro de histórico"),
+                        () -> assertEquals("PlanoBasico", historico.get(0).getTipoPlano(), "O histórico deve registrar o tipo novo") 
+                );
+        }
+
+        @Test
+        @DisplayName("Não altera plano para premium com código inválido")
+        void naoAlteraPlanoClienteParaPremiumCodigoAcessoInvalido() throws Exception {
+                // Arrange
+                String codigoInvalido = "123457";
+                String planoAlvo = "Premium";
+
+                // Act
+                String responseJsonString = driver.perform(patch(URI_CLIENTES + "/" + cliente.getId() + URI_PLANO) 
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .param("codigo", codigoInvalido)
+                                .param("tipoPlano", planoAlvo))
+                        .andExpect(status().isBadRequest())
+                        .andDo(print())
+                        .andReturn().getResponse().getContentAsString();
+
+                CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
+
+                // Assert
+
+                assertAll(
+                        () -> assertEquals("Codigo de acesso invalido!", resultado.getMessage()), 
+                        () -> assertEquals(0, historicoRepository.count()) 
+                );
+        }
+
+        @Test
+        @DisplayName("Não altera plano para basico com código inválido")
+        void naoAlteraPlanoClienteParaBasicoCodigoAcessoInvalido() throws Exception {
+                // Arrange
+                String codigoInvalido = "123457";
+                String planoAlvo = "Basico";
+                clienteService.setPlanoPremium(cliente.getId(), cliente.getCodigo());
+                historicoRepository.deleteAll();
+
+                // Act
+                String responseJsonString = driver.perform(patch(URI_CLIENTES + "/" + cliente.getId() + URI_PLANO)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .param("codigo", codigoInvalido)
+                                .param("tipoPlano", planoAlvo))
+                        .andExpect(status().isBadRequest())
+                        .andDo(print())
+                        .andReturn().getResponse().getContentAsString();
+
+                CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
+
+                // Assert
+                assertAll(
+                        () -> assertEquals("Codigo de acesso invalido!", resultado.getMessage()), 
+                        () -> assertEquals(0, historicoRepository.count()) 
+                );
+        }
+
+        @Test
+        @DisplayName("Não altera plano para premium de cliente inexistente")
+        void naoAlteraPlanoParaPremiumClienteInexistente() throws Exception {
+            // Arrange
+            String planoAlvo = "Premium";
+            
+            // Act
+            String responseJsonString = driver.perform(patch(URI_CLIENTES + "/999999" + URI_PLANO)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .param("codigo", "123456") 
+                            .param("tipoPlano", planoAlvo))
+                    .andExpect(status().isBadRequest()) 
+                    .andDo(print())
+                    .andReturn().getResponse().getContentAsString();
+
+            CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
+
+            // Assert
+            assertAll(
+                    () -> assertEquals("O cliente consultado nao existe!", resultado.getMessage()),
+                    () -> assertEquals(0, historicoRepository.count()) 
+            );
+        }
+
+        @Test
+        @DisplayName("Não altera plano para basico de cliente inexistente")
+        void naoAlteraPlanoParaBasicoClienteInexistente() throws Exception {
+            // Arrange
+            String planoAlvo = "Basico";
+            
+            // Act
+            String responseJsonString = driver.perform(patch(URI_CLIENTES + "/999999" + URI_PLANO)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .param("codigo", "123456") 
+                            .param("tipoPlano", planoAlvo))
+                    .andExpect(status().isBadRequest()) 
+                    .andDo(print())
+                    .andReturn().getResponse().getContentAsString();
+
+            CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
+
+            // Assert
+            assertAll(
+                    () -> assertEquals("O cliente consultado nao existe!", resultado.getMessage()),
+                    () -> assertEquals(0, historicoRepository.count()) 
+            );
+        }
+
+        @Test
+        @DisplayName("Não altera para um plano que não existe")
+        void naoAlteraParaPlanoInexistente() throws Exception {
+            // Arrange
+            String planoInvalido = "PlanoNaoExiste";
+
+            // Act
+            String responseJsonString = driver.perform(patch(URI_CLIENTES + "/" + cliente.getId() + URI_PLANO)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .param("codigo", cliente.getCodigo())
+                            .param("tipoPlano", planoInvalido))
+                    .andExpect(status().isBadRequest()) 
+                    .andDo(print())
+                    .andReturn().getResponse().getContentAsString();
+
+            CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
+
+            // Assert
+            assertAll(
+                () -> assertEquals("O plano consultado nao existe!", resultado.getMessage()), 
+                () -> assertEquals(0, historicoRepository.count())
+            );
+        }
+        
     }
 }
