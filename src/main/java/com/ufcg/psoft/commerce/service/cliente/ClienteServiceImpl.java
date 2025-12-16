@@ -100,7 +100,7 @@ public class ClienteServiceImpl implements ClienteService {
     }
     public ClienteResponseDTO setPlanoBasico(long id ,String codigoAcesso){
         Cliente cliente = clienteRepository.findById(id).orElseThrow(ClienteNaoExisteException::new);
-        cliente.setPlanoPremium(codigoAcesso);
+        cliente.setPlanoBasico(codigoAcesso);
         clienteRepository.save(cliente);
         Historico historico = criarHistorico(cliente.getId(),"Premium");
         historicoRepository.save(historico);
