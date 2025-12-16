@@ -32,6 +32,14 @@ public class Cliente {
     @Column(nullable = false)
     private String planoAtual;
 
+    @JsonProperty("proxPlano")
+    @Column(nullable = false)
+    private String proxPlano;
+
+    @JsonProperty("dataCobranca")
+    @Column(nullable = false)
+    private String dataCobranca;
+
     @JsonIgnore
     @Column(nullable = false)
     private String codigo;
