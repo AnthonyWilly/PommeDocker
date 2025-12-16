@@ -596,8 +596,8 @@ public class ClienteControllerTests {
     class ClienteAlterarPlano {
 
         @Test
-        @DisplayName("Quando alteramos o plano para Premium com sucesso")
-        void quandoAlteramosParaPremiumComSucesso() throws Exception {
+        @DisplayName("Altera o plano para Premium com sucesso")
+        void alteraParaPremiumComSucesso() throws Exception {
                 
                 // Arrange
                 historicoRepository.deleteAll();
@@ -626,8 +626,8 @@ public class ClienteControllerTests {
         }
 
         @Test
-        @DisplayName("Quando alteramos o plano para Basico com sucesso")
-        void quandoAlteramosParaBasicoComSucesso() throws Exception {
+        @DisplayName("Altera o plano para Basico com sucesso")
+        void alteraParaBasicoComSucesso() throws Exception {
                 // Arrange
                 clienteService.setPlanoPremium(cliente.getId(), cliente.getCodigo());
                 historicoRepository.deleteAll();
@@ -655,8 +655,8 @@ public class ClienteControllerTests {
         }
 
         @Test
-        @DisplayName("Quando tentamos alterar plano para premium com código inválido")
-        void quandoAlteramosPlanoClienteParaPremiumCodigoAcessoInvalido() throws Exception {
+        @DisplayName("Não altera plano para premium com código inválido")
+        void naoAlteraPlanoClienteParaPremiumCodigoAcessoInvalido() throws Exception {
                 // Arrange
                 String codigoInvalido = "123457";
                 String planoAlvo = "Premium";
@@ -681,8 +681,8 @@ public class ClienteControllerTests {
         }
 
         @Test
-        @DisplayName("Quando tentamos alterar plano para basico com código inválido")
-        void quandoAlteramosPlanoClienteParaBasicoCodigoAcessoInvalido() throws Exception {
+        @DisplayName("Não altera plano para basico com código inválido")
+        void naoAlteraPlanoClienteParaBasicoCodigoAcessoInvalido() throws Exception {
                 // Arrange
                 String codigoInvalido = "123457";
                 String planoAlvo = "Basico";
@@ -708,8 +708,8 @@ public class ClienteControllerTests {
         }
 
         @Test
-        @DisplayName("Quando tentamos alterar plano para premium de cliente inexistente")
-        void quandoAlteramosPlanoParaPremiumClienteInexistente() throws Exception {
+        @DisplayName("Não altera plano para premium de cliente inexistente")
+        void naoAlteraPlanoParaPremiumClienteInexistente() throws Exception {
             // Arrange
             String planoAlvo = "Premium";
             
@@ -732,8 +732,8 @@ public class ClienteControllerTests {
         }
 
         @Test
-        @DisplayName("Quando tentamos alterar plano para basico de cliente inexistente")
-        void quandoAlteramosPlanoParaBasicoClienteInexistente() throws Exception {
+        @DisplayName("Não altera plano para basico de cliente inexistente")
+        void naoAlteraPlanoParaBasicoClienteInexistente() throws Exception {
             // Arrange
             String planoAlvo = "Basico";
             
@@ -756,8 +756,8 @@ public class ClienteControllerTests {
         }
 
         @Test
-        @DisplayName("Quando tentamos alterar para um plano que não existe")
-        void quandoAlteramosParaPlanoInexistente() throws Exception {
+        @DisplayName("Não altera para um plano que não existe")
+        void naoAlteraParaPlanoInexistente() throws Exception {
             // Arrange
             String planoInvalido = "PlanoNaoExiste";
 
