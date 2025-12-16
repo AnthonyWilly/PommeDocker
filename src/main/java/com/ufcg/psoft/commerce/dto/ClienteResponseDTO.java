@@ -31,13 +31,15 @@ public class ClienteResponseDTO {
     @NotBlank(message = "Endereco obrigatorio")
     private String endereco;
 
-    @JsonProperty("plano")
+    @JsonProperty("planoAtual")
     @NotBlank(message = "Plano obrigatorio")
-    private String plano;
+    private String planoAtual;
 
     public ClienteResponseDTO(Cliente cliente) {
         this.id = cliente.getId();
         this.nome = cliente.getNome();
         this.endereco = cliente.getEndereco();
+        this.planoAtual = cliente.getPlanoAtual();
     }
 }
+
