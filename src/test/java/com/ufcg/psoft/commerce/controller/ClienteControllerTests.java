@@ -3,7 +3,6 @@ package com.ufcg.psoft.commerce.controller;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.ufcg.psoft.commerce.dto.ClientePlanoDTO;
 import com.ufcg.psoft.commerce.dto.ClientePostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ClienteResponseDTO;
 import com.ufcg.psoft.commerce.exception.CustomErrorType;
@@ -42,7 +41,6 @@ public class ClienteControllerTests {
     Cliente cliente;
 
     ClientePostPutRequestDTO clientePostPutRequestDTO;
-    ClientePlanoDTO clientePlanoDTO;
 
     @BeforeEach
     void setup() {
@@ -57,13 +55,9 @@ public class ClienteControllerTests {
         clientePostPutRequestDTO = ClientePostPutRequestDTO.builder()
                 .nome(cliente.getNome())
                 .endereco(cliente.getEndereco())
-                .codigoAcesso(cliente.getCodigo())
+                .codigo(cliente.getCodigo())
                 .build();
-                
-        clientePlanoDTO = ClientePlanoDTO.builder()
-                .codigoAcesso(cliente.getCodigo())
-                .plano("Premium")
-                .build();
+
     }
 
     @AfterEach
@@ -386,7 +380,7 @@ public class ClienteControllerTests {
             assertAll(
                     () -> assertNotNull(resultado.getId()),
                     () -> assertEquals(clientePostPutRequestDTO.getNome(), resultado.getNome()),
-                    () -> assertEquals("Basico", resultado.getPlano())
+                    () -> assertEquals("Basico", resultado.getPlanoAtual())
             );
 
         }

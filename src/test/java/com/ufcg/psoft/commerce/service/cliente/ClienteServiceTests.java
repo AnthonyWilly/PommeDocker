@@ -52,7 +52,7 @@ class ClienteServiceTests {
                .nome("João da Silva")
                .endereco("Rua A, 123")
                .codigo("123456")
-               .plano("Basico")
+               .planoAtual("Basico")
                .build();
 
 
@@ -66,7 +66,7 @@ class ClienteServiceTests {
        clienteResponseDTO = ClienteResponseDTO.builder()
                .id(1L)
                .nome("João da Silva")
-               .plano("Basico")
+               .planoAtual("Basico")
                .build();
    }
 
@@ -83,7 +83,7 @@ class ClienteServiceTests {
 
 
        assertNotNull(resultado);
-       assertEquals("Basico", resultado.getPlano());
+       assertEquals("Basico", resultado.getPlanoAtual());
        verify(clienteRepository, times(1)).save(cliente);
    }
 
@@ -113,7 +113,7 @@ class ClienteServiceTests {
        ClienteResponseDTO responseAtualizado = ClienteResponseDTO.builder()
                .nome("João Atualizado")
                .endereco("Rua Nova, 999")
-               .plano("Basico")
+               .planoAtual("Basico")
                .build();
        when(modelMapper.map(cliente, ClienteResponseDTO.class)).thenReturn(responseAtualizado);
 
@@ -196,7 +196,7 @@ class ClienteServiceTests {
             c.setPlanoAtual("Premium");
             return c;
         });
-        ClienteResponseDTO responsePremium = ClienteResponseDTO.builder().plano("Premium").build();
+        ClienteResponseDTO responsePremium = ClienteResponseDTO.builder().planoAtual("Premium").build();
         when(modelMapper.map(any(Cliente.class), eq(ClienteResponseDTO.class))).thenReturn(responsePremium);
         ClienteResponseDTO resultado = clienteService.setPlanoPremium(1L, "123456");
         assertEquals("Premium", resultado.getPlanoAtual());
@@ -214,10 +214,10 @@ class ClienteServiceTests {
             c.setPlanoAtual("Basico");
             return c;
         });
-        ClienteResponseDTO responseBasico = ClienteResponseDTO.builder().plano("Basico").build();
-        when(modelMapper.map(any(Cliente.class), eq(ClienteResponseDTO.class))).thenReturn(responsePremium);
+        ClienteResponseDTO responseBasico = ClienteResponseDTO.builder().planoAtual("Basico").build();
+        when(modelMapper.map(any(Cliente.class), eq(ClienteResponseDTO.class))).thenReturn(responseBasico);
         ClienteResponseDTO resultado = clienteService.setPlanoBasico(1L, "123456");
-        assertEquals("Basico", resultado.getPlano());
+        assertEquals("Basico", resultado.getPlanoAtual());
         verify(clienteRepository, times(1)).save(cliente);
         verify(historicoRepository, times(1)).save(any());
     }
