@@ -28,9 +28,9 @@ public class Cliente {
     @Column(nullable = false)
     private String endereco;
 
-    @JsonProperty("tipoPlano")
+    @JsonProperty("planoAtual")
     @Column(nullable = false)
-    private String codigoPlano;
+    private String planoAtual;
 
     @JsonIgnore
     @Column(nullable = false)
