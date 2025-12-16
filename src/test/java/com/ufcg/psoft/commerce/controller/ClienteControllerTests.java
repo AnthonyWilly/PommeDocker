@@ -49,7 +49,8 @@ public class ClienteControllerTests {
                 .nome("Cliente Um da Silva")
                 .endereco("Rua dos Testes, 123")
                 .codigo("123456")
-                .planoAtual("Basico") 
+                .planoAtual("Basico")
+                .proxPlano(null)
                 .build()
         );
         clientePostPutRequestDTO = ClientePostPutRequestDTO.builder()
@@ -309,12 +310,14 @@ public class ClienteControllerTests {
                     .endereco("Av. da Pits A, 100")
                     .codigo("246810")
                     .planoAtual("Basico")
+                    .proxPlano(null)
                     .build();
             Cliente cliente2 = Cliente.builder()
                     .nome("Cliente Três Lima")
                     .endereco("Distrito dos Testadores, 200")
                     .codigo("135790")
                     .planoAtual("Premium")
+                    .proxPlano(null)
                     .build();
             clienteRepository.saveAll(Arrays.asList(cliente1, cliente2));
 
@@ -506,14 +509,17 @@ public class ClienteControllerTests {
                     .andExpect(status().isOk()) //
                     .andDo(print())
                     .andReturn().getResponse().getContentAsString();
-
             ClienteResponseDTO resultado = objectMapper.readValue(responseJsonString, ClienteResponseDTO.class);
-            assertEquals("Premium", resultado.getPlanoAtual());
+            assertEquals("Basico", resultado.getPlanoAtual());
+            assertEquals("Premium", resultado.getProxPlano());
         }
 
         @Test
         @DisplayName("Deve alterar o plano para Basico com dados Validos")
         void quandoAlteramosPlanoParaBasico() throws Exception {
+            cliente.setPlanoAtual("Premium");
+            cliente.setProxPlano(null);
+            cliente = clienteRepository.save(cliente);
             String uri = URI_CLIENTES + "/" + cliente.getId() + "/plano/basico";
             String responseJsonString = driver.perform(put(uri)
                             .contentType(MediaType.APPLICATION_JSON)
@@ -523,7 +529,8 @@ public class ClienteControllerTests {
                     .andReturn().getResponse().getContentAsString();
 
             ClienteResponseDTO resultado = objectMapper.readValue(responseJsonString, ClienteResponseDTO.class);
-            assertEquals("Basico", resultado.getPlanoAtual());
+            assertEquals("Basico", resultado.getProxPlano());
+            assertEquals("Premium", resultado.getPlanoAtual());
         }
         
         @Test
