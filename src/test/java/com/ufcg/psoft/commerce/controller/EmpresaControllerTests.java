@@ -3,6 +3,7 @@ package com.ufcg.psoft.commerce.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.ufcg.psoft.commerce.dto.EmpresaPostPutRequestDTO;
+import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
 import com.ufcg.psoft.commerce.model.Empresa;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
 import org.junit.jupiter.api.AfterEach;
@@ -52,9 +53,9 @@ public class EmpresaControllerTests {
         );
 
         empresaPostPutRequestDTO = EmpresaPostPutRequestDTO.builder()
-                .nome("Nova Empresa")
-                .cnpj("98.765.432/0001-10")
-                .codigoAcesso("654321")
+                .nome(empresaPadrao.getNome())
+                .cnpj(empresaPadrao.getCnpj())
+                .codigoAcesso(empresaPadrao.getCodigoAcesso())
                 .senhaAdmin("admin123")
                 .build();
     }
@@ -90,6 +91,8 @@ public class EmpresaControllerTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(empresaPostPutRequestDTO)))
                 .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors").isArray())
+                .andExpect(jsonPath("$.errors[0]").value("Codigo de acesso deve ter exatamente 6 digitos"))
                 .andDo(print());
     }
 
@@ -102,6 +105,8 @@ public class EmpresaControllerTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(empresaPostPutRequestDTO)))
                 .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors").isArray())
+                .andExpect(jsonPath("$.errors[0]").value("Codigo de acesso deve conter apenas digitos"))
                 .andDo(print());
     }
 
@@ -114,6 +119,8 @@ public class EmpresaControllerTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(empresaPostPutRequestDTO)))
                 .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors").isArray())
+                .andExpect(jsonPath("$.errors[0]").value("Senha de administrador obrigatoria"))
                 .andDo(print());
     }
 
@@ -139,6 +146,48 @@ public class EmpresaControllerTests {
         Empresa resultado = objectMapper.readValue(responseJsonString, Empresa.class);
         
         assertEquals("Empresa Atualizada", resultado.getNome());
+    }
+
+    @Test
+    @DisplayName("Alterar empresa com código de acesso inválido")
+    void testAlterarEmpresaCodigoAcessoInvalido() throws Exception {
+        Empresa empresaSalva = empresaRepository.save(empresaPadrao);
+
+        EmpresaPostPutRequestDTO updateDTO = EmpresaPostPutRequestDTO.builder()
+                .nome("Empresa Atualizada")
+                .cnpj(empresaSalva.getCnpj())
+                .codigoAcesso("000000") // Código errado
+                .senhaAdmin("admin123")
+                .build();
+
+        driver.perform(put(URI_EMPRESAS + "/" + empresaSalva.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateDTO)))
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> assertTrue(result.getResolvedException() instanceof CodigoDeAcessoInvalidoException))
+                .andExpect(jsonPath("$.message").value("Codigo de acesso invalido!"))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("Remover empresa com código de acesso inválido")
+    void testRemoverEmpresaCodigoAcessoInvalido() throws Exception {
+        Empresa empresaSalva = empresaRepository.save(empresaPadrao);
+
+        EmpresaPostPutRequestDTO deleteDTO = EmpresaPostPutRequestDTO.builder()
+                .cnpj(empresaSalva.getCnpj())
+                .codigoAcesso("000000") // Código errado
+                .senhaAdmin("admin123")
+                .nome(empresaSalva.getNome())
+                .build();
+
+        driver.perform(delete(URI_EMPRESAS + "/" + empresaSalva.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(deleteDTO)))
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> assertTrue(result.getResolvedException() instanceof CodigoDeAcessoInvalidoException))
+                .andExpect(jsonPath("$.message").value("Codigo de acesso invalido!"))
+                .andDo(print());
     }
 
     @Test
@@ -171,6 +220,7 @@ public class EmpresaControllerTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(empresaPostPutRequestDTO)))
                 .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Senha invalida!"))
                 .andDo(print());
     }
 
@@ -197,6 +247,7 @@ public class EmpresaControllerTests {
         driver.perform(get(URI_EMPRESAS + "/99999")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("A empresa consultada nao existe!"))
                 .andDo(print());
     }
 
@@ -220,6 +271,8 @@ public class EmpresaControllerTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(empresaPostPutRequestDTO)))
                 .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors").isArray())
+                .andExpect(jsonPath("$.errors[0]").value("Nome obrigatorio"))
                 .andDo(print());
     }
 
@@ -232,6 +285,8 @@ public class EmpresaControllerTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(empresaPostPutRequestDTO)))
                 .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors").isArray())
+                .andExpect(jsonPath("$.errors[0]").value("CNPJ obrigatorio"))
                 .andDo(print());
     }
 
@@ -249,6 +304,7 @@ public class EmpresaControllerTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateDTO)))
                 .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("A empresa consultada nao existe!"))
                 .andDo(print());
     }
 
@@ -268,6 +324,7 @@ public class EmpresaControllerTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateDTO)))
                 .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Senha invalida!"))
                 .andDo(print());
     }
 
@@ -284,6 +341,7 @@ public class EmpresaControllerTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(deleteDTO)))
                 .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("A empresa consultada nao existe!"))
                 .andDo(print());
     }
 
@@ -303,6 +361,7 @@ public class EmpresaControllerTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(deleteDTO)))
                 .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Senha invalida!"))
                 .andDo(print());
     }
 
@@ -317,6 +376,7 @@ public class EmpresaControllerTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(empresaPostPutRequestDTO)))
                 .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Empresa ja cadastrada!"))
                 .andDo(print());
     }
 }
