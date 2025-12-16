@@ -60,8 +60,8 @@ public class ClienteServiceTests {
     class ClienteVerificacaoMudancaPlano { 
 
         @Test
-        @DisplayName("Quando alteramos o plano do cliente para premium com dados válidos")
-        void quandoAlteramosPlanoDoClienteParaPremiumValido() throws Exception {
+        @DisplayName("Altera plano do cliente para premium com sucesso")
+        void alteraPlanoDoClienteParaPremiumComSucesso() throws Exception {
             // Arrange
             when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente));
             when(clienteRepository.save(any(Cliente.class))).thenReturn(cliente); 
@@ -82,8 +82,8 @@ public class ClienteServiceTests {
         }
 
         @Test
-        @DisplayName("Quando alteramos o plano do cliente para basico com dados válidos")
-        void quandoAlteramosPlanoDoClienteParaBasicoValido() {
+        @DisplayName("Altera plano do cliente para basico com sucesso")
+        void alteraPlanoDoClienteParaBasicoValido() {
             // Arrange
             when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente));
             when(clienteRepository.save(any(Cliente.class))).thenReturn(cliente); 
@@ -103,8 +103,8 @@ public class ClienteServiceTests {
         }
 
         @Test
-        @DisplayName("Quando alteramos o plano do cliente com o código de validação inválido.")
-        void quandoAlteramosPlanoCodigoAcessoInvalido() {
+        @DisplayName("Altera o plano do cliente com o código de validação inválido.")
+        void alteramosPlanoDoClienteCodigoAcessoInvalido() {
             // Arrange
             when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente)); 
 
@@ -116,8 +116,8 @@ public class ClienteServiceTests {
         }
 
         @Test
-        @DisplayName("Quando alteramos o plano de um cliente inexistente")
-        void quandoAlteramosPlanoClienteInexistente() {
+        @DisplayName("Altera o plano de um cliente inexistente")
+        void alteraPlanoClienteInexistente() {
             // Arrange
             when(clienteRepository.findById(2L)).thenReturn(Optional.empty()); 
 
@@ -130,7 +130,7 @@ public class ClienteServiceTests {
 
         @Test
         @DisplayName("Verificar se histórico de plano de um cliente foi modificado ao trocar o plano para premium")
-        void quandoAlteramosPlanoClienteParaPremiumDeveSalvarHistorico() {
+        void alteraPlanoClienteParaPremiumDeveSalvarHistorico() {
             // Arrange
             when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente)); 
 
@@ -147,7 +147,7 @@ public class ClienteServiceTests {
 
         @Test
         @DisplayName("Verificar se histórico de plano de um cliente foi modificado ao trocar o plano para basico")
-        void quandoAlteramosPlanoClienteParaBasicoDeveSalvarHistorico() {
+        void alteraPlanoClienteParaBasicoDeveSalvarHistorico() {
             // Arrange
             when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente)); 
 
@@ -164,7 +164,7 @@ public class ClienteServiceTests {
 
         @Test
         @DisplayName("Verificar se histórico de plano de um cliente não foi modificado ao trocar o plano para Premium com código de cliente inválido")
-        void quandoAlteramosPlanoClienteComCodigoInvalidoParaPremiumNaoDeveSalvarHistorico() {
+        void alteraPlanoClienteParaPremiumComCodigoInvalidoNaoDeveSalvarHistorico() {
             // Arrange
             when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente)); 
 
@@ -178,7 +178,7 @@ public class ClienteServiceTests {
 
         @Test
         @DisplayName("Verificar se histórico de plano de um cliente não foi modificado ao trocar o plano para Premium com cliente inexistente")
-        void quandoAlteramosPlanoClienteComClienteInexistenteParaPremiumNaoDeveSalvarHistorico() {
+        void alteraPlanoClienteParaPremiumClienteInexistenteNaoDeveSalvarHistorico() {
             // Arrange
             when(clienteRepository.findById(2L)).thenReturn(Optional.empty());
 
@@ -192,7 +192,7 @@ public class ClienteServiceTests {
 
         @Test
         @DisplayName("Verificar se histórico de plano de um cliente não foi modificado ao trocar o plano para Basico com código de cliente inválido")
-        void quandoAlteramosPlanoClienteComCodigoInvalidoParaBasicoNaoDeveSalvarHistorico() {
+        void alteraPlanoClienteParaBasicoComCodigoInvalidoNaoDeveSalvarHistorico() {
             // Arrange
             when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente)); 
 
@@ -206,7 +206,7 @@ public class ClienteServiceTests {
 
         @Test
         @DisplayName("Verificar se histórico de plano de um cliente não foi modificado ao trocar o plano para Premium com cliente inexistente")
-        void quandoAlteramosPlanoClienteComClienteInexistenteParaBasicoNaoDeveSalvarHistorico() {
+        void alteraPlanoClienteParaBasicoComClienteInexistenteNaoDeveSalvarHistorico() {
             // Arrange
             when(clienteRepository.findById(2L)).thenReturn(Optional.empty());
 
