@@ -3,7 +3,6 @@ package com.ufcg.psoft.commerce.controller;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.ufcg.psoft.commerce.dto.ClientePostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.TecnicoPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.TecnicoResponseDTO;
 import com.ufcg.psoft.commerce.exception.CustomErrorType;
@@ -53,7 +52,7 @@ public class TecnicoControllerTests {
         tecnico = tecnicoRepository.save(Tecnico.builder()
                 .nome("Tecnico Um da Silva")
                 .tipoVeiculo(TipoVeiculo.MOTO)
-                .placaVeiculo("PlacaDoCarro")
+                .placaVeiculo("ABC1D23")
                 .corVeiculo("Verde")
                 .acesso("123456")
                 .especialidade("Consertos")
@@ -97,7 +96,7 @@ public class TecnicoControllerTests {
         @DisplayName("Quando alteramos o nome do tecnico com dados válidos")
         void quandoAlteramosNomeDoTecnicoValido() throws Exception {
             // Arrange
-            tecnicoPostPutRequestDTO.setNome("Cliente Um Alterado");
+            tecnicoPostPutRequestDTO.setNome("Tecnico Um Alterado");
 
             // Act
             String responseJsonString = driver.perform(put(URI_TECNICOS + "/" + tecnico.getId())
@@ -174,7 +173,7 @@ public class TecnicoControllerTests {
             tecnicoPostPutRequestDTO.setTipoVeiculo(TipoVeiculo.CARRO);
 
             // Act
-            String responseJsonString = driver.perform(put(URI_TECNICOS + "/" + tecnico.getAcesso())
+            String responseJsonString = driver.perform(put(URI_TECNICOS + "/" + tecnico.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .param("acesso", tecnico.getAcesso())
                             .content(objectMapper.writeValueAsString(tecnicoPostPutRequestDTO)))
@@ -221,10 +220,10 @@ public class TecnicoControllerTests {
         @DisplayName("Quando alteramos a placa do veiculo do tecnico com dados válidos")
         void quandoAlteramosPlacaDoTecnicoValida() throws Exception {
             // Arrange
-            tecnicoPostPutRequestDTO.setPlacaVeiculo("ABC1D23");
+            tecnicoPostPutRequestDTO.setPlacaVeiculo("ABG1D23");
 
             // Act
-            String responseJsonString = driver.perform(put(URI_TECNICOS + "/" + tecnico.getAcesso())
+            String responseJsonString = driver.perform(put(URI_TECNICOS + "/" + tecnico.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .param("acesso", tecnico.getAcesso())
                             .content(objectMapper.writeValueAsString(tecnicoPostPutRequestDTO)))
@@ -235,14 +234,14 @@ public class TecnicoControllerTests {
             TecnicoResponseDTO resultado = objectMapper.readValue(responseJsonString, TecnicoResponseDTO.TecnicoResponseDTOBuilder.class).build();
 
             // Assert
-            assertEquals("ABC1D23", resultado.getPlacaVeiculo());
+            assertEquals("ABG1D23", resultado.getPlacaVeiculo());
         }
 
         @Test
         @DisplayName("Quando alteramos placa do veiculo do tecnico nulo")
         void quandoAlteramosTipoVeiculoDoTecnicoNulo() throws Exception {
             // Arrange
-            tecnicoPostPutRequestDTO.setTipoVeiculo(null);
+            tecnicoPostPutRequestDTO.setPlacaVeiculo(null);
 
             // Act
             String responseJsonString = driver.perform(put(URI_TECNICOS + "/" + tecnico.getId())
@@ -261,20 +260,44 @@ public class TecnicoControllerTests {
                     () -> assertEquals("placa do veiculo obrigatoria", resultado.getErrors().get(0))
             );
         }
-    }
 
+
+        @Test
+        @DisplayName("Quando alteramos placa de veiculo invalida")
+        void quandoAlteramosPlacaVeiculoInvalida() throws Exception {
+            // Arrange
+            tecnicoPostPutRequestDTO.setPlacaVeiculo("abcdefgh");
+
+            // Act
+            String responseJsonString = driver.perform(put(URI_TECNICOS + "/" + tecnico.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .param("acesso", tecnico.getAcesso())
+                            .content(objectMapper.writeValueAsString(tecnicoPostPutRequestDTO)))
+                    .andExpect(status().isBadRequest())
+                    .andDo(print())
+                    .andReturn().getResponse().getContentAsString();
+
+            CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
+
+            // Assert
+            assertAll(
+                    () -> assertEquals("Erros de validacao encontrados", resultado.getMessage()),
+                    () -> assertEquals("placa do veiculoFormatoInvalido", resultado.getErrors().get(0))
+            );
+        }
+    }
     @Nested
     @DisplayName("Conjunto de casos de verificação da cor do veiculo")
     class TecnicoVerificacaoCorVeiculo {
 
         @Test
         @DisplayName("Quando alteramos a cor do veiculo do tecnico com dados válidos")
-        void quandoAlteramosTipoVeiculoDoTecnicoValido() throws Exception {
+        void quandoAlteramosACorDoVeiculoDoTecnicoValido() throws Exception {
             // Arrange
             tecnicoPostPutRequestDTO.setCorVeiculo("branco");
 
             // Act
-            String responseJsonString = driver.perform(put(URI_TECNICOS + "/" + tecnico.getAcesso())
+            String responseJsonString = driver.perform(put(URI_TECNICOS + "/" + tecnico.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .param("acesso", tecnico.getAcesso())
                             .content(objectMapper.writeValueAsString(tecnicoPostPutRequestDTO)))
@@ -346,7 +369,7 @@ public class TecnicoControllerTests {
             tecnicoPostPutRequestDTO.setEspecialidade("encanamento");
 
             // Act
-            String responseJsonString = driver.perform(put(URI_TECNICOS + "/" + tecnico.getAcesso())
+            String responseJsonString = driver.perform(put(URI_TECNICOS + "/" + tecnico.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .param("acesso", tecnico.getAcesso())
                             .content(objectMapper.writeValueAsString(tecnicoPostPutRequestDTO)))
@@ -362,9 +385,9 @@ public class TecnicoControllerTests {
 
         @Test
         @DisplayName("Quando alteramos a especialidade do tecnico nulo")
-        void quandoAlteramosCorVeiculoTecnicoNulo() throws Exception {
+        void quandoAlteramosEspecialidadeTecnicoNulo() throws Exception {
             // Arrange
-            tecnicoPostPutRequestDTO.setCorVeiculo(null);
+            tecnicoPostPutRequestDTO.setEspecialidade(null);
             // Act
             String responseJsonString = driver.perform(put(URI_TECNICOS + "/" + tecnico.getId())
                             .contentType(MediaType.APPLICATION_JSON)
@@ -402,7 +425,7 @@ public class TecnicoControllerTests {
             // Assert
             assertAll(
                     () -> assertEquals("Erros de validacao encontrados", resultado.getMessage()),
-                    () -> assertEquals("especialidade obrigatoria", resultado.getErrors().get(0))
+                    () -> assertEquals("Especialidade obrigatoria", resultado.getErrors().get(0))
             );
         }
     }
@@ -416,7 +439,7 @@ public class TecnicoControllerTests {
 
         @Test
         @DisplayName("Quando alteramos o código de acesso do tecnico nulo")
-        void quandoAlteramosCodigoAcessoDoClienteNulo() throws Exception {
+        void quandoAlteramosCodigoAcessoDoTecnicoNulo() throws Exception {
             // Arrange
             tecnicoPostPutRequestDTO.setAcesso(null);
 
@@ -471,7 +494,7 @@ public class TecnicoControllerTests {
             // Act
             String responseJsonString = driver.perform(put(URI_TECNICOS + "/" + tecnico.getId())
                             .contentType(MediaType.APPLICATION_JSON)
-                            .param("aceso", tecnico.getAcesso())
+                            .param("acesso", tecnico.getAcesso())
                             .content(objectMapper.writeValueAsString(tecnicoPostPutRequestDTO)))
                     .andExpect(status().isBadRequest())
                     .andDo(print())
@@ -513,13 +536,12 @@ public class TecnicoControllerTests {
 
     @Nested
     @DisplayName("Conjunto de casos de verificação dos fluxos básicos API Rest")
-    class ClienteVerificacaoFluxosBasicosApiRest {
+    class TecnicoVerificacaoFluxosBasicosApiRest {
 
         @Test
-        @DisplayName("Quando buscamos por todos clientes salvos")
+        @DisplayName("Quando buscamos por todos tecnicos salvos")
         void quandoBuscamosPorTodosTecnicosSalvos() throws Exception {
             // Arrange
-            // Vamos ter 3 clientes no banco
             Tecnico tecnico1 = Tecnico.builder()
                     .nome("Tecnico Dois Almeida")
                     .tipoVeiculo(TipoVeiculo.MOTO)
@@ -536,7 +558,7 @@ public class TecnicoControllerTests {
                     .corVeiculo("Rosa")
                     .especialidade("Carpintaria")
                     .build();
-            TecnicoRepository.saveAll(Arrays.asList(tecnico1, tecnico2));
+            tecnicoRepository.saveAll(Arrays.asList(tecnico1, tecnico2));
             // Act
             String responseJsonString = driver.perform(get(URI_TECNICOS)
                             .contentType(MediaType.APPLICATION_JSON)
@@ -601,7 +623,7 @@ public class TecnicoControllerTests {
 
         @Test
         @DisplayName("Quando criamos um novo tecnico com dados válidos")
-        void quandoCriarClienteValido() throws Exception {
+        void quandoCriarTecnicoValido() throws Exception {
             // Arrange
             // nenhuma necessidade além do setup()
 
@@ -625,10 +647,10 @@ public class TecnicoControllerTests {
 
         @Test
         @DisplayName("Quando alteramos o tecnico com dados válidos")
-        void quandoAlteramosClienteValido() throws Exception {
+        void quandoAlteramosTecnicoValido() throws Exception {
             // Arrange
             Long tecnicoId = tecnico.getId();
-
+            tecnicoPostPutRequestDTO.setNome("Nome Realmente Alterado");
             // Act
             String responseJsonString = driver.perform(put(URI_TECNICOS + "/" + tecnico.getId())
                             .contentType(MediaType.APPLICATION_JSON)
@@ -643,8 +665,8 @@ public class TecnicoControllerTests {
             // Assert
             assertAll(
                     () -> assertEquals(resultado.getId().longValue(), tecnicoId),
-                    () -> assertEquals(tecnicoPostPutRequestDTO.getNome(), resultado.getNome()))
-            ;
+                    () -> assertEquals(tecnicoPostPutRequestDTO.getNome(), resultado.getNome())
+            );
         }
 
         @Test
@@ -720,7 +742,7 @@ public class TecnicoControllerTests {
             // Act
             String responseJsonString = driver.perform(delete(URI_TECNICOS + "/" + 999999)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .param("codigo", tecnico.getAcesso()))
+                            .param("acesso", tecnico.getAcesso()))
                     .andExpect(status().isBadRequest()) // Codigo 400
                     .andDo(print())
                     .andReturn().getResponse().getContentAsString();
@@ -729,13 +751,13 @@ public class TecnicoControllerTests {
 
             // Assert
             assertAll(
-                    () -> assertEquals("O cliente consultado nao existe!", resultado.getMessage())
+                    () -> assertEquals("O tecnico consultado nao existe!", resultado.getMessage())
             );
         }
 
         @Test
-        @DisplayName("Quando excluímos um cliente salvo passando código de acesso inválido")
-        void quandoExcluimosClienteCodigoAcessoInvalido() throws Exception {
+        @DisplayName("Quando excluímos um tecnico salvo passando código de acesso inválido")
+        void quandoExcluimosTecnicoCodigoAcessoInvalido() throws Exception {
             // Arrange
             // nenhuma necessidade além do setup()
 
