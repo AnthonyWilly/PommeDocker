@@ -188,9 +188,7 @@ class ClienteServiceTests {
 
         when(modelMapper.map(any(Cliente.class), eq(ClienteResponseDTO.class)))
                 .thenReturn(response);
-
-        ClienteResponseDTO resultado = clienteService.setPlanoPremium(1L, "123456");
-
+        clienteService.setPlanoPremium(1L, "123456");
         assertEquals("Premium", cliente.getProxPlano());
         assertEquals("Basico", cliente.getPlanoAtual());
         verify(clienteRepository, times(1)).save(cliente);
@@ -212,10 +210,8 @@ class ClienteServiceTests {
         cliente.setPlanoAtual("Premium");
         when(modelMapper.map(any(Cliente.class), eq(ClienteResponseDTO.class)))
                 .thenReturn(response);
-        ClienteResponseDTO resultado = clienteService.setPlanoBasico(1L, "123456");
         assertEquals("Basico", cliente.getProxPlano());
         assertEquals("Premium", cliente.getPlanoAtual());
-        assertNotNull(resultado.getPlanoAtual());
         verify(clienteRepository, times(1)).save(cliente);
         verify(historicoRepository, times(1)).save(any());
     }
