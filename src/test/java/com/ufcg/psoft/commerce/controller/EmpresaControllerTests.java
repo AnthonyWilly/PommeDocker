@@ -28,6 +28,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class EmpresaControllerTests {
 
     final String URI_EMPRESAS = "/empresas";
+    final String SENHA_ADMIN = "admin123";
+    final String CODIGO_ACESSO_PADRAO = "123456";
+    final String CNPJ_PADRAO = "12.345.678/0001-90";
+    final String NOME_PADRAO = "Empresa Exemplo";
 
     @Autowired
     MockMvc driver;
@@ -46,9 +50,9 @@ public class EmpresaControllerTests {
         objectMapper.registerModule(new JavaTimeModule());
 
         empresaPadrao = empresaRepository.save(Empresa.builder()
-                .nome("Empresa Exemplo")
-                .cnpj("12.345.678/0001-90")
-                .codigoAcesso("123456")
+                .nome(NOME_PADRAO)
+                .cnpj(CNPJ_PADRAO)
+                .codigoAcesso(CODIGO_ACESSO_PADRAO)
                 .build()
         );
 
@@ -56,7 +60,7 @@ public class EmpresaControllerTests {
                 .nome(empresaPadrao.getNome())
                 .cnpj(empresaPadrao.getCnpj())
                 .codigoAcesso(empresaPadrao.getCodigoAcesso())
-                .senhaAdmin("admin123")
+                .senhaAdmin(SENHA_ADMIN)
                 .build();
     }
 
@@ -66,8 +70,8 @@ public class EmpresaControllerTests {
     }
 
     @Test
-    @DisplayName("Criar empresa")
-    void testCriarEmpresaComSucesso() throws Exception {
+    @DisplayName("Criar empresa com sucesso")
+    void criarEmpresaComSucesso() throws Exception {
         String responseJsonString = driver.perform(post(URI_EMPRESAS)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(empresaPostPutRequestDTO)))
@@ -84,7 +88,7 @@ public class EmpresaControllerTests {
 
     @Test
     @DisplayName("Criar empresa com código de acesso inválido (curto demais)")
-    void testCriarEmpresaCodigoAcessoCurto() throws Exception {
+    void criarEmpresaCodigoAcessoCurto() throws Exception {
         empresaPostPutRequestDTO.setCodigoAcesso("123");
 
         driver.perform(post(URI_EMPRESAS)
@@ -98,7 +102,7 @@ public class EmpresaControllerTests {
 
     @Test
     @DisplayName("Criar empresa com código de acesso inválido (não numérico)")
-    void testCriarEmpresaCodigoAcessoNaoNumerico() throws Exception {
+    void criarEmpresaCodigoAcessoNaoNumerico() throws Exception {
         empresaPostPutRequestDTO.setCodigoAcesso("abcdef");
 
         driver.perform(post(URI_EMPRESAS)
@@ -112,7 +116,7 @@ public class EmpresaControllerTests {
 
     @Test
     @DisplayName("Criar empresa sem senha de administrador")
-    void testCriarEmpresaSemSenhaAdmin() throws Exception {
+    void criarEmpresaSemSenhaAdmin() throws Exception {
         empresaPostPutRequestDTO.setSenhaAdmin("");
 
         driver.perform(post(URI_EMPRESAS)
@@ -126,14 +130,14 @@ public class EmpresaControllerTests {
 
     @Test
     @DisplayName("Alterar empresa com sucesso")
-    void testAlterarEmpresaComSucesso() throws Exception {
+    void alterarEmpresaComSucesso() throws Exception {
         Empresa empresaSalva = empresaRepository.save(empresaPadrao);
 
         EmpresaPostPutRequestDTO updateDTO = EmpresaPostPutRequestDTO.builder()
                 .nome("Empresa Atualizada")
                 .cnpj(empresaSalva.getCnpj())
                 .codigoAcesso(empresaSalva.getCodigoAcesso())
-                .senhaAdmin("admin123")
+                .senhaAdmin(SENHA_ADMIN)
                 .build();
 
         String responseJsonString = driver.perform(put(URI_EMPRESAS + "/" + empresaSalva.getId())
@@ -150,14 +154,14 @@ public class EmpresaControllerTests {
 
     @Test
     @DisplayName("Alterar empresa com código de acesso inválido")
-    void testAlterarEmpresaCodigoAcessoInvalido() throws Exception {
+    void alterarEmpresaCodigoAcessoInvalido() throws Exception {
         Empresa empresaSalva = empresaRepository.save(empresaPadrao);
 
         EmpresaPostPutRequestDTO updateDTO = EmpresaPostPutRequestDTO.builder()
                 .nome("Empresa Atualizada")
                 .cnpj(empresaSalva.getCnpj())
                 .codigoAcesso("000000")
-                .senhaAdmin("admin123")
+                .senhaAdmin(SENHA_ADMIN)
                 .build();
 
         driver.perform(put(URI_EMPRESAS + "/" + empresaSalva.getId())
@@ -171,13 +175,13 @@ public class EmpresaControllerTests {
 
     @Test
     @DisplayName("Remover empresa com código de acesso inválido")
-    void testRemoverEmpresaCodigoAcessoInvalido() throws Exception {
+    void removerEmpresaCodigoAcessoInvalido() throws Exception {
         Empresa empresaSalva = empresaRepository.save(empresaPadrao);
 
         EmpresaPostPutRequestDTO deleteDTO = EmpresaPostPutRequestDTO.builder()
                 .cnpj(empresaSalva.getCnpj())
                 .codigoAcesso("000000")
-                .senhaAdmin("admin123")
+                .senhaAdmin(SENHA_ADMIN)
                 .nome(empresaSalva.getNome())
                 .build();
 
@@ -192,13 +196,13 @@ public class EmpresaControllerTests {
 
     @Test
     @DisplayName("Remover empresa com sucesso")
-    void testRemoverEmpresaComSucesso() throws Exception {
+    void removerEmpresaComSucesso() throws Exception {
         Empresa empresaSalva = empresaRepository.save(empresaPadrao);
 
         EmpresaPostPutRequestDTO deleteDTO = EmpresaPostPutRequestDTO.builder()
                 .cnpj(empresaSalva.getCnpj())
                 .codigoAcesso(empresaSalva.getCodigoAcesso())
-                .senhaAdmin("admin123")
+                .senhaAdmin(SENHA_ADMIN)
                 .nome(empresaSalva.getNome())
                 .build();
 
@@ -213,7 +217,7 @@ public class EmpresaControllerTests {
     
     @Test
     @DisplayName("Falhar ao criar empresa com senha de administrador incorreta")
-    void testCriarEmpresaSenhaAdminIncorreta() throws Exception {
+    void criarEmpresaSenhaAdminIncorreta() throws Exception {
         empresaPostPutRequestDTO.setSenhaAdmin("senha_errada");
 
         driver.perform(post(URI_EMPRESAS)
@@ -226,7 +230,7 @@ public class EmpresaControllerTests {
 
     @Test
     @DisplayName("Buscar empresa por id com sucesso")
-    void testBuscarEmpresaPorIdComSucesso() throws Exception {
+    void buscarEmpresaPorIdComSucesso() throws Exception {
         Empresa empresaSalva = empresaRepository.save(empresaPadrao);
 
         String responseJsonString = driver.perform(get(URI_EMPRESAS + "/" + empresaSalva.getId())
@@ -243,7 +247,7 @@ public class EmpresaControllerTests {
 
     @Test
     @DisplayName("Buscar empresa por id não encontrada")
-    void testBuscarEmpresaPorIdNaoEncontrada() throws Exception {
+    void buscarEmpresaPorIdNaoEncontrada() throws Exception {
         driver.perform(get(URI_EMPRESAS + "/99999")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound())
@@ -253,7 +257,7 @@ public class EmpresaControllerTests {
 
     @Test
     @DisplayName("Listar empresas com sucesso")
-    void testListarEmpresasComSucesso() throws Exception {
+    void listarEmpresasComSucesso() throws Exception {
         empresaRepository.save(empresaPadrao);
 
         driver.perform(get(URI_EMPRESAS)
@@ -264,7 +268,7 @@ public class EmpresaControllerTests {
 
     @Test
     @DisplayName("Criar empresa com nome vazio")
-    void testCriarEmpresaNomeVazio() throws Exception {
+    void criarEmpresaNomeVazio() throws Exception {
         empresaPostPutRequestDTO.setNome("");
 
         driver.perform(post(URI_EMPRESAS)
@@ -278,7 +282,7 @@ public class EmpresaControllerTests {
 
     @Test
     @DisplayName("Criar empresa com CNPJ vazio")
-    void testCriarEmpresaCnpjVazio() throws Exception {
+    void criarEmpresaCnpjVazio() throws Exception {
         empresaPostPutRequestDTO.setCnpj("");
 
         driver.perform(post(URI_EMPRESAS)
@@ -292,12 +296,12 @@ public class EmpresaControllerTests {
 
     @Test
     @DisplayName("Alterar empresa não encontrada")
-    void testAlterarEmpresaNaoEncontrada() throws Exception {
+    void alterarEmpresaNaoEncontrada() throws Exception {
         EmpresaPostPutRequestDTO updateDTO = EmpresaPostPutRequestDTO.builder()
                 .nome("Empresa Atualizada")
                 .cnpj("98.765.432/0001-10")
                 .codigoAcesso("654321")
-                .senhaAdmin("admin123")
+                .senhaAdmin(SENHA_ADMIN)
                 .build();
 
         driver.perform(put(URI_EMPRESAS + "/99999")
@@ -310,7 +314,7 @@ public class EmpresaControllerTests {
 
     @Test
     @DisplayName("Alterar empresa com senha de administrador incorreta")
-    void testAlterarEmpresaSenhaAdminIncorreta() throws Exception {
+    void alterarEmpresaSenhaAdminIncorreta() throws Exception {
         Empresa empresaSalva = empresaRepository.save(empresaPadrao);
 
         EmpresaPostPutRequestDTO updateDTO = EmpresaPostPutRequestDTO.builder()
@@ -330,11 +334,11 @@ public class EmpresaControllerTests {
 
     @Test
     @DisplayName("Remover empresa não encontrada")
-    void testRemoverEmpresaNaoEncontrada() throws Exception {
+    void removerEmpresaNaoEncontrada() throws Exception {
         EmpresaPostPutRequestDTO deleteDTO = EmpresaPostPutRequestDTO.builder()
-                .cnpj("12.345.678/0001-90")
-                .codigoAcesso("123456")
-                .senhaAdmin("admin123")
+                .cnpj(CNPJ_PADRAO)
+                .codigoAcesso(CODIGO_ACESSO_PADRAO)
+                .senhaAdmin(SENHA_ADMIN)
                 .build();
 
         driver.perform(delete(URI_EMPRESAS + "/99999")
@@ -347,7 +351,7 @@ public class EmpresaControllerTests {
 
     @Test
     @DisplayName("Remover empresa com senha de administrador incorreta")
-    void testRemoverEmpresaSenhaAdminIncorreta() throws Exception {
+    void removerEmpresaSenhaAdminIncorreta() throws Exception {
         Empresa empresaSalva = empresaRepository.save(empresaPadrao);
 
         EmpresaPostPutRequestDTO deleteDTO = EmpresaPostPutRequestDTO.builder()
@@ -367,7 +371,7 @@ public class EmpresaControllerTests {
 
     @Test
     @DisplayName("Criar empresa com CNPJ duplicado")
-    void testCriarEmpresaCnpjDuplicado() throws Exception {
+    void criarEmpresaCnpjDuplicado() throws Exception {
         empresaRepository.save(empresaPadrao);
         
         empresaPostPutRequestDTO.setCnpj(empresaPadrao.getCnpj());
