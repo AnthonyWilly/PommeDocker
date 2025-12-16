@@ -49,7 +49,7 @@ public class ClienteControllerTests {
                 .nome("Cliente Um da Silva")
                 .endereco("Rua dos Testes, 123")
                 .codigo("123456")
-                .plano("Basico") 
+                .planoAtual("Basico") 
                 .build()
         );
         clientePostPutRequestDTO = ClientePostPutRequestDTO.builder()
@@ -512,8 +512,8 @@ public class ClienteControllerTests {
         }
 
         @Test
-        @DisplayName("Deve alterar o plano para Premium com dados Validos")
-        void quandoAlteramosPlanoParaPremium() throws Exception {
+        @DisplayName("Deve alterar o plano para Basico com dados Validos")
+        void quandoAlteramosPlanoParaBasico() throws Exception {
             String uri = URI_CLIENTES + "/" + cliente.getId() + "/plano/basico";
             String responseJsonString = driver.perform(put(uri)
                             .contentType(MediaType.APPLICATION_JSON)
@@ -525,6 +525,7 @@ public class ClienteControllerTests {
             ClienteResponseDTO resultado = objectMapper.readValue(responseJsonString, ClienteResponseDTO.class);
             assertEquals("Basico", resultado.getPlanoAtual());
         }
+        
         @Test
         @DisplayName("Deve falhar ao alterar plano de cliente inexistente")
         void quandoAlteramosPlanoClienteInexistente() throws Exception {
