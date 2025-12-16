@@ -156,7 +156,7 @@ public class EmpresaControllerTests {
         EmpresaPostPutRequestDTO updateDTO = EmpresaPostPutRequestDTO.builder()
                 .nome("Empresa Atualizada")
                 .cnpj(empresaSalva.getCnpj())
-                .codigoAcesso("000000") // Código errado
+                .codigoAcesso("000000")
                 .senhaAdmin("admin123")
                 .build();
 
@@ -176,7 +176,7 @@ public class EmpresaControllerTests {
 
         EmpresaPostPutRequestDTO deleteDTO = EmpresaPostPutRequestDTO.builder()
                 .cnpj(empresaSalva.getCnpj())
-                .codigoAcesso("000000") // Código errado
+                .codigoAcesso("000000")
                 .senhaAdmin("admin123")
                 .nome(empresaSalva.getNome())
                 .build();
