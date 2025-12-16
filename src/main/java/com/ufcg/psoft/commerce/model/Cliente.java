@@ -33,7 +33,6 @@ public class Cliente {
     private String planoAtual;
 
     @JsonProperty("proxPlano")
-    @Column(nullable = false)
     private String proxPlano;
 
     @JsonProperty("dataCobranca")
