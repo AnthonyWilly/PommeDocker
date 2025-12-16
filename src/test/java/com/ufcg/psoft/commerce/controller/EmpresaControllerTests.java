@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.ufcg.psoft.commerce.dto.EmpresaPostPutRequestDTO;
 import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
+import com.ufcg.psoft.commerce.exception.CustomErrorType;
 import com.ufcg.psoft.commerce.model.Empresa;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
 import org.junit.jupiter.api.AfterEach;
@@ -20,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -91,13 +91,19 @@ public class EmpresaControllerTests {
     void criarEmpresaCodigoAcessoCurto() throws Exception {
         empresaPostPutRequestDTO.setCodigoAcesso("123");
 
-        driver.perform(post(URI_EMPRESAS)
+        String responseJsonString = driver.perform(post(URI_EMPRESAS)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(empresaPostPutRequestDTO)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errors").isArray())
-                .andExpect(jsonPath("$.errors[0]").value("Codigo de acesso deve ter exatamente 6 digitos"))
-                .andDo(print());
+                .andDo(print())
+                .andReturn().getResponse().getContentAsString();
+
+        CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
+
+        assertAll(
+                () -> assertEquals("Erros de validacao encontrados", resultado.getMessage()),
+                () -> assertEquals("Codigo de acesso deve ter exatamente 6 digitos", resultado.getErrors().get(0))
+        );
     }
 
     @Test
@@ -105,13 +111,19 @@ public class EmpresaControllerTests {
     void criarEmpresaCodigoAcessoNaoNumerico() throws Exception {
         empresaPostPutRequestDTO.setCodigoAcesso("abcdef");
 
-        driver.perform(post(URI_EMPRESAS)
+        String responseJsonString = driver.perform(post(URI_EMPRESAS)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(empresaPostPutRequestDTO)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errors").isArray())
-                .andExpect(jsonPath("$.errors[0]").value("Codigo de acesso deve conter apenas digitos"))
-                .andDo(print());
+                .andDo(print())
+                .andReturn().getResponse().getContentAsString();
+
+        CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
+
+        assertAll(
+                () -> assertEquals("Erros de validacao encontrados", resultado.getMessage()),
+                () -> assertEquals("Codigo de acesso deve conter apenas digitos", resultado.getErrors().get(0))
+        );
     }
 
     @Test
@@ -119,13 +131,19 @@ public class EmpresaControllerTests {
     void criarEmpresaSemSenhaAdmin() throws Exception {
         empresaPostPutRequestDTO.setSenhaAdmin("");
 
-        driver.perform(post(URI_EMPRESAS)
+        String responseJsonString = driver.perform(post(URI_EMPRESAS)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(empresaPostPutRequestDTO)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errors").isArray())
-                .andExpect(jsonPath("$.errors[0]").value("Senha de administrador obrigatoria"))
-                .andDo(print());
+                .andDo(print())
+                .andReturn().getResponse().getContentAsString();
+
+        CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
+
+        assertAll(
+                () -> assertEquals("Erros de validacao encontrados", resultado.getMessage()),
+                () -> assertEquals("Senha de administrador obrigatoria", resultado.getErrors().get(0))
+        );
     }
 
     @Test
@@ -164,13 +182,17 @@ public class EmpresaControllerTests {
                 .senhaAdmin(SENHA_ADMIN)
                 .build();
 
-        driver.perform(put(URI_EMPRESAS + "/" + empresaSalva.getId())
+        String responseJsonString = driver.perform(put(URI_EMPRESAS + "/" + empresaSalva.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateDTO)))
                 .andExpect(status().isBadRequest())
                 .andExpect(result -> assertTrue(result.getResolvedException() instanceof CodigoDeAcessoInvalidoException))
-                .andExpect(jsonPath("$.message").value("Codigo de acesso invalido!"))
-                .andDo(print());
+                .andDo(print())
+                .andReturn().getResponse().getContentAsString();
+
+        CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
+
+        assertEquals("Codigo de acesso invalido!", resultado.getMessage());
     }
 
     @Test
@@ -185,13 +207,17 @@ public class EmpresaControllerTests {
                 .nome(empresaSalva.getNome())
                 .build();
 
-        driver.perform(delete(URI_EMPRESAS + "/" + empresaSalva.getId())
+        String responseJsonString = driver.perform(delete(URI_EMPRESAS + "/" + empresaSalva.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(deleteDTO)))
                 .andExpect(status().isBadRequest())
                 .andExpect(result -> assertTrue(result.getResolvedException() instanceof CodigoDeAcessoInvalidoException))
-                .andExpect(jsonPath("$.message").value("Codigo de acesso invalido!"))
-                .andDo(print());
+                .andDo(print())
+                .andReturn().getResponse().getContentAsString();
+
+        CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
+
+        assertEquals("Codigo de acesso invalido!", resultado.getMessage());
     }
 
     @Test
@@ -220,12 +246,16 @@ public class EmpresaControllerTests {
     void criarEmpresaSenhaAdminIncorreta() throws Exception {
         empresaPostPutRequestDTO.setSenhaAdmin("senha_errada");
 
-        driver.perform(post(URI_EMPRESAS)
+        String responseJsonString = driver.perform(post(URI_EMPRESAS)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(empresaPostPutRequestDTO)))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("Senha invalida!"))
-                .andDo(print());
+                .andDo(print())
+                .andReturn().getResponse().getContentAsString();
+
+        CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
+
+        assertEquals("Senha invalida!", resultado.getMessage());
     }
 
     @Test
@@ -248,11 +278,15 @@ public class EmpresaControllerTests {
     @Test
     @DisplayName("Buscar empresa por id não encontrada")
     void buscarEmpresaPorIdNaoEncontrada() throws Exception {
-        driver.perform(get(URI_EMPRESAS + "/99999")
+        String responseJsonString = driver.perform(get(URI_EMPRESAS + "/99999")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("A empresa consultada nao existe!"))
-                .andDo(print());
+                .andDo(print())
+                .andReturn().getResponse().getContentAsString();
+
+        CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
+
+        assertEquals("A empresa consultada nao existe!", resultado.getMessage());
     }
 
     @Test
@@ -271,13 +305,19 @@ public class EmpresaControllerTests {
     void criarEmpresaNomeVazio() throws Exception {
         empresaPostPutRequestDTO.setNome("");
 
-        driver.perform(post(URI_EMPRESAS)
+        String responseJsonString = driver.perform(post(URI_EMPRESAS)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(empresaPostPutRequestDTO)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errors").isArray())
-                .andExpect(jsonPath("$.errors[0]").value("Nome obrigatorio"))
-                .andDo(print());
+                .andDo(print())
+                .andReturn().getResponse().getContentAsString();
+
+        CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
+
+        assertAll(
+                () -> assertEquals("Erros de validacao encontrados", resultado.getMessage()),
+                () -> assertEquals("Nome obrigatorio", resultado.getErrors().get(0))
+        );
     }
 
     @Test
@@ -285,13 +325,19 @@ public class EmpresaControllerTests {
     void criarEmpresaCnpjVazio() throws Exception {
         empresaPostPutRequestDTO.setCnpj("");
 
-        driver.perform(post(URI_EMPRESAS)
+        String responseJsonString = driver.perform(post(URI_EMPRESAS)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(empresaPostPutRequestDTO)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errors").isArray())
-                .andExpect(jsonPath("$.errors[0]").value("CNPJ obrigatorio"))
-                .andDo(print());
+                .andDo(print())
+                .andReturn().getResponse().getContentAsString();
+
+        CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
+
+        assertAll(
+                () -> assertEquals("Erros de validacao encontrados", resultado.getMessage()),
+                () -> assertEquals("CNPJ obrigatorio", resultado.getErrors().get(0))
+        );
     }
 
     @Test
@@ -304,12 +350,16 @@ public class EmpresaControllerTests {
                 .senhaAdmin(SENHA_ADMIN)
                 .build();
 
-        driver.perform(put(URI_EMPRESAS + "/99999")
+        String responseJsonString = driver.perform(put(URI_EMPRESAS + "/99999")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateDTO)))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("A empresa consultada nao existe!"))
-                .andDo(print());
+                .andDo(print())
+                .andReturn().getResponse().getContentAsString();
+
+        CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
+
+        assertEquals("A empresa consultada nao existe!", resultado.getMessage());
     }
 
     @Test
@@ -324,12 +374,16 @@ public class EmpresaControllerTests {
                 .senhaAdmin("senha_errada")
                 .build();
 
-        driver.perform(put(URI_EMPRESAS + "/" + empresaSalva.getId())
+        String responseJsonString = driver.perform(put(URI_EMPRESAS + "/" + empresaSalva.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateDTO)))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("Senha invalida!"))
-                .andDo(print());
+                .andDo(print())
+                .andReturn().getResponse().getContentAsString();
+
+        CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
+
+        assertEquals("Senha invalida!", resultado.getMessage());
     }
 
     @Test
@@ -341,12 +395,16 @@ public class EmpresaControllerTests {
                 .senhaAdmin(SENHA_ADMIN)
                 .build();
 
-        driver.perform(delete(URI_EMPRESAS + "/99999")
+        String responseJsonString = driver.perform(delete(URI_EMPRESAS + "/99999")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(deleteDTO)))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("A empresa consultada nao existe!"))
-                .andDo(print());
+                .andDo(print())
+                .andReturn().getResponse().getContentAsString();
+
+        CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
+
+        assertEquals("A empresa consultada nao existe!", resultado.getMessage());
     }
 
     @Test
@@ -361,12 +419,16 @@ public class EmpresaControllerTests {
                 .nome(empresaSalva.getNome())
                 .build();
 
-        driver.perform(delete(URI_EMPRESAS + "/" + empresaSalva.getId())
+        String responseJsonString = driver.perform(delete(URI_EMPRESAS + "/" + empresaSalva.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(deleteDTO)))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("Senha invalida!"))
-                .andDo(print());
+                .andDo(print())
+                .andReturn().getResponse().getContentAsString();
+
+        CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
+
+        assertEquals("Senha invalida!", resultado.getMessage());
     }
 
     @Test
@@ -376,11 +438,15 @@ public class EmpresaControllerTests {
         
         empresaPostPutRequestDTO.setCnpj(empresaPadrao.getCnpj());
 
-        driver.perform(post(URI_EMPRESAS)
+        String responseJsonString = driver.perform(post(URI_EMPRESAS)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(empresaPostPutRequestDTO)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Empresa ja cadastrada!"))
-                .andDo(print());
+                .andDo(print())
+                .andReturn().getResponse().getContentAsString();
+
+        CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
+
+        assertEquals("Empresa ja cadastrada!", resultado.getMessage());
     }
 }
