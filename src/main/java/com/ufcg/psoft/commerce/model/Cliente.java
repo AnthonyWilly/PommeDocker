@@ -7,12 +7,14 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.time.LocalDate;
 
 @Entity
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Table(name = "clientes")
 public class Cliente {
 
     @JsonProperty("id")
@@ -28,7 +30,19 @@ public class Cliente {
     @Column(nullable = false)
     private String endereco;
 
-    @JsonIgnore
+    @JsonProperty("planoAtual")
     @Column(nullable = false)
+    private String planoAtual;
+
+    @JsonProperty("proxPlano")
+    private String proxPlano;
+
+    @JsonProperty("dataCobranca")
+    @Column(nullable = false)
+    private LocalDate dataCobranca;
+
+    @JsonIgnore
+    @Column(nullable = false, length = 6)
     private String codigo;
+
 }

@@ -68,4 +68,16 @@ public class ClienteController {
                 .status(HttpStatus.NO_CONTENT)
                 .body("");
     }
+
+    @PatchMapping("/{id}/plano")
+    public ResponseEntity<?> alterarPlano(
+        @PathVariable Long id,
+        @RequestParam String codigo,
+        @RequestParam String tipoPlano){
+                if ("Premium".equalsIgnoreCase(tipoPlano))
+                        return ResponseEntity.ok(clienteService.setPlanoPremium(id, codigo));
+                if ("Basico".equalsIgnoreCase(tipoPlano))
+                        return ResponseEntity.ok(clienteService.setPlanoBasico(id, codigo));
+                return ResponseEntity.badRequest().body("Plano inválido");
+        }
 }

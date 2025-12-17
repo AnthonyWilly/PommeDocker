@@ -6,6 +6,8 @@ import com.ufcg.psoft.commerce.exception.ClienteNaoExisteException;
 import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
 import com.ufcg.psoft.commerce.model.Cliente;
 import com.ufcg.psoft.commerce.repository.ClienteRepository;
+import com.ufcg.psoft.commerce.repository.HistoricoPlanoRepository;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -31,7 +33,7 @@ class ClienteServiceTests {
     ClienteRepository clienteRepository;
 
     @Mock
-    HistoricoRepository historicoRepository;
+    HistoricoPlanoRepository historicoPlanoRepository;
 
     @Spy
     ModelMapper modelMapper = new ModelMapper();
@@ -146,7 +148,7 @@ class ClienteServiceTests {
         assertEquals("Premium", cliente.getProxPlano());
         assertEquals("Basico", cliente.getPlanoAtual());
         verify(clienteRepository, times(1)).save(cliente);
-        verify(historicoRepository, times(1)).save(any());
+        verify(historicoPlanoRepository, times(1)).save(any());
     }
 
     @Test
@@ -162,7 +164,7 @@ class ClienteServiceTests {
         assertEquals("Basico", cliente.getProxPlano());
         assertEquals("Premium", cliente.getPlanoAtual());
         verify(clienteRepository, times(1)).save(cliente);
-        verify(historicoRepository, times(1)).save(any());
+        verify(historicoPlanoRepository, times(1)).save(any());
     }
 
     @Test
