@@ -6,9 +6,8 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class EmpresaPostPutRequestDTO {
+public class EmpresaResponseDTO {
+    private Long id;
     private String nome;
     private String cnpj;
-    private String codigoAcesso;
-    private String senhaAdmin;
 }
