@@ -16,6 +16,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import java.util.List;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -294,10 +296,15 @@ public class EmpresaControllerTests {
     void listarEmpresasComSucesso() throws Exception {
         empresaRepository.save(empresaPadrao);
 
-        driver.perform(get(URI_EMPRESAS)
+        String responseJsonString = driver.perform(get(URI_EMPRESAS)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andDo(print());
+                .andDo(print())
+                .andReturn().getResponse().getContentAsString();
+
+        List<Empresa> resultado = objectMapper.readValue(responseJsonString, new TypeReference<List<Empresa>>() {});
+
+        assertEquals(1, resultado.size());
     }
 
     @Test
