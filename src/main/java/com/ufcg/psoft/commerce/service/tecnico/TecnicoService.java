@@ -7,4 +7,15 @@ import java.util.List;
 
 public interface TecnicoService {
 
+    TecnicoResponseDTO criar(TecnicoPostPutRequestDTO tecnicoDTO);
+
+    TecnicoResponseDTO recuperar(Long id);
+
+    List<TecnicoResponseDTO> listar();
+
+    List<TecnicoResponseDTO> listarPorNome(String nome);
+
+    TecnicoResponseDTO alterar(Long id, String codigoAcesso, TecnicoPostPutRequestDTO tecnicoDTO);
+
+    void remover(Long id, String codigoAcesso);
 }
