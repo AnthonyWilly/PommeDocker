@@ -5,6 +5,8 @@ import com.ufcg.psoft.commerce.dto.ClienteResponseDTO;
 import com.ufcg.psoft.commerce.exception.ClienteNaoExisteException;
 import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
 import com.ufcg.psoft.commerce.model.Cliente;
+import com.ufcg.psoft.commerce.model.PlanoBasico;
+import com.ufcg.psoft.commerce.model.PlanoPremium;
 import com.ufcg.psoft.commerce.repository.ClienteRepository;
 import com.ufcg.psoft.commerce.repository.HistoricoPlanoRepository;
 
@@ -18,6 +20,7 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,6 +38,12 @@ class ClienteServiceTests {
     @Mock
     HistoricoPlanoRepository historicoPlanoRepository;
 
+    @Mock
+    PlanoBasico planoBasico;
+
+    @Mock
+    PlanoPremium planoPremium;
+
     @Spy
     ModelMapper modelMapper = new ModelMapper();
 
@@ -48,6 +57,7 @@ class ClienteServiceTests {
     @BeforeEach
     void setup() {
         modelMapper.getConfiguration().setSkipNullEnabled(true);
+        clienteService.inicializarMapaDePlanos();
 
         cliente = Cliente.builder()
                 .id(1L)
@@ -55,6 +65,7 @@ class ClienteServiceTests {
                 .endereco("Rua A, 123")
                 .codigo("123456")
                 .planoAtual("Basico")
+                .dataCobranca(LocalDate.now().plusDays(30))
                 .proxPlano(null)
                 .build();
 

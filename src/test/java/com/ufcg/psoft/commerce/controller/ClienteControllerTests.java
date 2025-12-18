@@ -15,6 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 
@@ -44,6 +45,7 @@ public class ClienteControllerTests {
 
     @BeforeEach
     void setup() {
+
         objectMapper.registerModule(new JavaTimeModule());
         cliente = clienteRepository.save(Cliente.builder()
                 .nome("Cliente Um da Silva")
@@ -51,8 +53,8 @@ public class ClienteControllerTests {
                 .codigo("123456")
                 .planoAtual("Basico")
                 .proxPlano(null)
-                .build()
-        );
+                .dataCobranca(LocalDate.now().plusDays(30))
+                .build());
         clientePostPutRequestDTO = ClientePostPutRequestDTO.builder()
                 .nome(cliente.getNome())
                 .endereco(cliente.getEndereco())
@@ -311,6 +313,7 @@ public class ClienteControllerTests {
                     .codigo("246810")
                     .planoAtual("Basico")
                     .proxPlano(null)
+                    .dataCobranca(LocalDate.now().plusDays(30))
                     .build();
             Cliente cliente2 = Cliente.builder()
                     .nome("Cliente Três Lima")
@@ -318,6 +321,7 @@ public class ClienteControllerTests {
                     .codigo("135790")
                     .planoAtual("Premium")
                     .proxPlano(null)
+                    .dataCobranca(LocalDate.now().plusDays(30))
                     .build();
             clienteRepository.saveAll(Arrays.asList(cliente1, cliente2));
 
@@ -502,10 +506,11 @@ public class ClienteControllerTests {
         @Test
         @DisplayName("Deve alterar o plano para Premium com dados Validos")
         void quandoAlteramosPlanoParaPremium() throws Exception {
-            String uri = URI_CLIENTES + "/" + cliente.getId() + "/plano/premium";
-            String responseJsonString = driver.perform(put(uri)
+            String uri = URI_CLIENTES + "/" + cliente.getId() + "/plano";
+            String responseJsonString = driver.perform(patch(uri)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(clientePostPutRequestDTO)))
+                            .param("codigo", cliente.getCodigo())
+                            .param("tipoPlano", "Premium"))
                     .andExpect(status().isOk()) //
                     .andDo(print())
                     .andReturn().getResponse().getContentAsString();
@@ -520,11 +525,12 @@ public class ClienteControllerTests {
             cliente.setPlanoAtual("Premium");
             cliente.setProxPlano(null);
             cliente = clienteRepository.save(cliente);
-            String uri = URI_CLIENTES + "/" + cliente.getId() + "/plano/basico";
-            String responseJsonString = driver.perform(put(uri)
+            String uri = URI_CLIENTES + "/" + cliente.getId() + "/plano";
+            String responseJsonString = driver.perform(patch(uri)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(clientePostPutRequestDTO)))
-                    .andExpect(status().isOk()) //
+                            .param("codigo", cliente.getCodigo())
+                            .param("tipoPlano", "Basico"))
+                    .andExpect(status().isOk()) 
                     .andDo(print())
                     .andReturn().getResponse().getContentAsString();
 
@@ -537,11 +543,12 @@ public class ClienteControllerTests {
         @DisplayName("Deve falhar ao alterar plano de cliente inexistente")
         void quandoAlteramosPlanoClienteInexistente() throws Exception {
             Long idInexistente = 999999L;
-            String uri = URI_CLIENTES + "/" + idInexistente + "/plano/premium";
-            String responseJsonString = driver.perform(put(uri)
+            String uri = URI_CLIENTES + "/" + idInexistente + "/plano";
+            String responseJsonString = driver.perform(patch(uri)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(clientePostPutRequestDTO)))
-                    .andExpect(status().isBadRequest()) //
+                            .param("codigo", "123456")
+                            .param("tipoPlano", "Premium"))
+                    .andExpect(status().isBadRequest()) 
                     .andDo(print())
                     .andReturn().getResponse().getContentAsString();
             CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);

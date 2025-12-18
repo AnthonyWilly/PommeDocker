@@ -67,6 +67,7 @@ public class ClienteServiceImpl implements ClienteService {
         Cliente cliente = modelMapper.map(clientePostPutRequestDTO, Cliente.class);
         cliente.setPlanoAtual("Basico");
         cliente.setProxPlano(null);
+        cliente.setDataCobranca(LocalDate.now().plusDays(30));
         clienteRepository.save(cliente);
         return modelMapper.map(cliente, ClienteResponseDTO.class);
     }

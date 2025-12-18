@@ -8,6 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface HistoricoPlanoRepository extends JpaRepository<HistoricoPlano, Long> {
 
-    List<HistoricoPlano> findAllByClienteIdOrderByDataAlteracaoDesc(Long id);
+    List<HistoricoPlano> findAllByIdClienteOrderByDataDesc(Long id);
     
 }
