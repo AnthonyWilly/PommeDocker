@@ -25,15 +25,16 @@ public class TecnicoPostPutRequestDTO {
     private String especialidade;
 
     @JsonProperty("corVeiculo")
-    @NotBlank(message = "Cor do Veículo obrigatoria")
+    @NotBlank(message = "Cor veiculo obrigatoria")
     private String corVeiculo;
 
     @JsonProperty("tipoVeiculo")
-    @NotBlank(message = "Tipo do Veiculo obrigatorio")
+    @NotNull(message = "Tipo veiculo obrigatorio")
     private TipoVeiculo tipoVeiculo;
 
     @JsonProperty("placaVeiculo")
-    @NotBlank(message = "Placa do Veiculo obrigatoria")
+    @NotBlank(message = "placa do veiculo obrigatoria")
+    @Pattern(regexp = "[A-Z]{3}\\d[A-Z0-9]\\d{2}", message = "placa do veiculoFormatoInvalido")
     private String placaVeiculo;
 
     @JsonProperty("acesso")

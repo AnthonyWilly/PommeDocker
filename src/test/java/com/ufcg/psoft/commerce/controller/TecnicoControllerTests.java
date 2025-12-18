@@ -89,7 +89,7 @@ public class TecnicoControllerTests {
             Tecnico resultado = objectMapper.readValue(responseJsonString, Tecnico.TecnicoBuilder.class).build();
 
             // Assert
-            assertEquals("Tecnico Um Da Silva", resultado.getNome());
+            assertEquals("Tecnico Um da Silva", resultado.getNome());
         }
 
         @Test
@@ -353,7 +353,7 @@ public class TecnicoControllerTests {
             // Assert
             assertAll(
                     () -> assertEquals("Erros de validacao encontrados", resultado.getMessage()),
-                    () -> assertEquals("CorVeiculo obrigatoria", resultado.getErrors().get(0))
+                    () -> assertEquals("Cor veiculo obrigatoria", resultado.getErrors().get(0))
             );
         }
     }

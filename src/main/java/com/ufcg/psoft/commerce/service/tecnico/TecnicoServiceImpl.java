@@ -4,6 +4,8 @@ import com.ufcg.psoft.commerce.dto.TecnicoPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.TecnicoResponseDTO;
 import com.ufcg.psoft.commerce.model.Tecnico;
 import com.ufcg.psoft.commerce.repository.TecnicoRepository;
+import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
+import com.ufcg.psoft.commerce.exception.CommerceException;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -30,7 +32,7 @@ public class TecnicoServiceImpl implements TecnicoService {
     public TecnicoResponseDTO recuperar(Long id) {
         return tecnicoRepository.findById(id)
                 .map(tecnico -> modelMapper.map(tecnico, TecnicoResponseDTO.class))
-                .orElse(null);
+                .orElseThrow(() -> new CommerceException("O tecnico consultado nao existe!"));
     }
 
     @Override
@@ -52,7 +54,7 @@ public class TecnicoServiceImpl implements TecnicoService {
         return tecnicoRepository.findById(id)
                 .map(tecnico -> {
                     if (!tecnico.getAcesso().equals(codigoAcesso)) {
-                        throw new RuntimeException("Código de acesso inválido");
+                        throw new CodigoDeAcessoInvalidoException();
                     }
                     tecnico.setNome(tecnicoDTO.getNome());
                     tecnico.setEspecialidade(tecnicoDTO.getEspecialidade());
@@ -63,15 +65,15 @@ public class TecnicoServiceImpl implements TecnicoService {
                     tecnicoRepository.save(tecnico);
                     return modelMapper.map(tecnico, TecnicoResponseDTO.class);
                 })
-                .orElse(null);
+                .orElseThrow(() -> new CommerceException("O tecnico consultado nao existe!"));
     }
 
     @Override
     public void remover(Long id, String codigoAcesso) {
         Tecnico tecnico = tecnicoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Técnico não encontrado"));
+                .orElseThrow(() -> new CommerceException("O tecnico consultado nao existe!"));
         if (!tecnico.getAcesso().equals(codigoAcesso)) {
-            throw new RuntimeException("Código de acesso inválido");
+            throw new CodigoDeAcessoInvalidoException();
         }
         tecnicoRepository.deleteById(id);
     }
