@@ -3,11 +3,12 @@ package com.ufcg.psoft.commerce.service.cliente;
 import com.ufcg.psoft.commerce.dto.ClientePlanoPostPutRequestDTO;
 import com.ufcg.psoft.commerce.exception.ClienteNaoExisteException;
 import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
+import com.ufcg.psoft.commerce.exception.CommerceException;
 import com.ufcg.psoft.commerce.model.*;
 import com.ufcg.psoft.commerce.repository.ClienteRepository;
 import com.ufcg.psoft.commerce.dto.ClientePostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ClienteResponseDTO;
-import com.ufcg.psoft.commerce.repository.HistoricoRepository;
+import com.ufcg.psoft.commerce.repository.HistoricoPlanoRepository;
 import jakarta.annotation.PostConstruct;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,9 +32,8 @@ public class ClienteServiceImpl implements ClienteService {
     @Autowired
     private PlanoPremium planoPremium;
     @Autowired
+    private HistoricoPlanoRepository  historicoRepository;
     private Map<String, Plano> estrategias = new HashMap<>();
-    @Autowired
-    private HistoricoRepository  historicoRepository;
 
     @PostConstruct
     public void inicializarMapaDePlanos() {
@@ -55,7 +55,9 @@ public class ClienteServiceImpl implements ClienteService {
     @Override
     public ClienteResponseDTO criar(ClientePostPutRequestDTO clientePostPutRequestDTO) {
         Cliente cliente = modelMapper.map(clientePostPutRequestDTO, Cliente.class);
-        cliente.setPlanoBasico(clientePostPutRequestDTO.getCodigo());
+        cliente.setPlanoAtual("Basico");
+        cliente.setProxPlano(null);
+        cliente.setDataCobranca(LocalDate.now().plusDays(30));
         clienteRepository.save(cliente);
         return modelMapper.map(cliente, ClienteResponseDTO.class);
     }
@@ -90,28 +92,39 @@ public class ClienteServiceImpl implements ClienteService {
         Cliente cliente = clienteRepository.findById(id).orElseThrow(ClienteNaoExisteException::new);
         return new ClienteResponseDTO(cliente);
     }
-    public ClienteResponseDTO setPlanoPremium(long id ,String codigoAcesso){
-        Cliente cliente = clienteRepository.findById(id).orElseThrow(ClienteNaoExisteException::new);
-        cliente.setPlanoPremium(codigoAcesso);
-        clienteRepository.save(cliente);
-        Historico historico = criarHistorico(cliente.getId(),"Basico");
+    private ClienteResponseDTO alterarPlano(Long id, String codigoAcesso, String novoPlano) {
+        Cliente cliente = buscarValidandoAcesso(id, codigoAcesso);
+        if (!estrategias.containsKey(novoPlano))
+            throw new CommerceException("Plano inválido");
+        HistoricoPlano historico = criarHistorico(cliente.getId(), cliente.getPlanoAtual());
         historicoRepository.save(historico);
+        cliente.setProxPlano(novoPlano);
+        clienteRepository.save(cliente);
         return modelMapper.map(cliente, ClienteResponseDTO.class);
     }
-    public ClienteResponseDTO setPlanoBasico(long id ,String codigoAcesso){
-        Cliente cliente = clienteRepository.findById(id).orElseThrow(ClienteNaoExisteException::new);
-        cliente.setPlanoBasico(codigoAcesso);
-        clienteRepository.save(cliente);
-        Historico historico = criarHistorico(cliente.getId(),"Premium");
-        historicoRepository.save(historico);
-        return modelMapper.map(cliente, ClienteResponseDTO.class);
+
+    @Override
+    public ClienteResponseDTO setPlanoPremium(long id, String codigoAcesso){
+        return alterarPlano(id, codigoAcesso, "Premium");
     }
-    private Historico criarHistorico(long idCliente, String plano){
-        Historico h = new Historico();
+
+    @Override
+    public ClienteResponseDTO setPlanoBasico(long id, String codigoAcesso){
+        return alterarPlano(id, codigoAcesso, "Basico");
+    }
+
+    private HistoricoPlano criarHistorico(long idCliente, String plano){
+        HistoricoPlano h = new HistoricoPlano();
         h.setIdCliente(idCliente);
         h.setIdPlanoAntigo(plano);
         h.setData(LocalDate.now());
         return h;
+    }
+    private Cliente buscarValidandoAcesso(Long id, String codigoAcesso) {
+        Cliente cliente = clienteRepository.findById(id).orElseThrow(ClienteNaoExisteException::new);
+        if (!cliente.getCodigo().equals(codigoAcesso))
+            throw new CodigoDeAcessoInvalidoException();
+        return cliente;
     }
 
 }

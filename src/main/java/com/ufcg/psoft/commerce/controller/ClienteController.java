@@ -69,21 +69,20 @@ public class ClienteController {
                 .status(HttpStatus.NO_CONTENT)
                 .body("");
     }
-    @PutMapping("/{id}/plano/premium")
-    public ResponseEntity<?> alterarPlanoPremium(
+    @PatchMapping("/{id}/plano")
+    public ResponseEntity<?> alterarPlano(
             @PathVariable Long id,
-            @RequestBody @Valid ClientePostPutRequestDTO dto) {
+            @RequestParam String codigo,
+            @RequestParam String tipoPlano) {
+        try {
+            if ("Premium".equalsIgnoreCase(tipoPlano))
+                return ResponseEntity.ok(clienteService.setPlanoPremium(id, codigo));
+            if ("Basico".equalsIgnoreCase(tipoPlano))
+                return ResponseEntity.ok(clienteService.setPlanoBasico(id, codigo));
 
-        ClienteResponseDTO ok = clienteService.setPlanoPremium(id, dto.getCodigo());
-        return ResponseEntity.ok(ok);
-    }
-
-    @PutMapping("/{id}/plano/basico")
-    public ResponseEntity<?> alterarPlanoBasico(
-            @PathVariable Long id,
-            @RequestBody @Valid ClientePostPutRequestDTO dto) {
-
-        ClienteResponseDTO ok = clienteService.setPlanoBasico(id, dto.getCodigo());
-        return ResponseEntity.ok(ok);
+            throw new IllegalArgumentException("Plano invalido");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

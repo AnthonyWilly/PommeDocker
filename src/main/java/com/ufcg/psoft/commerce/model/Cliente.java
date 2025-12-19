@@ -8,6 +8,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
+
 @Entity
 @Data
 @Builder
@@ -37,7 +39,7 @@ public class Cliente {
 
     @JsonProperty("dataCobranca")
     @Column(nullable = false)
-    private String dataCobranca;
+    private LocalDate dataCobranca;
 
     @JsonIgnore
     @Column(nullable = false)

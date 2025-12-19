@@ -2,6 +2,7 @@ package com.ufcg.psoft.commerce.service.cliente;
 
 import com.ufcg.psoft.commerce.dto.ClientePostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ClienteResponseDTO;
+import com.ufcg.psoft.commerce.model.Cliente;
 
 import java.util.List;
 
@@ -18,6 +19,6 @@ public interface ClienteService {
     void remover(Long id, String codigoAcesso);
 
     List<ClienteResponseDTO> listarPorNome(String nome);
-    ClienteResponseDTO setPlanoPremium(long id ,String codigoAcesso);
-    public ClienteResponseDTO setPlanoBasico(long id ,String codigoAcesso);
+    ClienteResponseDTO setPlanoPremium(long id , String codigoAcesso);
+    ClienteResponseDTO setPlanoBasico(long id ,String codigoAcesso);
 }

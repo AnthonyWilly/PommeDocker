@@ -8,7 +8,8 @@ import java.time.LocalDate;
 
 @Entity
 @Data
-public class Historico {
+public class HistoricoPlano
+{
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long id;

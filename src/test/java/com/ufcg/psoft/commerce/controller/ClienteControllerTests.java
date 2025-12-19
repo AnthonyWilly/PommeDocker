@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 
@@ -45,7 +46,6 @@ public class ClienteControllerTests {
 
     final String URI_CLIENTES = "/clientes";
     final String URI_PLANO = "/plano";
-
     @Autowired
     MockMvc driver;
 
@@ -56,7 +56,7 @@ public class ClienteControllerTests {
     ClienteService clienteService;
 
     @Autowired
-    HistoricoPlanoRepository historicoRepository; 
+    HistoricoPlanoRepository historicoRepository;
 
     ObjectMapper objectMapper = new ObjectMapper();
 
@@ -72,6 +72,9 @@ public class ClienteControllerTests {
                 .nome("Cliente Um da Silva")
                 .endereco("Rua dos Testes, 123")
                 .codigo("123456")
+                .planoAtual("Basico")
+                .proxPlano(null)
+                .dataCobranca(LocalDate.now().plusDays(30))
                 .build()
         );
         clientePostPutRequestDTO = ClientePostPutRequestDTO.builder()
@@ -358,32 +361,33 @@ public class ClienteControllerTests {
         @Test
         @DisplayName("Quando buscamos por todos clientes salvos")
         void quandoBuscamosPorTodosClienteSalvos() throws Exception {
-            // Arrange
-            // Vamos ter 3 clientes no banco
             Cliente cliente1 = Cliente.builder()
                     .nome("Cliente Dois Almeida")
                     .endereco("Av. da Pits A, 100")
                     .codigo("246810")
+                    .planoAtual("Basico")
+                    .proxPlano(null)
+                    .dataCobranca(LocalDate.now().plusDays(30))
                     .build();
             Cliente cliente2 = Cliente.builder()
                     .nome("Cliente Três Lima")
                     .endereco("Distrito dos Testadores, 200")
                     .codigo("135790")
+                    .planoAtual("Premium")
+                    .proxPlano(null)
+                    .dataCobranca(LocalDate.now().plusDays(30))
                     .build();
             clienteRepository.saveAll(Arrays.asList(cliente1, cliente2));
 
-            // Act
             String responseJsonString = driver.perform(get(URI_CLIENTES)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(clientePostPutRequestDTO)))
-                    .andExpect(status().isOk()) // Codigo 200
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
                     .andDo(print())
                     .andReturn().getResponse().getContentAsString();
 
             List<Cliente> resultado = objectMapper.readValue(responseJsonString, new TypeReference<>() {
             });
 
-            // Assert
             assertAll(
                     () -> assertEquals(3, resultado.size())
             );
@@ -437,23 +441,19 @@ public class ClienteControllerTests {
         @Test
         @DisplayName("Quando criamos um novo cliente com dados válidos")
         void quandoCriarClienteValido() throws Exception {
-            // Arrange
-            // nenhuma necessidade além do setup()
-
-            // Act
             String responseJsonString = driver.perform(post(URI_CLIENTES)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(clientePostPutRequestDTO)))
-                    .andExpect(status().isCreated()) // Codigo 201
+                    .andExpect(status().isCreated())
                     .andDo(print())
                     .andReturn().getResponse().getContentAsString();
 
             Cliente resultado = objectMapper.readValue(responseJsonString, Cliente.ClienteBuilder.class).build();
 
-            // Assert
             assertAll(
                     () -> assertNotNull(resultado.getId()),
-                    () -> assertEquals(clientePostPutRequestDTO.getNome(), resultado.getNome())
+                    () -> assertEquals(clientePostPutRequestDTO.getNome(), resultado.getNome()),
+                    () -> assertEquals("Basico", resultado.getPlanoAtual())
             );
 
         }
@@ -592,192 +592,143 @@ public class ClienteControllerTests {
     }
 
     @Nested
-    @DisplayName("Conjunto de casos de verificação de mudança de plano")
-    class ClienteAlterarPlano {
+    @DisplayName("Conjunto de casos de verificação de Planos")
+    class ClienteVerificacaoPlanos {
 
         @Test
-        @DisplayName("Altera o plano para Premium com sucesso")
-        void alteraParaPremiumComSucesso() throws Exception {
-                
-                // Arrange
-                historicoRepository.deleteAll();
-
-                String planoAlvo = "Premium";
-
-                // Act
-                String responseJsonString = driver.perform(patch(URI_CLIENTES + "/" + cliente.getId() + URI_PLANO) 
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .param("codigo", cliente.getCodigo())
-                                .param("tipoPlano", planoAlvo))
-                        .andExpect(status().isOk())
-                        .andDo(print())
-                        .andReturn().getResponse().getContentAsString();
-
-                Cliente resultado = objectMapper.readValue(responseJsonString, Cliente.class); 
-
-                //Assert
-                List<HistoricoPlano> historico = historicoRepository.findAllByClienteIdOrderByDataAlteracaoDesc(cliente.getId());
-                assertAll(
-                        () -> assertTrue(resultado.getPlano().getClass().getSimpleName().contains(planoAlvo)), 
-                        () -> assertEquals(1, historico.size(), "Deve ter criado 1 registro de histórico"),
-                        () -> assertEquals("PlanoPremium", historico.get(0).getTipoPlano(), "O histórico deve registrar o tipo novo") 
-                );
-
-        }
-
-        @Test
-        @DisplayName("Altera o plano para Basico com sucesso")
-        void alteraParaBasicoComSucesso() throws Exception {
-                // Arrange
-                clienteService.setPlanoPremium(cliente.getId(), cliente.getCodigo());
-                historicoRepository.deleteAll();
-
-                String planoAlvo = "Basico";
-
-                // Act
-                String responseJsonString = driver.perform(patch(URI_CLIENTES + "/" + cliente.getId() + URI_PLANO) 
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .param("codigo", cliente.getCodigo())
-                                .param("tipoPlano", planoAlvo))
-                        .andExpect(status().isOk())
-                        .andDo(print())
-                        .andReturn().getResponse().getContentAsString();
-
-                Cliente resultado = objectMapper.readValue(responseJsonString, Cliente.class); 
-
-                //Assert
-                List<HistoricoPlano> historico = historicoRepository.findAllByClienteIdOrderByDataAlteracaoDesc(cliente.getId());
-                assertAll(
-                        () -> assertTrue(resultado.getPlano().getClass().getSimpleName().contains(planoAlvo)), 
-                        () -> assertEquals(1, historico.size(), "Deve ter criado 1 registro de histórico"),
-                        () -> assertEquals("PlanoBasico", historico.get(0).getTipoPlano(), "O histórico deve registrar o tipo novo") 
-                );
-        }
-
-        @Test
-        @DisplayName("Não altera plano para premium com código inválido")
-        void naoAlteraPlanoClienteParaPremiumCodigoAcessoInvalido() throws Exception {
-                // Arrange
-                String codigoInvalido = "123457";
-                String planoAlvo = "Premium";
-
-                // Act
-                String responseJsonString = driver.perform(patch(URI_CLIENTES + "/" + cliente.getId() + URI_PLANO) 
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .param("codigo", codigoInvalido)
-                                .param("tipoPlano", planoAlvo))
-                        .andExpect(status().isBadRequest())
-                        .andDo(print())
-                        .andReturn().getResponse().getContentAsString();
-
-                CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
-
-                // Assert
-
-                assertAll(
-                        () -> assertEquals("Codigo de acesso invalido!", resultado.getMessage()), 
-                        () -> assertEquals(0, historicoRepository.count()) 
-                );
-        }
-
-        @Test
-        @DisplayName("Não altera plano para basico com código inválido")
-        void naoAlteraPlanoClienteParaBasicoCodigoAcessoInvalido() throws Exception {
-                // Arrange
-                String codigoInvalido = "123457";
-                String planoAlvo = "Basico";
-                clienteService.setPlanoPremium(cliente.getId(), cliente.getCodigo());
-                historicoRepository.deleteAll();
-
-                // Act
-                String responseJsonString = driver.perform(patch(URI_CLIENTES + "/" + cliente.getId() + URI_PLANO)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .param("codigo", codigoInvalido)
-                                .param("tipoPlano", planoAlvo))
-                        .andExpect(status().isBadRequest())
-                        .andDo(print())
-                        .andReturn().getResponse().getContentAsString();
-
-                CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
-
-                // Assert
-                assertAll(
-                        () -> assertEquals("Codigo de acesso invalido!", resultado.getMessage()), 
-                        () -> assertEquals(0, historicoRepository.count()) 
-                );
-        }
-
-        @Test
-        @DisplayName("Não altera plano para premium de cliente inexistente")
-        void naoAlteraPlanoParaPremiumClienteInexistente() throws Exception {
-            // Arrange
-            String planoAlvo = "Premium";
-            
-            // Act
-            String responseJsonString = driver.perform(patch(URI_CLIENTES + "/999999" + URI_PLANO)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .param("codigo", "123456") 
-                            .param("tipoPlano", planoAlvo))
-                    .andExpect(status().isBadRequest()) 
-                    .andDo(print())
-                    .andReturn().getResponse().getContentAsString();
-
-            CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
-
-            // Assert
-            assertAll(
-                    () -> assertEquals("O cliente consultado nao existe!", resultado.getMessage()),
-                    () -> assertEquals(0, historicoRepository.count()) 
-            );
-        }
-
-        @Test
-        @DisplayName("Não altera plano para basico de cliente inexistente")
-        void naoAlteraPlanoParaBasicoClienteInexistente() throws Exception {
-            // Arrange
-            String planoAlvo = "Basico";
-            
-            // Act
-            String responseJsonString = driver.perform(patch(URI_CLIENTES + "/999999" + URI_PLANO)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .param("codigo", "123456") 
-                            .param("tipoPlano", planoAlvo))
-                    .andExpect(status().isBadRequest()) 
-                    .andDo(print())
-                    .andReturn().getResponse().getContentAsString();
-
-            CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
-
-            // Assert
-            assertAll(
-                    () -> assertEquals("O cliente consultado nao existe!", resultado.getMessage()),
-                    () -> assertEquals(0, historicoRepository.count()) 
-            );
-        }
-
-        @Test
-        @DisplayName("Não altera para um plano que não existe")
-        void naoAlteraParaPlanoInexistente() throws Exception {
-            // Arrange
-            String planoInvalido = "PlanoNaoExiste";
-
-            // Act
-            String responseJsonString = driver.perform(patch(URI_CLIENTES + "/" + cliente.getId() + URI_PLANO)
+        @DisplayName("Deve alterar o plano para Premium com dados Validos")
+        void quandoAlteramosPlanoParaPremium() throws Exception {
+            String uri = URI_CLIENTES + "/" + cliente.getId() + "/plano";
+            String responseJsonString = driver.perform(patch(uri)
                             .contentType(MediaType.APPLICATION_JSON)
                             .param("codigo", cliente.getCodigo())
-                            .param("tipoPlano", planoInvalido))
-                    .andExpect(status().isBadRequest()) 
+                            .param("tipoPlano", "Premium"))
+                    .andExpect(status().isOk()) //
+                    .andDo(print())
+                    .andReturn().getResponse().getContentAsString();
+            ClienteResponseDTO resultado = objectMapper.readValue(responseJsonString, ClienteResponseDTO.class);
+            assertEquals("Basico", resultado.getPlanoAtual());
+            assertEquals("Premium", resultado.getProxPlano());
+        }
+
+        @Test
+        @DisplayName("Deve alterar o plano para Basico com dados Validos")
+        void quandoAlteramosPlanoParaBasico() throws Exception {
+            cliente.setPlanoAtual("Premium");
+            cliente.setProxPlano(null);
+            cliente = clienteRepository.save(cliente);
+            String uri = URI_CLIENTES + "/" + cliente.getId() + "/plano";
+            String responseJsonString = driver.perform(patch(uri)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .param("codigo", cliente.getCodigo())
+                            .param("tipoPlano", "Basico"))
+                    .andExpect(status().isOk())
                     .andDo(print())
                     .andReturn().getResponse().getContentAsString();
 
-            CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
-
-            // Assert
-            assertAll(
-                () -> assertEquals("O plano consultado nao existe!", resultado.getMessage()), 
-                () -> assertEquals(0, historicoRepository.count())
-            );
+            ClienteResponseDTO resultado = objectMapper.readValue(responseJsonString, ClienteResponseDTO.class);
+            assertEquals("Basico", resultado.getProxPlano());
+            assertEquals("Premium", resultado.getPlanoAtual());
         }
-        
+
+        @Test
+        @DisplayName("Deve falhar ao alterar plano de cliente inexistente")
+        void quandoAlteramosPlanoClienteInexistente() throws Exception {
+            Long idInexistente = 999999L;
+            String uri = URI_CLIENTES + "/" + idInexistente + "/plano";
+            String responseJsonString = driver.perform(patch(uri)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .param("codigo", "123456")
+                            .param("tipoPlano", "Premium"))
+                    .andExpect(status().isBadRequest())
+                    .andDo(print())
+                    .andReturn().getResponse().getContentAsString();
+            CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
+            assertEquals("O cliente consultado nao existe!", resultado.getMessage());
+        }
+    }
+    @Test
+    @DisplayName("Deve falhar ao alterar para Premium com codigo de acesso invalido")
+    void quandoAlteramosParaPremiumCodigoInvalido() throws Exception {
+        // Arrange
+        String codigoInvalido = "000000";
+        String uri = URI_CLIENTES + "/" + cliente.getId() + "/plano";
+
+        // Act
+        String responseJsonString = driver.perform(patch(uri)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .param("codigo", codigoInvalido)
+                        .param("tipoPlano", "Premium"))
+                .andExpect(status().isBadRequest())
+                .andDo(print())
+                .andReturn().getResponse().getContentAsString();
+
+        CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
+
+        // Assert
+        assertEquals("Codigo de acesso invalido!", resultado.getMessage());
+    }
+
+    @Test
+    @DisplayName("Deve falhar ao alterar para Basico com codigo de acesso invalido")
+    void quandoAlteramosParaBasicoCodigoInvalido() throws Exception {
+        // Arrange
+        String codigoInvalido = "000000";
+        String uri = URI_CLIENTES + "/" + cliente.getId() + "/plano";
+
+        // Act
+        String responseJsonString = driver.perform(patch(uri)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .param("codigo", codigoInvalido)
+                        .param("tipoPlano", "Basico"))
+                .andExpect(status().isBadRequest())
+                .andDo(print())
+                .andReturn().getResponse().getContentAsString();
+
+        CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
+
+        // Assert
+        assertEquals("Codigo de acesso invalido!", resultado.getMessage());
+    }
+
+    @Test
+    @DisplayName("Deve falhar ao alterar para Basico de cliente inexistente")
+    void quandoAlteramosPlanoBasicoClienteInexistente() throws Exception {
+        // Arrange
+        Long idInexistente = 999999L;
+        String uri = URI_CLIENTES + "/" + idInexistente + "/plano";
+
+        // Act
+        String responseJsonString = driver.perform(patch(uri)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .param("codigo", "123456")
+                        .param("tipoPlano", "Basico"))
+                .andExpect(status().isBadRequest())
+                .andDo(print())
+                .andReturn().getResponse().getContentAsString();
+
+        CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
+
+        // Assert
+        assertEquals("O cliente consultado nao existe!", resultado.getMessage());
+    }
+
+    @Test
+    @DisplayName("Deve falhar ao passar um tipo de plano que nao existe")
+    void quandoPassamosTipoPlanoInvalido() throws Exception {
+        // Arrange
+        String planoInexistente = "PlanoNaoExiste";
+        String uri = URI_CLIENTES + "/" + cliente.getId() + "/plano";
+
+        // Act
+        String responseJsonString = driver.perform(patch(uri)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .param("codigo", cliente.getCodigo())
+                        .param("tipoPlano", planoInexistente))
+                .andExpect(status().isBadRequest())
+                .andDo(print())
+                .andReturn().getResponse().getContentAsString();
+
+        assertEquals("Plano invalido", responseJsonString);
     }
 }

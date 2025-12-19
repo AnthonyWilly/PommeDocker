@@ -1,17 +1,15 @@
 package com.ufcg.psoft.commerce.service.cliente;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
+import com.ufcg.psoft.commerce.dto.ClienteResponseDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -20,6 +18,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.ufcg.psoft.commerce.exception.ClienteNaoExisteException;
@@ -30,6 +29,9 @@ import com.ufcg.psoft.commerce.model.PlanoBasico;
 import com.ufcg.psoft.commerce.model.PlanoPremium;
 import com.ufcg.psoft.commerce.repository.ClienteRepository;
 import com.ufcg.psoft.commerce.repository.HistoricoPlanoRepository;
+import org.modelmapper.ModelMapper;
+import org.springframework.boot.test.context.SpringBootTest;
+
 
 @ExtendWith(MockitoExtension.class) 
 @DisplayName("Testes do service de clientes")
@@ -40,66 +42,72 @@ public class ClienteServiceTests {
 
     @Mock
     HistoricoPlanoRepository historicoRepository;
-
+    @Mock
+    PlanoBasico planoBasico;
+    @Mock
+    PlanoPremium planoPremium;
     @InjectMocks
     ClienteServiceImpl clienteService;
 
+    @Spy
+    ModelMapper modelMapper = new ModelMapper();
     Cliente cliente;
 
     @BeforeEach
     void setup() {
-        cliente = Cliente.builder() 
-            .nome("Cliente")
-            .endereco("Rua dos Testes, 123")
-            .codigo("123456")
-            .build();
+        modelMapper.getConfiguration().setSkipNullEnabled(true);
+        clienteService.inicializarMapaDePlanos();
+        cliente = Cliente.builder()
+                .id(1L)
+                .nome("João da Silva")
+                .endereco("Rua A, 123")
+                .codigo("123456")
+                .planoAtual("Basico")
+                .dataCobranca((LocalDate.now().plusDays(30)))
+                .proxPlano(null)
+                .build();
+
     }
 
     @Nested 
     @DisplayName("Conjunto de casos de verificação de mudança de plano do cliente")
-    class ClienteVerificacaoMudancaPlano { 
-
+    class ClienteVerificacaoMudancaPlano {
         @Test
         @DisplayName("Altera plano do cliente para premium com sucesso")
         void alteraPlanoDoClienteParaPremiumComSucesso() throws Exception {
             // Arrange
             when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente));
-            when(clienteRepository.save(any(Cliente.class))).thenReturn(cliente); 
-
+            when(clienteRepository.save(any(Cliente.class))).thenReturn(cliente);
             // Act
-            boolean resultado = clienteService.setPlanoPremium(1L, "123456");
-            
-
+            ClienteResponseDTO response =
+                    clienteService.setPlanoPremium(1L, "123456");
             // Assert
-            ArgumentCaptor<Cliente> clienteCaptor = ArgumentCaptor.forClass(Cliente.class);
-            verify(clienteRepository).save(clienteCaptor.capture());
-            Cliente clienteSalvo = clienteCaptor.getValue();
-            
             assertAll(
-                () -> assertTrue(resultado, "O plano não foi mudado com sucesso."),
-                () -> assertInstanceOf(PlanoPremium.class, clienteSalvo.getPlano(), "O plano do cliente deveria ser uma instância do PlanoPremium")
+                    () -> assertNotNull(response),
+                    () -> assertEquals("Premium", response.getProxPlano(),
+                            "O próximo plano do cliente deve ser Premium")
             );
-        }
 
+            verify(clienteRepository).save(any(Cliente.class));
+        }
         @Test
         @DisplayName("Altera plano do cliente para basico com sucesso")
         void alteraPlanoDoClienteParaBasicoValido() {
             // Arrange
             when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente));
-            when(clienteRepository.save(any(Cliente.class))).thenReturn(cliente); 
+            when(clienteRepository.save(any(Cliente.class))).thenReturn(cliente);
 
             // Act
-            boolean resultado = clienteService.setPlanoBasico(1L, "123456");
+            ClienteResponseDTO response =
+                    clienteService.setPlanoBasico(1L, "123456");
 
             // Assert
-            ArgumentCaptor<Cliente> clienteCaptor = ArgumentCaptor.forClass(Cliente.class);
-            verify(clienteRepository).save(clienteCaptor.capture());
-            Cliente clienteSalvo = clienteCaptor.getValue();
-            
             assertAll(
-                () -> assertTrue(resultado, "O plano não foi mudado com sucesso."),
-                () -> assertInstanceOf(PlanoBasico.class, clienteSalvo.getPlano(), "O plano do cliente deveria ser uma instância do PlanoBasico")
+                    () -> assertNotNull(response),
+                    () -> assertEquals("Basico", response.getProxPlano(),
+                            "O próximo plano do cliente deve ser Basico")
             );
+            verify(clienteRepository).save(any(Cliente.class));
         }
 
         @Test
@@ -142,24 +150,22 @@ public class ClienteServiceTests {
             verify(historicoRepository).save(historicoCaptor.capture());
             HistoricoPlano historicoSalvo = historicoCaptor.getValue();
 
-            assertEquals("Premium", historicoSalvo.getTipoPlano(), "O histórico deve registrar a string 'Premium'");
+            assertEquals("Basico", historicoSalvo.getIdPlanoAntigo(), "O histórico deve registrar a string 'Basico'");
         }
 
         @Test
         @DisplayName("Verificar se histórico de plano de um cliente foi modificado ao trocar o plano para basico")
         void alteraPlanoClienteParaBasicoDeveSalvarHistorico() {
             // Arrange
-            when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente)); 
-
+            when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente));
             // Act
             clienteService.setPlanoBasico(1L, "123456");
-
             // Assert
             ArgumentCaptor<HistoricoPlano> historicoCaptor = ArgumentCaptor.forClass(HistoricoPlano.class);
             verify(historicoRepository).save(historicoCaptor.capture());
             HistoricoPlano historicoSalvo = historicoCaptor.getValue();
 
-            assertEquals("Basico", historicoSalvo.getTipoPlano(), "O histórico deve registrar a string 'Basico'");
+            assertEquals("Basico", historicoSalvo.getIdPlanoAntigo(), "O histórico deve registrar a string 'Basico'");
         }
 
         @Test
