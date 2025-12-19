@@ -21,10 +21,8 @@ public class EmpresaServiceImpl implements EmpresaService {
     private static final String SENHA_ADMIN_PADRAO = "admin123";
 
     @Override
-    public Empresa cadastrar(EmpresaPostPutRequestDTO dto) {
-        if (!SENHA_ADMIN_PADRAO.equals(dto.getSenhaAdmin())) {
-            throw new SenhaInvalidaException();
-        }
+    public Empresa criar(EmpresaPostPutRequestDTO dto) {
+        validarSenhaAdmin(dto.getSenhaAdmin());
 
         if (empresaRepository.findByCnpj(dto.getCnpj()).isPresent()) {
             throw new EmpresaJaCadastradaException();
@@ -52,15 +50,10 @@ public class EmpresaServiceImpl implements EmpresaService {
 
     @Override
     public Empresa alterar(Long id, String codigoAcesso, EmpresaPostPutRequestDTO dto) {
-        if (!SENHA_ADMIN_PADRAO.equals(dto.getSenhaAdmin())) {
-            throw new SenhaInvalidaException();
-        }
+        validarSenhaAdmin(dto.getSenhaAdmin());
 
         Empresa empresa = recuperar(id);
-
-        if (!empresa.getCodigoAcesso().equals(codigoAcesso)) {
-            throw new CodigoDeAcessoInvalidoException();
-        }
+        validarCodigoAcesso(empresa, codigoAcesso);
 
         empresa.setNome(dto.getNome());
         empresa.setCnpj(dto.getCnpj());
@@ -70,16 +63,23 @@ public class EmpresaServiceImpl implements EmpresaService {
 
     @Override
     public void remover(Long id, String codigoAcesso, String senhaAdmin) {
+        validarSenhaAdmin(senhaAdmin);
+
+        Empresa empresa = recuperar(id);
+        validarCodigoAcesso(empresa, codigoAcesso);
+
+        empresaRepository.delete(empresa);
+    }
+
+    private void validarSenhaAdmin(String senhaAdmin) {
         if (!SENHA_ADMIN_PADRAO.equals(senhaAdmin)) {
             throw new SenhaInvalidaException();
         }
+    }
 
-        Empresa empresa = recuperar(id);
-
+    private void validarCodigoAcesso(Empresa empresa, String codigoAcesso) {
         if (!empresa.getCodigoAcesso().equals(codigoAcesso)) {
             throw new CodigoDeAcessoInvalidoException();
         }
-
-        empresaRepository.delete(empresa);
     }
 }

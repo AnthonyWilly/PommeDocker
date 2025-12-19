@@ -4,6 +4,7 @@ import com.ufcg.psoft.commerce.dto.EmpresaPostPutRequestDTO;
 import com.ufcg.psoft.commerce.model.Empresa;
 import com.ufcg.psoft.commerce.service.empresa.EmpresaService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,11 +14,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/empresas")
+@RequiredArgsConstructor
 public class EmpresaController {
 
-    @Autowired
-    private EmpresaService empresaService;
-
+    private final EmpresaService empresaService;
     @PostMapping
     public ResponseEntity<Empresa> criarEmpresa(@RequestBody @Valid EmpresaPostPutRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(empresaService.cadastrar(dto));
