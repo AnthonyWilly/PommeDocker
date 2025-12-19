@@ -3,6 +3,7 @@ package com.ufcg.psoft.commerce.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.ufcg.psoft.commerce.dto.EmpresaPostPutRequestDTO;
+import com.ufcg.psoft.commerce.dto.EmpresaResponseDTO;
 import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
 import com.ufcg.psoft.commerce.exception.CustomErrorType;
 import com.ufcg.psoft.commerce.model.Empresa;
@@ -100,7 +101,7 @@ public class EmpresaControllerTests {
                 .andDo(print())
                 .andReturn().getResponse().getContentAsString();
 
-        Empresa resultado = objectMapper.readValue(responseJsonString, Empresa.class);
+        EmpresaResponseDTO resultado = objectMapper.readValue(responseJsonString, EmpresaResponseDTO.class);
         
         assertNotNull(resultado.getId());
         assertEquals(empresaPostPutRequestDTO.getNome(), resultado.getNome());
@@ -186,7 +187,7 @@ public class EmpresaControllerTests {
                 .andDo(print())
                 .andReturn().getResponse().getContentAsString();
 
-        Empresa resultado = objectMapper.readValue(responseJsonString, Empresa.class);
+        EmpresaResponseDTO resultado = objectMapper.readValue(responseJsonString, EmpresaResponseDTO.class);
         
         assertEquals("Empresa Atualizada", resultado.getNome());
     }
@@ -290,7 +291,7 @@ public class EmpresaControllerTests {
                 .andDo(print())
                 .andReturn().getResponse().getContentAsString();
 
-        Empresa resultado = objectMapper.readValue(responseJsonString, Empresa.class);
+        EmpresaResponseDTO resultado = objectMapper.readValue(responseJsonString, EmpresaResponseDTO.class);
 
         assertEquals(empresaSalva.getNome(), resultado.getNome());
         assertEquals(empresaSalva.getCnpj(), resultado.getCnpj());
@@ -321,7 +322,7 @@ public class EmpresaControllerTests {
                 .andDo(print())
                 .andReturn().getResponse().getContentAsString();
 
-        List<Empresa> resultado = objectMapper.readValue(responseJsonString, new TypeReference<List<Empresa>>() {});
+        List<EmpresaResponseDTO> resultado = objectMapper.readValue(responseJsonString, new TypeReference<List<EmpresaResponseDTO>>() {});
 
         assertEquals(1, resultado.size());
     }
