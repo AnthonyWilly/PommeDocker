@@ -477,39 +477,35 @@ public class EmpresaControllerTests {
 
         assertEquals("Empresa ja cadastrada!", resultado.getMessage());
     }
-
-    @Test
+@Test
     @DisplayName("Empresa aprova técnico com sucesso")
     void aprovarTecnicoComSucesso() throws Exception {
-        
         driver.perform(put(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/tecnicos/" + tecnicoPadrao.getId())
                         .param("codigoAcesso", CODIGO_ACESSO_PADRAO)
                         .param("aprovacao", "true") 
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andDo(print())
-                .andReturn().getResponse().getContentAsString();
-
-        Empresa empresaAtualizada = empresaRepository.findById(empresaPadrao.getId()).orElseThrow();
-        assertTrue(empresaAtualizada.getTecnicosAprovados().stream()
-                .anyMatch(t -> t.getId().equals(tecnicoPadrao.getId())));
+                .andExpect(status().isOk());
+        Tecnico tecnicoAtualizado = tecnicoRepository.findById(tecnicoPadrao.getId()).orElseThrow();
+        assertTrue(tecnicoAtualizado.getEmpresasAprovadoras().contains(empresaPadrao));
+        assertTrue(tecnicoAtualizado.isAprovado());
     }
 
     @Test
-    @DisplayName("Empresa rejeita (remove) técnico com sucesso")
+    @DisplayName("Empresa rejeita técnico com sucesso")
     void rejeitarTecnicoComSucesso() throws Exception {
-        empresaPadrao.getTecnicosAprovados().add(tecnicoPadrao);
-        empresaRepository.save(empresaPadrao);
+        tecnicoPadrao.getEmpresasAprovadoras().add(empresaPadrao);
+        tecnicoRepository.save(tecnicoPadrao);
 
         driver.perform(put(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/tecnicos/" + tecnicoPadrao.getId())
                         .param("codigoAcesso", CODIGO_ACESSO_PADRAO)
                         .param("aprovacao", "false")
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andDo(print());
+                .andExpect(status().isOk());
 
-        Empresa empresaAtualizada = empresaRepository.findById(empresaPadrao.getId()).orElseThrow();
-        assertFalse(empresaAtualizada.getTecnicosAprovados().contains(tecnicoPadrao));
+        Tecnico tecnicoAtualizado = tecnicoRepository.findById(tecnicoPadrao.getId()).orElseThrow();
+        
+        assertFalse(tecnicoAtualizado.getEmpresasAprovadoras().contains(empresaPadrao));
+        assertFalse(tecnicoAtualizado.isAprovado());
     }
 
     @Test
