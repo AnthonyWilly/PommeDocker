@@ -19,7 +19,7 @@ public class EmpresaController {
 
     private final EmpresaService empresaService;
     @PostMapping
-    public ResponseEntity<Empresa> criarEmpresa(@RequestBody @Valid EmpresaPostPutRequestDTO dto) {
+    public ResponseEntity<Empresa> cadastrarEmpresa(@RequestBody @Valid EmpresaPostPutRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(empresaService.cadastrar(dto));
     }
 

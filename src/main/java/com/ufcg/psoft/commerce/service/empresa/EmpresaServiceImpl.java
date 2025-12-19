@@ -21,7 +21,7 @@ public class EmpresaServiceImpl implements EmpresaService {
     private static final String SENHA_ADMIN_PADRAO = "admin123";
 
     @Override
-    public Empresa criar(EmpresaPostPutRequestDTO dto) {
+    public Empresa cadastrar(EmpresaPostPutRequestDTO dto) {
         validarSenhaAdmin(dto.getSenhaAdmin());
 
         if (empresaRepository.findByCnpj(dto.getCnpj()).isPresent()) {

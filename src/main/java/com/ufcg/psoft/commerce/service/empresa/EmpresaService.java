@@ -5,7 +5,7 @@ import com.ufcg.psoft.commerce.model.Empresa;
 import java.util.List;
 
 public interface EmpresaService {
-    Empresa criar(EmpresaPostPutRequestDTO dto);
+    Empresa cadastrar(EmpresaPostPutRequestDTO dto);
     Empresa recuperar(Long id);
     List<Empresa> listar();
     Empresa alterar(Long id, String codigoAcesso, EmpresaPostPutRequestDTO dto);
