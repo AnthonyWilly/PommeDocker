@@ -7,6 +7,8 @@ import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
 import com.ufcg.psoft.commerce.exception.CustomErrorType;
 import com.ufcg.psoft.commerce.model.Empresa;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
+import com.ufcg.psoft.commerce.model.Tecnico;
+import com.ufcg.psoft.commerce.repository.TecnicoRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -47,6 +49,11 @@ public class EmpresaControllerTests {
     Empresa empresaPadrao;
     EmpresaPostPutRequestDTO empresaPostPutRequestDTO;
 
+    @Autowired
+    TecnicoRepository tecnicoRepository;
+
+    Tecnico tecnicoPadrao;
+
     @BeforeEach
     void setup() {
         objectMapper.registerModule(new JavaTimeModule());
@@ -64,10 +71,20 @@ public class EmpresaControllerTests {
                 .codigoAcesso(empresaPadrao.getCodigoAcesso())
                 .senhaAdmin(SENHA_ADMIN)
                 .build();
+        
+        tecnicoPadrao = tecnicoRepository.save(Tecnico.builder()
+                .nome("Tecnico Teste")
+                .acesso("123456")
+                .tipoVeiculo(TipoVeiculo.CARRO)
+                .placaVeiculo("XYZ-1234")
+                .corVeiculo("Branco")
+                .especialidade("Geral")
+                .build());
     }
 
     @AfterEach
     void tearDown() {
+        tecnicoRepository.deleteAll();
         empresaRepository.deleteAll();
     }
 
@@ -459,4 +476,62 @@ public class EmpresaControllerTests {
 
         assertEquals("Empresa ja cadastrada!", resultado.getMessage());
     }
+
+    @Test
+    @DisplayName("Empresa aprova técnico com sucesso")
+    void aprovarTecnicoComSucesso() throws Exception {
+        
+        driver.perform(put(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/tecnicos/" + tecnicoPadrao.getId())
+                        .param("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                        .param("aprovacao", "true") 
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andDo(print())
+                .andReturn().getResponse().getContentAsString();
+
+        Empresa empresaAtualizada = empresaRepository.findById(empresaPadrao.getId()).orElseThrow();
+        assertTrue(empresaAtualizada.getTecnicosAprovados().stream()
+                .anyMatch(t -> t.getId().equals(tecnicoPadrao.getId())));
+    }
+
+    @Test
+    @DisplayName("Empresa rejeita (remove) técnico com sucesso")
+    void rejeitarTecnicoComSucesso() throws Exception {
+        empresaPadrao.getTecnicosAprovados().add(tecnicoPadrao);
+        empresaRepository.save(empresaPadrao);
+
+        driver.perform(put(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/tecnicos/" + tecnicoPadrao.getId())
+                        .param("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                        .param("aprovacao", "false")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andDo(print());
+
+        Empresa empresaAtualizada = empresaRepository.findById(empresaPadrao.getId()).orElseThrow();
+        assertFalse(empresaAtualizada.getTecnicosAprovados().contains(tecnicoPadrao));
+    }
+
+    @Test
+    @DisplayName("Tentar aprovar técnico com código de acesso errado")
+    void aprovarTecnicoSenhaErrada() throws Exception {
+        driver.perform(put(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/tecnicos/" + tecnicoPadrao.getId())
+                        .param("codigoAcesso", "000000")
+                        .param("aprovacao", "true")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> assertTrue(result.getResolvedException() instanceof CodigoDeAcessoInvalidoException))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("Tentar aprovar técnico inexistente")
+    void aprovarTecnicoInexistente() throws Exception {
+        driver.perform(put(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/tecnicos/" + 999999)
+                        .param("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                        .param("aprovacao", "true")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andDo(print());
+    }
+
 }
