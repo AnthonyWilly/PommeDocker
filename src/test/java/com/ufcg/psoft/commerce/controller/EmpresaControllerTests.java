@@ -74,6 +74,8 @@ public class EmpresaControllerTests {
     @Test
     @DisplayName("Criar empresa com sucesso")
     void criarEmpresaComSucesso() throws Exception {
+        empresaPostPutRequestDTO.setCnpj("99.999.999/0001-99");
+
         String responseJsonString = driver.perform(post(URI_EMPRESAS)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(empresaPostPutRequestDTO)))
@@ -400,6 +402,7 @@ public class EmpresaControllerTests {
                 .cnpj(CNPJ_PADRAO)
                 .codigoAcesso(CODIGO_ACESSO_PADRAO)
                 .senhaAdmin(SENHA_ADMIN)
+                .nome("Teste") 
                 .build();
 
         String responseJsonString = driver.perform(delete(URI_EMPRESAS + "/99999")
