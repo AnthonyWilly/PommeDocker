@@ -598,7 +598,7 @@ public class ClienteControllerTests {
         @Test
         @DisplayName("Deve alterar o plano para Premium com dados Validos")
         void quandoAlteramosPlanoParaPremium() throws Exception {
-            String uri = URI_CLIENTES + "/" + cliente.getId() + "/plano";
+            String uri = URI_CLIENTES + "/" + cliente.getId() + URI_PLANO;
             String responseJsonString = driver.perform(patch(uri)
                             .contentType(MediaType.APPLICATION_JSON)
                             .param("codigo", cliente.getCodigo())
@@ -617,7 +617,7 @@ public class ClienteControllerTests {
             cliente.setPlanoAtual("Premium");
             cliente.setProxPlano(null);
             cliente = clienteRepository.save(cliente);
-            String uri = URI_CLIENTES + "/" + cliente.getId() + "/plano";
+            String uri = URI_CLIENTES + "/" + cliente.getId() + URI_PLANO;
             String responseJsonString = driver.perform(patch(uri)
                             .contentType(MediaType.APPLICATION_JSON)
                             .param("codigo", cliente.getCodigo())
@@ -635,7 +635,7 @@ public class ClienteControllerTests {
         @DisplayName("Deve falhar ao alterar plano de cliente inexistente")
         void quandoAlteramosPlanoClienteInexistente() throws Exception {
             Long idInexistente = 999999L;
-            String uri = URI_CLIENTES + "/" + idInexistente + "/plano";
+            String uri = URI_CLIENTES + "/" + idInexistente + URI_PLANO;
             String responseJsonString = driver.perform(patch(uri)
                             .contentType(MediaType.APPLICATION_JSON)
                             .param("codigo", "123456")
@@ -652,7 +652,7 @@ public class ClienteControllerTests {
     void quandoAlteramosParaPremiumCodigoInvalido() throws Exception {
         // Arrange
         String codigoInvalido = "000000";
-        String uri = URI_CLIENTES + "/" + cliente.getId() + "/plano";
+        String uri = URI_CLIENTES + "/" + cliente.getId() + URI_PLANO;
 
         // Act
         String responseJsonString = driver.perform(patch(uri)
@@ -674,7 +674,7 @@ public class ClienteControllerTests {
     void quandoAlteramosParaBasicoCodigoInvalido() throws Exception {
         // Arrange
         String codigoInvalido = "000000";
-        String uri = URI_CLIENTES + "/" + cliente.getId() + "/plano";
+        String uri = URI_CLIENTES + "/" + cliente.getId() + URI_PLANO;
 
         // Act
         String responseJsonString = driver.perform(patch(uri)
@@ -696,7 +696,7 @@ public class ClienteControllerTests {
     void quandoAlteramosPlanoBasicoClienteInexistente() throws Exception {
         // Arrange
         Long idInexistente = 999999L;
-        String uri = URI_CLIENTES + "/" + idInexistente + "/plano";
+        String uri = URI_CLIENTES + "/" + idInexistente + URI_PLANO;
 
         // Act
         String responseJsonString = driver.perform(patch(uri)
@@ -718,7 +718,7 @@ public class ClienteControllerTests {
     void quandoPassamosTipoPlanoInvalido() throws Exception {
         // Arrange
         String planoInexistente = "PlanoNaoExiste";
-        String uri = URI_CLIENTES + "/" + cliente.getId() + "/plano";
+        String uri = URI_CLIENTES + "/" + cliente.getId() + URI_PLANO;
 
         // Act
         String responseJsonString = driver.perform(patch(uri)
