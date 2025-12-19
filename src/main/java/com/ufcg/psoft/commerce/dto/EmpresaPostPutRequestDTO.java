@@ -16,9 +16,12 @@ public class EmpresaPostPutRequestDTO {
     @NotBlank(message = "CNPJ obrigatorio")
     private String cnpj;
 
+
+    @NotBlank(message = "O código de acesso é obrigatório")
     @Pattern(regexp = "^\\d+$", message = "Codigo de acesso deve conter apenas digitos")
     @Size(min = 6, max = 6, message = "Codigo de acesso deve ter exatamente 6 digitos")
-    private String codigoAcesso;
+private String codigoAcesso;
+
 
     @NotBlank(message = "Senha de administrador obrigatoria")
     private String senhaAdmin;
