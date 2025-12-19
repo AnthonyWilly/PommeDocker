@@ -9,6 +9,7 @@ import com.ufcg.psoft.commerce.exception.CustomErrorType;
 import com.ufcg.psoft.commerce.model.Empresa;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
 import com.ufcg.psoft.commerce.model.Tecnico;
+import com.ufcg.psoft.commerce.model.TipoVeiculo;
 import com.ufcg.psoft.commerce.repository.TecnicoRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -477,8 +478,9 @@ public class EmpresaControllerTests {
 
         assertEquals("Empresa ja cadastrada!", resultado.getMessage());
     }
-@Test
+    @Test
     @DisplayName("Empresa aprova técnico com sucesso")
+    @org.springframework.transaction.annotation.Transactional
     void aprovarTecnicoComSucesso() throws Exception {
         driver.perform(put(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/tecnicos/" + tecnicoPadrao.getId())
                         .param("codigoAcesso", CODIGO_ACESSO_PADRAO)
@@ -488,10 +490,9 @@ public class EmpresaControllerTests {
         Tecnico tecnicoAtualizado = tecnicoRepository.findById(tecnicoPadrao.getId()).orElseThrow();
         assertTrue(tecnicoAtualizado.getEmpresasAprovadoras().contains(empresaPadrao));
         assertTrue(tecnicoAtualizado.isAprovado());
-    }
-
-    @Test
+    }    @Test
     @DisplayName("Empresa rejeita técnico com sucesso")
+    @org.springframework.transaction.annotation.Transactional
     void rejeitarTecnicoComSucesso() throws Exception {
         tecnicoPadrao.getEmpresasAprovadoras().add(empresaPadrao);
         tecnicoRepository.save(tecnicoPadrao);

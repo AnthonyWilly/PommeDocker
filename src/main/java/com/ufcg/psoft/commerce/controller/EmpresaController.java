@@ -43,4 +43,18 @@ public class EmpresaController {
         empresaService.remover(id, dto.getCodigoAcesso(), dto.getSenhaAdmin());
         return ResponseEntity.noContent().build();
     }
+
+    @PutMapping("/{empresaId}/tecnicos/{tecnicoId}")
+    public ResponseEntity<Void> aprovarOuRejeitarTecnico(
+            @PathVariable Long empresaId,
+            @PathVariable Long tecnicoId,
+            @RequestParam String codigoAcesso,
+            @RequestParam Boolean aprovacao) {
+        if (aprovacao) {
+            empresaService.aprovarTecnico(empresaId, tecnicoId, codigoAcesso);
+        } else {
+            empresaService.rejeitarTecnico(empresaId, tecnicoId, codigoAcesso);
+        }
+        return ResponseEntity.ok().build();
+    }
 }

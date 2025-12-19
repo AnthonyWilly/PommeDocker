@@ -10,4 +10,6 @@ public interface EmpresaService {
     List<EmpresaResponseDTO> listar();
     EmpresaResponseDTO alterar(Long id, String codigoAcesso, EmpresaPostPutRequestDTO dto);
     void remover(Long id, String codigoAcesso, String senhaAdmin);
+    void aprovarTecnico(Long empresaId, Long tecnicoId, String codigoAcesso);
+    void rejeitarTecnico(Long empresaId, Long tecnicoId, String codigoAcesso);
 }

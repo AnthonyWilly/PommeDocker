@@ -8,6 +8,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Data
 @Builder
@@ -43,6 +46,18 @@ public class Tecnico {
     @Column(nullable = false)
     private String acesso;
 
+    @JsonIgnore
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "tecnico_empresa_aprovacao",
+        joinColumns = @JoinColumn(name = "tecnico_id"),
+        inverseJoinColumns = @JoinColumn(name = "empresa_id")
+    )
+    @Builder.Default
+    private List<Empresa> empresasAprovadoras = new ArrayList<>();
 
+    public boolean isAprovado() {
+        return !empresasAprovadoras.isEmpty();
+    }
 }
 
