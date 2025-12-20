@@ -102,10 +102,8 @@ public class EmpresaServiceImpl implements EmpresaService {
     public void aprovarTecnico(Long empresaId, Long tecnicoId, String codigoAcesso) {
         Empresa empresa = buscarEmpresaPeloId(empresaId);
         validarCodigoAcesso(empresa, codigoAcesso);
-        
         Tecnico tecnico = tecnicoRepository.findById(tecnicoId)
                 .orElseThrow(TecnicoNaoExisteException::new);
-        
         if (!tecnico.getEmpresasAprovadoras().contains(empresa)) {
             tecnico.getEmpresasAprovadoras().add(empresa);
             tecnicoRepository.save(tecnico);
