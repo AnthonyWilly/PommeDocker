@@ -1,18 +1,14 @@
 package com.ufcg.psoft.commerce.service.cliente;
 
+import com.ufcg.psoft.commerce.dto.ClientePlanoPostPutRequestDTO;
+import com.ufcg.psoft.commerce.dto.ClientePostPutRequestDTO;
+import com.ufcg.psoft.commerce.dto.ClienteResponseDTO;
 import com.ufcg.psoft.commerce.exception.ClienteNaoExisteException;
 import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
 import com.ufcg.psoft.commerce.exception.CommerceException;
+import com.ufcg.psoft.commerce.model.*;
 import com.ufcg.psoft.commerce.repository.ClienteRepository;
 import com.ufcg.psoft.commerce.repository.HistoricoPlanoRepository;
-import com.ufcg.psoft.commerce.dto.ClientePostPutRequestDTO;
-import com.ufcg.psoft.commerce.dto.ClienteResponseDTO;
-import com.ufcg.psoft.commerce.model.Cliente;
-import com.ufcg.psoft.commerce.model.HistoricoPlano;
-import com.ufcg.psoft.commerce.model.Plano;
-import com.ufcg.psoft.commerce.model.PlanoBasico;
-import com.ufcg.psoft.commerce.model.PlanoPremium;
-
 import jakarta.annotation.PostConstruct;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,18 +28,17 @@ public class ClienteServiceImpl implements ClienteService {
 
     @Autowired
     ModelMapper modelMapper;
-     
+  
     @Autowired
     private PlanoBasico planoBasico;
-
+  
     @Autowired
     private PlanoPremium planoPremium;
-
+  
     @Autowired
-    private Map<String, Plano> estrategias = new HashMap<String, Plano>();
-
-    @Autowired
-    private HistoricoPlanoRepository historicoRepository;
+    private HistoricoPlanoRepository  historicoRepository;
+  
+    private Map<String, Plano> estrategias = new HashMap<>();
 
     @PostConstruct
     public void inicializarMapaDePlanos() {
@@ -104,7 +99,7 @@ public class ClienteServiceImpl implements ClienteService {
     }
 
     private ClienteResponseDTO alterarPlano(Long id, String codigoAcesso, String novoPlano) {
-        Cliente cliente = buscarValidandoAcesso(id, codigoAcesso); //NÃO DEVERIA TER UM TRYCATH? JÁ QUE PODE LANÇAR EXCEÇÃO?
+        Cliente cliente = buscarValidandoAcesso(id, codigoAcesso);
         if (!estrategias.containsKey(novoPlano))
             throw new CommerceException("Plano não encontrado: " + novoPlano);
         HistoricoPlano historico = criarHistorico(cliente.getId(), cliente.getPlanoAtual());

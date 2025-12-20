@@ -19,6 +19,7 @@ public class ClienteResponseDTO {
 
     @JsonProperty("id")
     @Id
+    @NotBlank(message = "Id obrigatorio")
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long id;
 
@@ -41,5 +42,10 @@ public class ClienteResponseDTO {
         this.id = cliente.getId();
         this.nome = cliente.getNome();
         this.endereco = cliente.getEndereco();
+        this.planoAtual = cliente.getPlanoAtual();
+        this.proxPlano = cliente.getProxPlano();
     }
 }
+
+
+

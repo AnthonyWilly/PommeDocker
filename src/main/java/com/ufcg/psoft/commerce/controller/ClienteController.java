@@ -1,6 +1,7 @@
 package com.ufcg.psoft.commerce.controller;
 
 import com.ufcg.psoft.commerce.dto.ClientePostPutRequestDTO;
+import com.ufcg.psoft.commerce.dto.ClienteResponseDTO;
 import com.ufcg.psoft.commerce.service.cliente.ClienteService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,9 +1,9 @@
 package com.ufcg.psoft.commerce.model;
+import org.springframework.stereotype.Component;
+
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.springframework.stereotype.Component;
 
 @Component("Basico")
 public class PlanoBasico implements Plano {

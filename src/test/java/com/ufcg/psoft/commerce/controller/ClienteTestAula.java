@@ -11,6 +11,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -40,27 +41,34 @@ public class ClienteTestAula {
     @BeforeEach
     void setup() {
         // Object Mapper suporte para LocalDateTime
-        objectMapper.registerModule(new JavaTimeModule());
-        Cliente cliente1 = clienteRepository.save(Cliente.builder()
-                .nome("Cliente")
-                .endereco("Rua 123")
-                .codigo("123456")
-                .build()
+        Cliente cliente1 = clienteRepository.save(
+                Cliente.builder()
+                        .nome("Cliente")
+                        .endereco("Rua 123")
+                        .codigo("123456")
+                        .planoAtual("Basico")
+                        .dataCobranca(LocalDate.now())
+                        .build()
         );
 
-        Cliente cliente2 = clienteRepository.save(Cliente.builder()
-                .nome("Clienta")
-                .endereco("Rua 234")
-                .codigo("123456")
-                .build()
+        Cliente cliente2 = clienteRepository.save(
+                Cliente.builder()
+                        .nome("Clienta")
+                        .endereco("Rua 234")
+                        .codigo("123456")
+                        .planoAtual("Basico")
+                        .dataCobranca(LocalDate.now())
+                        .build()
         );
 
         ClienteResponseDTO r1 = ClienteResponseDTO.builder()
+                .id(cliente1.getId())
                 .nome(cliente1.getNome())
                 .endereco(cliente1.getEndereco())
-                .id(cliente1.getId())
+                .planoAtual(cliente1.getPlanoAtual())
                 .build();
 
+        clientesDTO = new ArrayList<>();
         clientesDTO.add(r1);
     }
 
