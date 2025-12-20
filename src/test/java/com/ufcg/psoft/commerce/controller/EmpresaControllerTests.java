@@ -3,10 +3,14 @@ package com.ufcg.psoft.commerce.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.ufcg.psoft.commerce.dto.EmpresaPostPutRequestDTO;
+import com.ufcg.psoft.commerce.dto.EmpresaResponseDTO;
 import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
 import com.ufcg.psoft.commerce.exception.CustomErrorType;
 import com.ufcg.psoft.commerce.model.Empresa;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
+import com.ufcg.psoft.commerce.model.Tecnico;
+import com.ufcg.psoft.commerce.model.TipoVeiculo;
+import com.ufcg.psoft.commerce.repository.TecnicoRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -47,6 +51,11 @@ public class EmpresaControllerTests {
     Empresa empresaPadrao;
     EmpresaPostPutRequestDTO empresaPostPutRequestDTO;
 
+    @Autowired
+    TecnicoRepository tecnicoRepository;
+
+    Tecnico tecnicoPadrao;
+
     @BeforeEach
     void setup() {
         objectMapper.registerModule(new JavaTimeModule());
@@ -64,10 +73,20 @@ public class EmpresaControllerTests {
                 .codigoAcesso(empresaPadrao.getCodigoAcesso())
                 .senhaAdmin(SENHA_ADMIN)
                 .build();
+        
+        tecnicoPadrao = tecnicoRepository.save(Tecnico.builder()
+                .nome("Tecnico Teste")
+                .acesso("123456")
+                .tipoVeiculo(TipoVeiculo.CARRO)
+                .placaVeiculo("XYZ-1234")
+                .corVeiculo("Branco")
+                .especialidade("Geral")
+                .build());
     }
 
     @AfterEach
     void tearDown() {
+        tecnicoRepository.deleteAll();
         empresaRepository.deleteAll();
     }
 
@@ -83,7 +102,7 @@ public class EmpresaControllerTests {
                 .andDo(print())
                 .andReturn().getResponse().getContentAsString();
 
-        Empresa resultado = objectMapper.readValue(responseJsonString, Empresa.class);
+        EmpresaResponseDTO resultado = objectMapper.readValue(responseJsonString, EmpresaResponseDTO.class);
         
         assertNotNull(resultado.getId());
         assertEquals(empresaPostPutRequestDTO.getNome(), resultado.getNome());
@@ -169,7 +188,7 @@ public class EmpresaControllerTests {
                 .andDo(print())
                 .andReturn().getResponse().getContentAsString();
 
-        Empresa resultado = objectMapper.readValue(responseJsonString, Empresa.class);
+        EmpresaResponseDTO resultado = objectMapper.readValue(responseJsonString, EmpresaResponseDTO.class);
         
         assertEquals("Empresa Atualizada", resultado.getNome());
     }
@@ -273,7 +292,7 @@ public class EmpresaControllerTests {
                 .andDo(print())
                 .andReturn().getResponse().getContentAsString();
 
-        Empresa resultado = objectMapper.readValue(responseJsonString, Empresa.class);
+        EmpresaResponseDTO resultado = objectMapper.readValue(responseJsonString, EmpresaResponseDTO.class);
 
         assertEquals(empresaSalva.getNome(), resultado.getNome());
         assertEquals(empresaSalva.getCnpj(), resultado.getCnpj());
@@ -304,7 +323,7 @@ public class EmpresaControllerTests {
                 .andDo(print())
                 .andReturn().getResponse().getContentAsString();
 
-        List<Empresa> resultado = objectMapper.readValue(responseJsonString, new TypeReference<List<Empresa>>() {});
+        List<EmpresaResponseDTO> resultado = objectMapper.readValue(responseJsonString, new TypeReference<List<EmpresaResponseDTO>>() {});
 
         assertEquals(1, resultado.size());
     }
@@ -459,4 +478,58 @@ public class EmpresaControllerTests {
 
         assertEquals("Empresa ja cadastrada!", resultado.getMessage());
     }
+    @Test
+    @DisplayName("Empresa aprova técnico com sucesso")
+    @org.springframework.transaction.annotation.Transactional
+    void aprovarTecnicoComSucesso() throws Exception {
+        driver.perform(put(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/tecnicos/" + tecnicoPadrao.getId())
+                        .param("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                        .param("aprovacao", "true") 
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+        Tecnico tecnicoAtualizado = tecnicoRepository.findById(tecnicoPadrao.getId()).orElseThrow();
+        assertTrue(tecnicoAtualizado.getEmpresasAprovadoras().contains(empresaPadrao));
+        assertTrue(tecnicoAtualizado.isAprovado());
+    }    @Test
+    @DisplayName("Empresa rejeita técnico com sucesso")
+    @org.springframework.transaction.annotation.Transactional
+    void rejeitarTecnicoComSucesso() throws Exception {
+        tecnicoPadrao.getEmpresasAprovadoras().add(empresaPadrao);
+        tecnicoRepository.save(tecnicoPadrao);
+
+        driver.perform(put(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/tecnicos/" + tecnicoPadrao.getId())
+                        .param("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                        .param("aprovacao", "false")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        Tecnico tecnicoAtualizado = tecnicoRepository.findById(tecnicoPadrao.getId()).orElseThrow();
+        
+        assertFalse(tecnicoAtualizado.getEmpresasAprovadoras().contains(empresaPadrao));
+        assertFalse(tecnicoAtualizado.isAprovado());
+    }
+
+    @Test
+    @DisplayName("Tentar aprovar técnico com código de acesso errado")
+    void aprovarTecnicoSenhaErrada() throws Exception {
+        driver.perform(put(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/tecnicos/" + tecnicoPadrao.getId())
+                        .param("codigoAcesso", "000000")
+                        .param("aprovacao", "true")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> assertTrue(result.getResolvedException() instanceof CodigoDeAcessoInvalidoException))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("Tentar aprovar técnico inexistente")
+    void aprovarTecnicoInexistente() throws Exception {
+        driver.perform(put(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/tecnicos/" + 999999)
+                        .param("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                        .param("aprovacao", "true")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andDo(print());
+    }
+
 }

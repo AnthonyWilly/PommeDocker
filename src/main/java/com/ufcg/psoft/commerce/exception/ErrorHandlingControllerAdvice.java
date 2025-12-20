@@ -57,6 +57,13 @@ public class ErrorHandlingControllerAdvice {
         return defaultCustomErrorTypeConstruct(e.getMessage());
     }
 
+    @ExceptionHandler(TecnicoNaoExisteException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ResponseBody
+    public CustomErrorType onTecnicoNaoExisteException(TecnicoNaoExisteException e) {
+        return defaultCustomErrorTypeConstruct(e.getMessage());
+    }
+
     @ExceptionHandler(SenhaInvalidaException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     @ResponseBody

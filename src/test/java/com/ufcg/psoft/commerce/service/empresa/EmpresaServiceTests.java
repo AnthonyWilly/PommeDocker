@@ -1,6 +1,7 @@
 package com.ufcg.psoft.commerce.service.empresa;
 
 import com.ufcg.psoft.commerce.dto.EmpresaPostPutRequestDTO;
+import com.ufcg.psoft.commerce.dto.EmpresaResponseDTO;
 import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
 import com.ufcg.psoft.commerce.model.Empresa;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
@@ -55,7 +56,7 @@ public class EmpresaServiceTests {
     void testCadastrarEmpresaSucesso() {
         when(empresaRepository.save(any(Empresa.class))).thenReturn(empresa);
 
-        Empresa resultado = empresaService.cadastrar(empresaDTO);
+        EmpresaResponseDTO resultado = empresaService.cadastrar(empresaDTO);
 
         assertNotNull(resultado);
         assertEquals(empresa.getNome(), resultado.getNome());
@@ -68,7 +69,7 @@ public class EmpresaServiceTests {
     void testRecuperarEmpresaSucesso() {
         when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
 
-        Empresa resultado = empresaService.recuperar(1L);
+        EmpresaResponseDTO resultado = empresaService.recuperar(1L);
 
         assertNotNull(resultado);
         assertEquals(empresa.getId(), resultado.getId());
@@ -81,7 +82,7 @@ public class EmpresaServiceTests {
         when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
         when(empresaRepository.save(any(Empresa.class))).thenReturn(empresa);
 
-        Empresa resultado = empresaService.alterar(1L, "123456", empresaDTO);
+        EmpresaResponseDTO resultado = empresaService.alterar(1L, "123456", empresaDTO);
 
         assertNotNull(resultado);
         assertEquals(empresa.getNome(), resultado.getNome());
