@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.time.LocalDate;
 
 import java.time.LocalDate;
 
@@ -15,6 +16,7 @@ import java.time.LocalDate;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Table(name = "clientes")
 public class Cliente {
 
     @JsonProperty("id")
@@ -43,6 +45,10 @@ public class Cliente {
 
     @JsonIgnore
     @Column(nullable = false)
+    private LocalDate dataCobranca;
+
+    @JsonIgnore
+    @Column(nullable = false, length = 6)
     private String codigo;
 
     public void setPlanoPremium(String senha) {

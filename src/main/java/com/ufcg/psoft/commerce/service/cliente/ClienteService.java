@@ -19,6 +19,9 @@ public interface ClienteService {
     void remover(Long id, String codigoAcesso);
 
     List<ClienteResponseDTO> listarPorNome(String nome);
-    ClienteResponseDTO setPlanoPremium(long id , String codigoAcesso);
-    ClienteResponseDTO setPlanoBasico(long id ,String codigoAcesso);
+
+    ClienteResponseDTO setPlanoPremium(long id, String codigoAcesso);
+
+    ClienteResponseDTO setPlanoBasico(long id, String codigoAcesso);
+
 }

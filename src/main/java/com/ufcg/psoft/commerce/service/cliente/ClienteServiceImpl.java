@@ -1,13 +1,13 @@
 package com.ufcg.psoft.commerce.service.cliente;
 
 import com.ufcg.psoft.commerce.dto.ClientePlanoPostPutRequestDTO;
+import com.ufcg.psoft.commerce.dto.ClientePostPutRequestDTO;
+import com.ufcg.psoft.commerce.dto.ClienteResponseDTO;
 import com.ufcg.psoft.commerce.exception.ClienteNaoExisteException;
 import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
 import com.ufcg.psoft.commerce.exception.CommerceException;
 import com.ufcg.psoft.commerce.model.*;
 import com.ufcg.psoft.commerce.repository.ClienteRepository;
-import com.ufcg.psoft.commerce.dto.ClientePostPutRequestDTO;
-import com.ufcg.psoft.commerce.dto.ClienteResponseDTO;
 import com.ufcg.psoft.commerce.repository.HistoricoPlanoRepository;
 import jakarta.annotation.PostConstruct;
 import org.modelmapper.ModelMapper;
@@ -25,14 +25,19 @@ public class ClienteServiceImpl implements ClienteService {
 
     @Autowired
     ClienteRepository clienteRepository;
+
     @Autowired
     ModelMapper modelMapper;
+  
     @Autowired
     private PlanoBasico planoBasico;
+  
     @Autowired
     private PlanoPremium planoPremium;
+  
     @Autowired
     private HistoricoPlanoRepository  historicoRepository;
+  
     private Map<String, Plano> estrategias = new HashMap<>();
 
     @PostConstruct
@@ -92,10 +97,11 @@ public class ClienteServiceImpl implements ClienteService {
         Cliente cliente = clienteRepository.findById(id).orElseThrow(ClienteNaoExisteException::new);
         return new ClienteResponseDTO(cliente);
     }
+
     private ClienteResponseDTO alterarPlano(Long id, String codigoAcesso, String novoPlano) {
         Cliente cliente = buscarValidandoAcesso(id, codigoAcesso);
         if (!estrategias.containsKey(novoPlano))
-            throw new CommerceException("Plano inválido");
+            throw new CommerceException("Plano não encontrado: " + novoPlano);
         HistoricoPlano historico = criarHistorico(cliente.getId(), cliente.getPlanoAtual());
         historicoRepository.save(historico);
         cliente.setProxPlano(novoPlano);
@@ -113,13 +119,14 @@ public class ClienteServiceImpl implements ClienteService {
         return alterarPlano(id, codigoAcesso, "Basico");
     }
 
-    private HistoricoPlano criarHistorico(long idCliente, String plano){
+    private HistoricoPlano criarHistorico(long idCliente, String plano) {
         HistoricoPlano h = new HistoricoPlano();
         h.setIdCliente(idCliente);
         h.setIdPlanoAntigo(plano);
         h.setData(LocalDate.now());
         return h;
     }
+
     private Cliente buscarValidandoAcesso(Long id, String codigoAcesso) {
         Cliente cliente = clienteRepository.findById(id).orElseThrow(ClienteNaoExisteException::new);
         if (!cliente.getCodigo().equals(codigoAcesso))
