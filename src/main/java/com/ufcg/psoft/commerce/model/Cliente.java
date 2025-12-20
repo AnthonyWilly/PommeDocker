@@ -7,12 +7,16 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.time.LocalDate;
+
+import java.time.LocalDate;
 
 @Entity
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Table(name = "clientes")
 public class Cliente {
 
     @JsonProperty("id")
@@ -28,7 +32,31 @@ public class Cliente {
     @Column(nullable = false)
     private String endereco;
 
-    @JsonIgnore
+    @JsonProperty("planoAtual")
     @Column(nullable = false)
+    private String planoAtual;
+
+    @JsonProperty("proxPlano")
+    private String proxPlano;
+
+    @JsonProperty("dataCobranca")
+    @Column(nullable = false)
+    private LocalDate dataCobranca;
+
+    @JsonIgnore
+    @Column(nullable = false, length = 6)
     private String codigo;
+
+    public void setPlanoPremium(String senha) {
+        this.setPlano("Premium", senha);
+    }
+    public void setPlanoBasico(String senha) {
+        this.setPlano("Basico", senha);
+    }
+    private void setPlano(String plano, String senha){
+        if (!this.codigo.equals(senha)) {
+            throw new IllegalArgumentException("Codigo de acesso invalido!");
+        }
+        this.proxPlano = plano;
+    }
 }

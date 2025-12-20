@@ -19,6 +19,7 @@ public class ClienteResponseDTO {
 
     @JsonProperty("id")
     @Id
+    @NotBlank(message = "Id obrigatorio")
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long id;
 
@@ -30,9 +31,21 @@ public class ClienteResponseDTO {
     @NotBlank(message = "Endereco obrigatorio")
     private String endereco;
 
+    @JsonProperty("planoAtual")
+    @NotBlank(message = "Plano obrigatorio")
+    private String planoAtual;
+
+    @JsonProperty("proxPlano")
+    private String proxPlano;
+
     public ClienteResponseDTO(Cliente cliente) {
         this.id = cliente.getId();
         this.nome = cliente.getNome();
         this.endereco = cliente.getEndereco();
+        this.planoAtual = cliente.getPlanoAtual();
+        this.proxPlano = cliente.getProxPlano();
     }
 }
+
+
+
