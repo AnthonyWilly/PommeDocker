@@ -44,10 +44,6 @@ public class Cliente {
     private LocalDate dataCobranca;
 
     @JsonIgnore
-    @Column(nullable = false)
-    private LocalDate dataCobranca;
-
-    @JsonIgnore
     @Column(nullable = false, length = 6)
     private String codigo;
 

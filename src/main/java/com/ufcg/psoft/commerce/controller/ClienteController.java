@@ -79,6 +79,6 @@ public class ClienteController {
                         return ResponseEntity.ok(clienteService.setPlanoPremium(id, codigo));
                 if ("Basico".equalsIgnoreCase(tipoPlano))
                         return ResponseEntity.ok(clienteService.setPlanoBasico(id, codigo));
-                return ResponseEntity.badRequest().body("Plano inválido");
+                return ResponseEntity.badRequest().body("Plano invalido");
         }
 }

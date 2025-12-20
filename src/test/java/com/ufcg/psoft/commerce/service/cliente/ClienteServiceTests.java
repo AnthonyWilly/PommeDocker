@@ -159,7 +159,7 @@ public class ClienteServiceTests {
             assertEquals("Premium", cliente.getProxPlano());
             assertEquals("Basico", cliente.getPlanoAtual());
             verify(clienteRepository, times(1)).save(cliente);
-            verify(historicoPlanoRepository, times(1)).save(any());
+            verify(historicoRepository, times(1)).save(any());
         }
 
         @Test
@@ -175,7 +175,7 @@ public class ClienteServiceTests {
             assertEquals("Basico", cliente.getProxPlano());
             assertEquals("Premium", cliente.getPlanoAtual());
             verify(clienteRepository, times(1)).save(cliente);
-            verify(historicoPlanoRepository, times(1)).save(any());
+            verify(historicoRepository, times(1)).save(any());
         }
 
         @Test
