@@ -198,7 +198,13 @@ public class ClienteServiceTests {
         }
 
         @Test
-        @DisplayName("Deve remover cliente com código de acesso correto")
+        @DisplayName("Deve remover cliente com código
+            ClienteResponseDTO response =
+                    clienteService.setPlanoBasico(1L, "123456");
+
+            // Assert
+            assertAll(
+                    () -> assertNotNull(respon de acesso correto")
         void deveRemoverCliente() {
             when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente));
             clienteService.remover(1L, "123456");
