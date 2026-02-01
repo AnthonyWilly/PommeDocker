@@ -5,6 +5,7 @@ import com.ufcg.psoft.commerce.dto.EmpresaResponseDTO;
 import com.ufcg.psoft.commerce.dto.PagamentoRequestDTO;
 import com.ufcg.psoft.commerce.dto.PagamentoResponseDTO;
 import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
+import com.ufcg.psoft.commerce.exception.CommerceException;
 import com.ufcg.psoft.commerce.exception.EmpresaJaCadastradaException;
 import com.ufcg.psoft.commerce.exception.EmpresaNaoExisteException;
 import com.ufcg.psoft.commerce.exception.SenhaInvalidaException;

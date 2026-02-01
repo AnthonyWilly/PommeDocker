@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.ufcg.psoft.commerce.dto.EmpresaPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.EmpresaResponseDTO;
+import com.ufcg.psoft.commerce.dto.PagamentoRequestDTO;
+import com.ufcg.psoft.commerce.dto.PagamentoResponseDTO;
 import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
 import com.ufcg.psoft.commerce.exception.CustomErrorType;
 import com.ufcg.psoft.commerce.model.Empresa;
@@ -21,6 +23,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
+import java.math.BigDecimal;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -530,6 +533,112 @@ public class EmpresaControllerTests {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound())
                 .andDo(print());
+    }
+
+    @Test
+    @DisplayName("Pagamento credito nao aplica desconto")
+    void pagamentoCreditoSemDesconto() throws Exception {
+        PagamentoRequestDTO pagamentoRequest = PagamentoRequestDTO.builder()
+                .valorTotal(new BigDecimal("100.00"))
+                .metodoPagamento("Credito")
+                .build();
+
+        String responseJsonString = driver.perform(post(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/1/pagamentos")
+                        .param("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(pagamentoRequest)))
+                .andExpect(status().isOk())
+                .andDo(print())
+                .andReturn().getResponse().getContentAsString();
+
+        PagamentoResponseDTO resultado = objectMapper.readValue(responseJsonString, PagamentoResponseDTO.class);
+
+        assertEquals(new BigDecimal("100.00"), resultado.getValorFinal());
+    }
+
+    @Test
+    @DisplayName("Pagamento debito aplica 2,5% de desconto")
+    void pagamentoDebitoComDesconto() throws Exception {
+        PagamentoRequestDTO pagamentoRequest = PagamentoRequestDTO.builder()
+                .valorTotal(new BigDecimal("100.00"))
+                .metodoPagamento("Debito")
+                .build();
+
+        String responseJsonString = driver.perform(post(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/2/pagamentos")
+                        .param("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(pagamentoRequest)))
+                .andExpect(status().isOk())
+                .andDo(print())
+                .andReturn().getResponse().getContentAsString();
+
+        PagamentoResponseDTO resultado = objectMapper.readValue(responseJsonString, PagamentoResponseDTO.class);
+
+        assertEquals(new BigDecimal("97.50"), resultado.getValorFinal());
+    }
+
+    @Test
+    @DisplayName("Pagamento pix aplica 5% de desconto")
+    void pagamentoPixComDesconto() throws Exception {
+        PagamentoRequestDTO pagamentoRequest = PagamentoRequestDTO.builder()
+                .valorTotal(new BigDecimal("100.00"))
+                .metodoPagamento("Pix")
+                .build();
+
+        String responseJsonString = driver.perform(post(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/3/pagamentos")
+                        .param("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(pagamentoRequest)))
+                .andExpect(status().isOk())
+                .andDo(print())
+                .andReturn().getResponse().getContentAsString();
+
+        PagamentoResponseDTO resultado = objectMapper.readValue(responseJsonString, PagamentoResponseDTO.class);
+
+        assertEquals(new BigDecimal("95.00"), resultado.getValorFinal());
+    }
+
+    @Test
+    @DisplayName("Pagamento com metodo invalido deve falhar")
+    void pagamentoMetodoInvalido() throws Exception {
+        PagamentoRequestDTO pagamentoRequest = PagamentoRequestDTO.builder()
+                .valorTotal(new BigDecimal("100.00"))
+                .metodoPagamento("Boleto")
+                .build();
+
+        String responseJsonString = driver.perform(post(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/4/pagamentos")
+                        .param("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(pagamentoRequest)))
+                .andExpect(status().isBadRequest())
+                .andDo(print())
+                .andReturn().getResponse().getContentAsString();
+
+        CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
+
+        assertEquals("Metodo de pagamento nao suportado", resultado.getMessage());
+    }
+
+    @Test
+    @DisplayName("Pagamento com codigo de acesso invalido deve ser rejeitado")
+    void pagamentoCodigoAcessoInvalido() throws Exception {
+        PagamentoRequestDTO pagamentoRequest = PagamentoRequestDTO.builder()
+                .valorTotal(new BigDecimal("100.00"))
+                .metodoPagamento("Pix")
+                .build();
+
+        String responseJsonString = driver.perform(post(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/5/pagamentos")
+                        .param("codigoAcesso", "000000")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(pagamentoRequest)))
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> assertTrue(result.getResolvedException() instanceof CodigoDeAcessoInvalidoException))
+                .andDo(print())
+                .andReturn().getResponse().getContentAsString();
+
+        CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
+
+        assertEquals("Codigo de acesso invalido!", resultado.getMessage());
     }
 
 }
