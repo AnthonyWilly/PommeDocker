@@ -6,6 +6,7 @@ import com.ufcg.psoft.commerce.dto.PagamentoRequestDTO;
 import com.ufcg.psoft.commerce.dto.PagamentoResponseDTO;
 import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
 import com.ufcg.psoft.commerce.exception.CommerceException;
+import com.ufcg.psoft.commerce.exception.EmpresaNaoExisteException;
 import com.ufcg.psoft.commerce.model.Empresa;
 import com.ufcg.psoft.commerce.model.PagamentoCredito;
 import com.ufcg.psoft.commerce.model.PagamentoDebito;
@@ -222,4 +223,63 @@ public class EmpresaServiceTests {
                 empresaService.confirmarPagamento(1L, 999L, "123456", request)
         );
     }
+
+        @Test
+        @DisplayName("Pagamento falha quando empresa nao existe")
+        void pagamentoEmpresaInexistente() {
+        when(empresaRepository.findById(1L)).thenReturn(Optional.empty());
+
+        PagamentoRequestDTO request = PagamentoRequestDTO.builder()
+            .valorTotal(new BigDecimal("50.00"))
+            .metodoPagamento("Pix")
+            .build();
+
+        assertThrows(EmpresaNaoExisteException.class, () ->
+            empresaService.confirmarPagamento(1L, 10L, "123456", request)
+        );
+        }
+
+        @Test
+        @DisplayName("Pagamento falha com codigo de acesso invalido")
+        void pagamentoCodigoAcessoInvalido() {
+        when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
+
+        PagamentoRequestDTO request = PagamentoRequestDTO.builder()
+            .valorTotal(new BigDecimal("80.00"))
+            .metodoPagamento("Pix")
+            .build();
+
+        assertThrows(CodigoDeAcessoInvalidoException.class, () ->
+            empresaService.confirmarPagamento(1L, 10L, "000000", request)
+        );
+        }
+
+        @Test
+        @DisplayName("Pagamento sem metodo informado deve falhar")
+        void pagamentoSemMetodo() {
+        when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
+
+        PagamentoRequestDTO request = PagamentoRequestDTO.builder()
+            .valorTotal(new BigDecimal("100.00"))
+            .build();
+
+        assertThrows(CommerceException.class, () ->
+            empresaService.confirmarPagamento(1L, 10L, "123456", request)
+        );
+        }
+
+        @Test
+        @DisplayName("Pagamento com chamado zero deve falhar")
+        void pagamentoChamadoZero() {
+        when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
+
+        PagamentoRequestDTO request = PagamentoRequestDTO.builder()
+            .valorTotal(new BigDecimal("40.00"))
+            .metodoPagamento("Debito")
+            .build();
+
+        assertThrows(RuntimeException.class, () ->
+            empresaService.confirmarPagamento(1L, 0L, "123456", request)
+        );
+        }
 }
