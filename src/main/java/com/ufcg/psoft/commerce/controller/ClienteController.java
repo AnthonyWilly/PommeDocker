@@ -2,7 +2,6 @@ package com.ufcg.psoft.commerce.controller;
 
 import com.ufcg.psoft.commerce.dto.ClientePostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ClienteResponseDTO;
-import com.ufcg.psoft.commerce.dto.PagamentoRequestDTO;
 import com.ufcg.psoft.commerce.service.cliente.ClienteService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -83,13 +82,4 @@ public class ClienteController {
                 return ResponseEntity.badRequest().body("Plano invalido");
         }
 
-    @PostMapping("/{id}/pagamentos")
-    public ResponseEntity<?> calcularPagamento(
-            @PathVariable Long id,
-            @RequestParam String codigo,
-            @RequestBody PagamentoRequestDTO pagamentoRequestDTO) {
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(clienteService.confirmarPagamento(id, codigo, pagamentoRequestDTO));
-    }
 }

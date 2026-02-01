@@ -7,8 +7,6 @@ import com.ufcg.psoft.commerce.exception.ClienteNaoExisteException;
 import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
 import com.ufcg.psoft.commerce.exception.CommerceException;
 import com.ufcg.psoft.commerce.model.*;
-import com.ufcg.psoft.commerce.dto.PagamentoRequestDTO;
-import com.ufcg.psoft.commerce.dto.PagamentoResponseDTO;
 import com.ufcg.psoft.commerce.repository.ClienteRepository;
 import com.ufcg.psoft.commerce.repository.HistoricoPlanoRepository;
 import jakarta.annotation.PostConstruct;
@@ -38,32 +36,14 @@ public class ClienteServiceImpl implements ClienteService {
     private PlanoPremium planoPremium;
 
     @Autowired
-    private PagamentoCredito pagamentoCredito;
-
-    @Autowired
-    private PagamentoDebito pagamentoDebito;
-
-    @Autowired
-    private PagamentoPix pagamentoPix;
-  
-    @Autowired
     private HistoricoPlanoRepository  historicoRepository;
   
     private Map<String, Plano> estrategias = new HashMap<>();
-
-    private Map<String, Pagamento> pagamentos = new HashMap<>();
 
     @PostConstruct
     public void inicializarMapaDePlanos() {
         estrategias.put("Basico", planoBasico);
         estrategias.put("Premium", planoPremium);
-        inicializarMapaDePagamentos(); //tira isso daqui depois
-    }
-
-    public void inicializarMapaDePagamentos() {
-        pagamentos.put(pagamentoCredito.getMetodo(), pagamentoCredito);
-        pagamentos.put(pagamentoDebito.getMetodo(), pagamentoDebito);
-        pagamentos.put(pagamentoPix.getMetodo(), pagamentoPix);
     }
 
     @Override
@@ -137,12 +117,6 @@ public class ClienteServiceImpl implements ClienteService {
     @Override
     public ClienteResponseDTO setPlanoBasico(long id, String codigoAcesso){
         return alterarPlano(id, codigoAcesso, "Basico");
-    }
-
-    @Override
-    public PagamentoResponseDTO confirmarPagamento(Long id, String codigoAcesso, PagamentoRequestDTO pagamentoRequestDTO) {
-        buscarValidandoAcesso(id, codigoAcesso);
-        throw new UnsupportedOperationException("Processamento de pagamento nao implementado");
     }
 
     private HistoricoPlano criarHistorico(long idCliente, String plano) {

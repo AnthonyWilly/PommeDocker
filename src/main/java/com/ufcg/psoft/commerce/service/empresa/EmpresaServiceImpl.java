@@ -2,19 +2,28 @@ package com.ufcg.psoft.commerce.service.empresa;
 
 import com.ufcg.psoft.commerce.dto.EmpresaPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.EmpresaResponseDTO;
+import com.ufcg.psoft.commerce.dto.PagamentoRequestDTO;
+import com.ufcg.psoft.commerce.dto.PagamentoResponseDTO;
 import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
 import com.ufcg.psoft.commerce.exception.EmpresaJaCadastradaException;
 import com.ufcg.psoft.commerce.exception.EmpresaNaoExisteException;
 import com.ufcg.psoft.commerce.exception.SenhaInvalidaException;
 import com.ufcg.psoft.commerce.exception.TecnicoNaoExisteException;
 import com.ufcg.psoft.commerce.model.Empresa;
+import com.ufcg.psoft.commerce.model.Pagamento;
+import com.ufcg.psoft.commerce.model.PagamentoCredito;
+import com.ufcg.psoft.commerce.model.PagamentoDebito;
+import com.ufcg.psoft.commerce.model.PagamentoPix;
 import com.ufcg.psoft.commerce.model.Tecnico;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
 import com.ufcg.psoft.commerce.repository.TecnicoRepository;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,6 +36,24 @@ public class EmpresaServiceImpl implements EmpresaService {
     private TecnicoRepository tecnicoRepository;
 
     private static final String SENHA_ADMIN_PADRAO = "admin123";
+
+    @Autowired
+    private PagamentoCredito pagamentoCredito;
+
+    @Autowired
+    private PagamentoDebito pagamentoDebito;
+
+    @Autowired
+    private PagamentoPix pagamentoPix;
+
+    private Map<String, Pagamento> pagamentos = new HashMap<>();
+
+    @PostConstruct
+    public void inicializarMapaDePagamentos() {
+        pagamentos.put(pagamentoCredito.getMetodo(), pagamentoCredito);
+        pagamentos.put(pagamentoDebito.getMetodo(), pagamentoDebito);
+        pagamentos.put(pagamentoPix.getMetodo(), pagamentoPix);
+    }
 
     @Override
     public EmpresaResponseDTO cadastrar(EmpresaPostPutRequestDTO dto) {
@@ -120,5 +147,12 @@ public class EmpresaServiceImpl implements EmpresaService {
         
         tecnico.getEmpresasAprovadoras().remove(empresa);
         tecnicoRepository.save(tecnico);
+    }
+
+    @Override
+    public PagamentoResponseDTO confirmarPagamento(Long empresaId, Long chamadoId, String codigoAcesso, PagamentoRequestDTO pagamentoRequestDTO) {
+        Empresa empresa = buscarEmpresaPeloId(empresaId);
+        validarCodigoAcesso(empresa, codigoAcesso);
+        throw new UnsupportedOperationException("Processamento de pagamento nao implementado");
     }
 }

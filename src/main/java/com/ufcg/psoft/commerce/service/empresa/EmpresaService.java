@@ -2,6 +2,8 @@ package com.ufcg.psoft.commerce.service.empresa;
 
 import com.ufcg.psoft.commerce.dto.EmpresaPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.EmpresaResponseDTO;
+import com.ufcg.psoft.commerce.dto.PagamentoRequestDTO;
+import com.ufcg.psoft.commerce.dto.PagamentoResponseDTO;
 import java.util.List;
 
 public interface EmpresaService {
@@ -12,4 +14,6 @@ public interface EmpresaService {
     void remover(Long id, String codigoAcesso, String senhaAdmin);
     void aprovarTecnico(Long empresaId, Long tecnicoId, String codigoAcesso);
     void rejeitarTecnico(Long empresaId, Long tecnicoId, String codigoAcesso);
+
+    PagamentoResponseDTO confirmarPagamento(Long empresaId, Long chamadoId, String codigoAcesso, PagamentoRequestDTO pagamentoRequestDTO);
 }

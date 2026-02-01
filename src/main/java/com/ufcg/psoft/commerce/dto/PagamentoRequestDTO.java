@@ -12,6 +12,6 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PagamentoRequestDTO {
-    private BigDecimal valorTotal;
+    private BigDecimal valorTotal; //isso vem direto do serviço associado ao chamado
     private String metodoPagamento;
 }

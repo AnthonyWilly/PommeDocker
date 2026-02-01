@@ -2,8 +2,14 @@ package com.ufcg.psoft.commerce.service.empresa;
 
 import com.ufcg.psoft.commerce.dto.EmpresaPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.EmpresaResponseDTO;
+import com.ufcg.psoft.commerce.dto.PagamentoRequestDTO;
+import com.ufcg.psoft.commerce.dto.PagamentoResponseDTO;
 import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
+import com.ufcg.psoft.commerce.exception.CommerceException;
 import com.ufcg.psoft.commerce.model.Empresa;
+import com.ufcg.psoft.commerce.model.PagamentoCredito;
+import com.ufcg.psoft.commerce.model.PagamentoDebito;
+import com.ufcg.psoft.commerce.model.PagamentoPix;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
 import com.ufcg.psoft.commerce.service.empresa.EmpresaServiceImpl;
 
@@ -15,6 +21,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -31,11 +38,25 @@ public class EmpresaServiceTests {
     @InjectMocks
     private EmpresaServiceImpl empresaService;
 
+    @Mock
+    private PagamentoCredito pagamentoCredito;
+
+    @Mock
+    private PagamentoDebito pagamentoDebito;
+
+    @Mock
+    private PagamentoPix pagamentoPix;
+
     private EmpresaPostPutRequestDTO empresaDTO;
     private Empresa empresa;
 
     @BeforeEach
     void setUp() {
+        when(pagamentoCredito.getMetodo()).thenReturn("Credito");
+        when(pagamentoDebito.getMetodo()).thenReturn("Debito");
+        when(pagamentoPix.getMetodo()).thenReturn("Pix");
+        empresaService.inicializarMapaDePagamentos();
+
         empresaDTO = EmpresaPostPutRequestDTO.builder()
                 .nome("Empresa Exemplo")
                 .cnpj("12345678901234")
@@ -122,5 +143,83 @@ public class EmpresaServiceTests {
         });
 
         verify(empresaRepository, never()).delete(any(Empresa.class));
+    }
+
+    @Test
+    @DisplayName("Pagamento credito nao aplica desconto (empresa disponibiliza)")
+    void pagamentoCreditoSemDesconto() {
+        when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
+        when(pagamentoCredito.aplicarDesconto(new BigDecimal("100.00"))).thenReturn(new BigDecimal("100.00"));
+
+        PagamentoRequestDTO request = PagamentoRequestDTO.builder()
+                .valorTotal(new BigDecimal("100.00"))
+                .metodoPagamento("Credito")
+                .build();
+
+        PagamentoResponseDTO response = empresaService.confirmarPagamento(1L, 10L, "123456", request);
+
+        assertEquals(new BigDecimal("100.00"), response.getValorFinal());
+    }
+
+    @Test
+    @DisplayName("Pagamento debito aplica 2,5% de desconto")
+    void pagamentoDebitoComDesconto() {
+        when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
+        when(pagamentoDebito.aplicarDesconto(new BigDecimal("100.00"))).thenReturn(new BigDecimal("97.50"));
+
+        PagamentoRequestDTO request = PagamentoRequestDTO.builder()
+                .valorTotal(new BigDecimal("100.00"))
+                .metodoPagamento("Debito")
+                .build();
+
+        PagamentoResponseDTO response = empresaService.confirmarPagamento(1L, 10L, "123456", request);
+
+        assertEquals(new BigDecimal("97.50"), response.getValorFinal());
+    }
+
+    @Test
+    @DisplayName("Pagamento pix aplica 5% de desconto")
+    void pagamentoPixComDesconto() {
+        when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
+        when(pagamentoPix.aplicarDesconto(new BigDecimal("100.00"))).thenReturn(new BigDecimal("95.00"));
+
+        PagamentoRequestDTO request = PagamentoRequestDTO.builder()
+                .valorTotal(new BigDecimal("100.00"))
+                .metodoPagamento("Pix")
+                .build();
+
+        PagamentoResponseDTO response = empresaService.confirmarPagamento(1L, 10L, "123456", request);
+
+        assertEquals(new BigDecimal("95.00"), response.getValorFinal());
+    }
+
+    @Test
+    @DisplayName("Pagamento com metodo desconhecido deve falhar")
+    void pagamentoMetodoInvalido() {
+        when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
+
+        PagamentoRequestDTO request = PagamentoRequestDTO.builder()
+                .valorTotal(new BigDecimal("100.00"))
+                .metodoPagamento("Boleto")
+                .build();
+
+        assertThrows(CommerceException.class, () ->
+                empresaService.confirmarPagamento(1L, 10L, "123456", request)
+        );
+    }
+
+    @Test
+    @DisplayName("Pagamento sem chamado valido deve falhar")
+    void pagamentoSemChamado() {
+        when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
+
+        PagamentoRequestDTO request = PagamentoRequestDTO.builder()
+                .valorTotal(new BigDecimal("100.00"))
+                .metodoPagamento("Pix")
+                .build();
+
+        assertThrows(RuntimeException.class, () ->
+                empresaService.confirmarPagamento(1L, 999L, "123456", request)
+        );
     }
 }

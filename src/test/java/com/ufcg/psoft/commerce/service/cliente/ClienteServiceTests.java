@@ -2,17 +2,12 @@ package com.ufcg.psoft.commerce.service.cliente;
 
 import com.ufcg.psoft.commerce.dto.ClientePostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ClienteResponseDTO;
-import com.ufcg.psoft.commerce.dto.PagamentoRequestDTO;
-import com.ufcg.psoft.commerce.dto.PagamentoResponseDTO;
 import com.ufcg.psoft.commerce.exception.ClienteNaoExisteException;
 import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
 import com.ufcg.psoft.commerce.model.Cliente;
 import com.ufcg.psoft.commerce.model.HistoricoPlano;
 import com.ufcg.psoft.commerce.model.PlanoBasico;
 import com.ufcg.psoft.commerce.model.PlanoPremium;
-import com.ufcg.psoft.commerce.model.PagamentoCredito;
-import com.ufcg.psoft.commerce.model.PagamentoDebito;
-import com.ufcg.psoft.commerce.model.PagamentoPix;
 import com.ufcg.psoft.commerce.repository.ClienteRepository;
 import com.ufcg.psoft.commerce.repository.HistoricoPlanoRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,14 +48,6 @@ public class ClienteServiceTests {
     @Mock
     PlanoPremium planoPremium;
 
-    @Mock
-    PagamentoCredito pagamentoCredito;
-
-    @Mock
-    PagamentoDebito pagamentoDebito;
-
-    @Mock
-    PagamentoPix pagamentoPix;
   
     @InjectMocks
     ClienteServiceImpl clienteService;
@@ -75,10 +62,6 @@ public class ClienteServiceTests {
     void setup() {
         modelMapper.getConfiguration().setSkipNullEnabled(true);
         clienteService.inicializarMapaDePlanos();
-        when(pagamentoCredito.getMetodo()).thenReturn("Credito");
-        when(pagamentoDebito.getMetodo()).thenReturn("Debito");
-        when(pagamentoPix.getMetodo()).thenReturn("Pix");
-        clienteService.inicializarMapaDePagamentos();
       
         cliente = Cliente.builder()
                 .id(1L)
@@ -131,58 +114,6 @@ public class ClienteServiceTests {
             assertEquals("João Atualizado", resultado.getNome());
             assertEquals("Rua Nova, 999", resultado.getEndereco());
 
-    @Nested
-    @DisplayName("Conjunto de casos de verificação de pagamentos")
-    class ClienteVerificacaoPagamentos {
-
-        @Test
-        @DisplayName("Pagamento em credito nao deve aplicar desconto")
-        void pagamentoCreditoSemDesconto() {
-            when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente));
-            when(pagamentoCredito.aplicarDesconto(new BigDecimal("100.00"))).thenReturn(new BigDecimal("100.00"));
-
-            PagamentoRequestDTO request = PagamentoRequestDTO.builder()
-                    .valorTotal(new BigDecimal("100.00"))
-                    .metodoPagamento("Credito")
-                    .build();
-
-            PagamentoResponseDTO response = clienteService.confirmarPagamento(1L, "123456", request);
-
-            assertEquals(new BigDecimal("100.00"), response.getValorFinal());
-        }
-
-        @Test
-        @DisplayName("Pagamento em debito deve aplicar 2.5% de desconto")
-        void pagamentoDebitoComDesconto() {
-            when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente));
-            when(pagamentoDebito.aplicarDesconto(new BigDecimal("100.00"))).thenReturn(new BigDecimal("97.50"));
-
-            PagamentoRequestDTO request = PagamentoRequestDTO.builder()
-                    .valorTotal(new BigDecimal("100.00"))
-                    .metodoPagamento("Debito")
-                    .build();
-
-            PagamentoResponseDTO response = clienteService.confirmarPagamento(1L, "123456", request);
-
-            assertEquals(new BigDecimal("97.50"), response.getValorFinal());
-        }
-
-        @Test
-        @DisplayName("Pagamento via pix deve aplicar 5% de desconto")
-        void pagamentoPixComDesconto() {
-            when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente));
-            when(pagamentoPix.aplicarDesconto(new BigDecimal("100.00"))).thenReturn(new BigDecimal("95.00"));
-
-            PagamentoRequestDTO request = PagamentoRequestDTO.builder()
-                    .valorTotal(new BigDecimal("100.00"))
-                    .metodoPagamento("Pix")
-                    .build();
-
-            PagamentoResponseDTO response = clienteService.confirmarPagamento(1L, "123456", request);
-
-            assertEquals(new BigDecimal("95.00"), response.getValorFinal());
-        }
-    }
             verify(clienteRepository, times(1)).save(cliente);
         }
 
