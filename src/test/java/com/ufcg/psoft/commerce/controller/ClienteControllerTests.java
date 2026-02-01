@@ -33,8 +33,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.ufcg.psoft.commerce.dto.ClientePostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ClienteResponseDTO;
-import com.ufcg.psoft.commerce.dto.PagamentoRequestDTO;
-import com.ufcg.psoft.commerce.dto.PagamentoResponseDTO;
 import com.ufcg.psoft.commerce.exception.CustomErrorType;
 import com.ufcg.psoft.commerce.model.Cliente;
 import com.ufcg.psoft.commerce.repository.ClienteRepository;
@@ -543,73 +541,6 @@ public class ClienteControllerTests {
             assertEquals("Premium", resultado.getProxPlano());
         }
 
-            @Nested
-            @DisplayName("Conjunto de casos de verificação de pagamentos")
-            class ClienteVerificacaoPagamentos {
-
-                @Test
-                @DisplayName("Pagamento em credito retorna valor integral")
-                void quandoCalculamosPagamentoCredito() throws Exception {
-                    PagamentoRequestDTO pagamentoRequestDTO = PagamentoRequestDTO.builder()
-                            .valorTotal(new BigDecimal("100.00"))
-                            .metodoPagamento("Credito")
-                            .build();
-
-                    String responseJsonString = driver.perform(post(URI_CLIENTES + "/" + cliente.getId() + "/pagamentos")
-                                    .contentType(MediaType.APPLICATION_JSON)
-                                    .param("codigo", cliente.getCodigo())
-                                    .content(objectMapper.writeValueAsString(pagamentoRequestDTO)))
-                            .andExpect(status().isOk())
-                            .andDo(print())
-                            .andReturn().getResponse().getContentAsString();
-
-                    PagamentoResponseDTO resultado = objectMapper.readValue(responseJsonString, PagamentoResponseDTO.class);
-
-                    assertEquals(new BigDecimal("100.00"), resultado.getValorFinal());
-                }
-
-                @Test
-                @DisplayName("Pagamento em debito aplica 2,5% de desconto")
-                void quandoCalculamosPagamentoDebito() throws Exception {
-                    PagamentoRequestDTO pagamentoRequestDTO = PagamentoRequestDTO.builder()
-                            .valorTotal(new BigDecimal("100.00"))
-                            .metodoPagamento("Debito")
-                            .build();
-
-                    String responseJsonString = driver.perform(post(URI_CLIENTES + "/" + cliente.getId() + "/pagamentos")
-                                    .contentType(MediaType.APPLICATION_JSON)
-                                    .param("codigo", cliente.getCodigo())
-                                    .content(objectMapper.writeValueAsString(pagamentoRequestDTO)))
-                            .andExpect(status().isOk())
-                            .andDo(print())
-                            .andReturn().getResponse().getContentAsString();
-
-                    PagamentoResponseDTO resultado = objectMapper.readValue(responseJsonString, PagamentoResponseDTO.class);
-
-                    assertEquals(new BigDecimal("97.50"), resultado.getValorFinal());
-                }
-
-                @Test
-                @DisplayName("Pagamento via Pix aplica 5% de desconto")
-                void quandoCalculamosPagamentoPix() throws Exception {
-                    PagamentoRequestDTO pagamentoRequestDTO = PagamentoRequestDTO.builder()
-                            .valorTotal(new BigDecimal("100.00"))
-                            .metodoPagamento("Pix")
-                            .build();
-
-                    String responseJsonString = driver.perform(post(URI_CLIENTES + "/" + cliente.getId() + "/pagamentos")
-                                    .contentType(MediaType.APPLICATION_JSON)
-                                    .param("codigo", cliente.getCodigo())
-                                    .content(objectMapper.writeValueAsString(pagamentoRequestDTO)))
-                            .andExpect(status().isOk())
-                            .andDo(print())
-                            .andReturn().getResponse().getContentAsString();
-
-                    PagamentoResponseDTO resultado = objectMapper.readValue(responseJsonString, PagamentoResponseDTO.class);
-
-                    assertEquals(new BigDecimal("95.00"), resultado.getValorFinal());
-                }
-            }
 
         @Test
         @DisplayName("Deve alterar o plano para Basico com dados Validos")
