@@ -2,6 +2,7 @@ package com.ufcg.psoft.commerce.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.ufcg.psoft.commerce.exception.CustomErrorType;
 import com.ufcg.psoft.commerce.model.Empresa;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
 import org.junit.jupiter.api.AfterEach;
@@ -14,9 +15,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -81,8 +81,7 @@ public class ServicoControllerTests {
     @DisplayName("Criar serviço com sucesso")
     void criarServicoComSucesso() throws Exception {
         String response = driver.perform(
-                        post("/servicos")
-                                .param("empresaId", empresaPadrao.getId().toString())
+                        post("/empresas/" + empresaPadrao.getId() + "/servicos")
                                 .param("codigoAcesso", CODIGO_ACESSO_PADRAO)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(servicoDTO))
@@ -103,8 +102,7 @@ public class ServicoControllerTests {
     @DisplayName("Falhar ao adicionar serviço com código de acesso incorreto")
     void adicionarServicoCodigoAcessoIncorreto() throws Exception {
         String responseJsonString = driver.perform(
-                        post("/servicos")
-                                .param("empresaId", empresaPadrao.getId().toString())
+                        post("/empresas/" + empresaPadrao.getId() + "/servicos")
                                 .param("codigoAcesso", "999999")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(servicoDTO))
@@ -135,9 +133,8 @@ public class ServicoControllerTests {
                 .build();
 
         String responseJsonString = driver.perform(
-                        put("/servicos/" + servicoPadrao.getId())
-                                .param("empresaId", empresaPadrao.getId().toString())
-                                .param("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                        put("/empresas/" + empresaPadrao.getId() +
+                                "/servicos/" + servicoPadrao.getId())                                .param("codigoAcesso", CODIGO_ACESSO_PADRAO)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(hidraulicaDTO))
                 )
@@ -167,9 +164,8 @@ public class ServicoControllerTests {
                 .build();
 
         String responseJsonString = driver.perform(
-                        put("/servicos/" + servicoPadrao.getId())
-                                .param("empresaId", empresaPadrao.getId().toString())
-                                .param("codigoAcesso", "000000")
+                        put("/empresas/" + empresaPadrao.getId() +
+                                "/servicos/" + servicoPadrao.getId())                                .param("codigoAcesso", "000000")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(marcenariaDTO))
                 )
@@ -194,8 +190,8 @@ public class ServicoControllerTests {
     @DisplayName("Remover serviço com código de acesso válido")
     void removerServicoComSucesso() throws Exception {
         driver.perform(
-                        delete("/servicos/" + servicoPadrao.getId())
-                                .param("empresaId", empresaPadrao.getId().toString())
+                        delete("/empresas/" + empresaPadrao.getId() +
+                                "/servicos/" + servicoPadrao.getId())
                                 .param("codigoAcesso", CODIGO_ACESSO_PADRAO)
                 )
                 .andExpect(status().isNoContent());
@@ -206,14 +202,14 @@ public class ServicoControllerTests {
     @DisplayName("Falhar ao remover serviço com código de acesso inválido")
     void removerServicoCodigoAcessoInvalido() throws Exception {
         driver.perform(
-                        delete("/servicos/" + servicoPadrao.getId())
-                                .param("empresaId", empresaPadrao.getId().toString())
+                        delete("/empresas/" + empresaPadrao.getId() +
+                                "/servicos/" + servicoPadrao.getId())
                                 .param("codigoAcesso", "000000")
                 )
                 .andExpect(status().isBadRequest())
                 .andExpect(result ->
-                        assertTrue(result.getResolvedException()
-                                instanceof CodigoDeAcessoInvalidoException)
+                        assertTrue(result.getResolvedException().getMessage()
+                                .contains("Codigo de acesso invalido!"))
                 );
     }
     @Test
@@ -232,8 +228,7 @@ public class ServicoControllerTests {
                 .build());
 
         String responseJsonString = driver.perform(
-                        get("/servicos")
-                                .param("empresaId", empresaPadrao.getId().toString())
+                        get("/empresas/" + empresaPadrao.getId() + "/servicos")
                 )
                 .andExpect(status().isOk())
                 .andReturn()
