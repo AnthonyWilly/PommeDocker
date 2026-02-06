@@ -94,7 +94,12 @@ public class ServicoServiceTest {
         ServicoPostPutRequestDTO updateDTO = ServicoPostPutRequestDTO.builder()
                 .nome("Reparo de Cano")
                 .tipo(TipoServico.HIDRAULICA)
+                .urgencia(Urgencia.MEDIA)
+                .duracao(3.0)
+                .disponivel(true)
+                .descricao("instala um chuveiro")
                 .preco(80.0)
+                .idPlano("Basico")
                 .build();
 
         when(servicoRepository.save(any(Servico.class)))
