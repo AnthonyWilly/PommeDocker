@@ -71,19 +71,27 @@ public class ChamadoControllerTests {
                 .plano("Premium")
                 .build());
 
-        servicoComum = servicoRepository.save(Servico.builder()
-                .nome("Manutenção Simples")
-                .valor(150.00)
+        servicoComum = Servico.save(Cliente.builder()
+                .id(1L)
+                .nome("Reparo Simples")
+                .descricao("Reparo elétrico básico de tomadas")
+                .nivelUrgencia("NORMAL")
+                .duracaoEstimada("30 min")
+                .valor(100.0)
                 .empresa(empresa)
                 .tipo("Basico")
-                .build());
+                .build();
         
-        servicoExclusivo = servicoRepository.save(Servico.builder()
+        servicoExclusivo = Servico.save(Cliente.builder()
+                .id(2L)
                 .nome("Instalação 24h")
-                .valor(300.00)
+                .descricao("Instalação elétrica completa de urgência") 
+                .nivelUrgencia("ALTA")
+                .duracaoEstimada("120 min")
+                .valor(300.0)
                 .empresa(empresa)
                 .tipo("Premium")
-                .build());
+                .build();
     }
 
     @AfterEach
