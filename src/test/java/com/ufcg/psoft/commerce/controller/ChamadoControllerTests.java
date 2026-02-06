@@ -213,4 +213,22 @@ public class ChamadoControllerTests {
         
         assertFalse(chamadoRepository.existsById(chamado.getId()));
     }
+
+    @Test
+    @DisplayName("Cliente Basico tenta criar chamado Premium")
+    void criarChamadoBasicoParaServicoPremium() throws Exception {
+        ChamadoPostPutRequestDTO dto = ChamadoPostPutRequestDTO.builder()
+                .servicoId(servicoExclusivo.getId())
+                .empresaId(empresa.getId())
+                .codigoAcessoCliente(clienteBasico.getCodigoAcesso())
+                .enderecoAtendimento("Rua Teste, 123")
+                .build();
+
+        driver.perform(post("/clientes/" + clienteBasico.getId() + "/chamados")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> assertTrue(result.getResolvedException() instanceof PlanoInvalidoException))
+                .andDo(print());
+    }
 }
