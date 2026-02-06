@@ -67,16 +67,23 @@ public class ChamadoServiceTests {
         servicoComum = Servico.builder()
                 .id(1L)
                 .nome("Reparo Simples")
-                .tipo("Basico")
+                .descricao("Reparo elétrico básico de tomadas")
+                .nivelUrgencia("NORMAL")
+                .duracaoEstimada("30 min")
                 .valor(100.0)
+                .empresa(empresa)
+                .tipo("Basico")
                 .build();
-
+        
         servicoExclusivo = Servico.builder()
                 .id(2L)
-                .nome("Atendimento 24h")
-                .tipo("Premium")
-                .valor(250.0)
-                .build();
+                .nome("Instalação 24h")
+                .descricao("Instalação elétrica completa de urgência")
+                .nivelUrgencia("ALTA")
+                .duracaoEstimada("120 min")
+                .valor(300.0)
+                .empresa(empresa)
+                .tipo("Prem
 
         chamadoDTO = ChamadoPostPutRequestDTO.builder()
                 .empresaId(1L)
