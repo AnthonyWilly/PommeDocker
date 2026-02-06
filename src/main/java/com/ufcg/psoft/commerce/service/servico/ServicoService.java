@@ -5,15 +5,15 @@ import java.util.List;
 
 public interface ServicoService {
 
-    ServicoResponseDTO alterar(Long id, ServicoPostPutRequestDTO servicoPostPutRequestDTO);
+    ServicoResponseDTO alterar(Long id, ServicoPostPutRequestDTO servicoPostPutRequestDTO, String codigoAcesso);
 
     List<ServicoResponseDTO> listar();
 
     ServicoResponseDTO recuperar(Long id);
 
-    ServicoResponseDTO criar(ServicoPostPutRequestDTO servicoPostPutRequestDTO);
+    ServicoResponseDTO criar(ServicoPostPutRequestDTO servicoPostPutRequestDTO, String codigoAcesso);
 
-    void remover(Long idEmpresa, Long idServico);
+    void remover(Long idEmpresa, Long idServico, String codigoAcesso);
 
     List<ServicoResponseDTO> listarPorNome(String nome);
 }

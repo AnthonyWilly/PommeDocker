@@ -5,5 +5,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface HistoricoPlanoRepository extends JpaRepository<HistoricoPlano, Long> {
-    List<HistoricoPlano> findAllByIdClienteOrderByDataDesc(Long idCliente);
+    List<HistoricoPlano> findByEmpresaId(Long idCliente);
 }

@@ -40,27 +40,31 @@ public class ServicoController {
     }
 
     @PostMapping()
-    public ResponseEntity<?> criarCliente(
-            @RequestBody @Valid ServicoPostPutRequestDTO servicoPostPutRequestDto) {
+    public ResponseEntity<?> criarServico(
+            @RequestBody @Valid ServicoPostPutRequestDTO servicoPostPutRequestDto,
+            @RequestHeader("codigo-acesso") String codigoAcesso)
+     {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(servicoService.criar(servicoPostPutRequestDto));
+                .body(servicoService.criar(servicoPostPutRequestDto,codigoAcesso));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<?> atualizarServico(
             @PathVariable Long id,
+            @RequestHeader("codigo-acesso") String codigoAcesso,
             @RequestBody @Valid ServicoPostPutRequestDTO servicoPostPutRequestDto) {
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(servicoService.alterar(id, servicoPostPutRequestDto));
+                .body(servicoService.alterar(id, servicoPostPutRequestDto,codigoAcesso));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> excluirSevico(
             @PathVariable Long idServico,
-            @RequestParam Long idEmpresa) {
-        servicoService.remover(idEmpresa, idServico);
+            @RequestParam Long empresaId,
+            @RequestHeader ("codigo-acesso") String codigoAcesso) {
+        servicoService.remover(empresaId, idServico, codigoAcesso);
         return ResponseEntity
                 .status(HttpStatus.NO_CONTENT)
                 .body("");

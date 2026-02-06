@@ -53,4 +53,8 @@ public class Servico {
     @Column(name = "idPlano")
     private String idPlano;
 
+    @JsonProperty("preco")
+    @Column(nullable = false)
+    private double preco;
+
 }
