@@ -2,6 +2,6 @@ package com.ufcg.psoft.commerce.model;
 
 public enum Urgencia {
     NORMAL,
-    URGENCIA,
+    URGENTE,
     _24
 }

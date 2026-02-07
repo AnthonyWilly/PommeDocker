@@ -48,9 +48,9 @@ public class ServicoResponseDTO {
     @NotNull(message = "disponibilidade obrigatoria")
     private Boolean disponivel;
 
-    @JsonProperty("idPlano")
-    @NotBlank(message = "idPlano obrigatorio")
-    private String idPlano;
+    @JsonProperty("plano")
+    @NotBlank(message = "plano obrigatorio")
+    private String plano;
 
     @JsonProperty("duracao")
     @NotNull(message = "duracao obrigatoria")
@@ -68,7 +68,7 @@ public class ServicoResponseDTO {
         this.urgencia = servico.getUrgencia();
         this.preco = servico.getPreco();
         this.disponivel = servico.isDisponivel();
-        this.idPlano = servico.getIdPlano();
+        this.plano = servico.getPlano();
         this.duracao = servico.getDuracao();
         this.empresaId = servico.getEmpresa().getId();
     }

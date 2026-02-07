@@ -10,14 +10,14 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping(
-        value = "/empresas/{empresaId}/servicos",
+        value = "",
         produces = MediaType.APPLICATION_JSON_VALUE
 )
 public class ServicoController {
 
     @Autowired
     ServicoService servicoService;
-    @GetMapping("/{id}")
+    @GetMapping("/empresas/{empresaId}/servicos/{id}")
     public ResponseEntity<?> recuperarServico(
             @PathVariable Long id,
             @PathVariable Long empresaId
@@ -27,7 +27,7 @@ public class ServicoController {
                 .body(servicoService.recuperar(empresaId, id));
     }
 
-    @GetMapping("")
+    @GetMapping("/empresas/{empresaId}/servicos")
     public ResponseEntity<?> listarServicos(
             @PathVariable Long empresaId ){
         return ResponseEntity
@@ -35,7 +35,7 @@ public class ServicoController {
                 .body(servicoService.listar(empresaId));
     }
 
-    @PostMapping()
+    @PostMapping("/empresas/{empresaId}/servicos")
     public ResponseEntity<?> criarServico(
             @PathVariable Long empresaId,
             @RequestBody @Valid ServicoPostPutRequestDTO servicoPostPutRequestDto,
@@ -46,7 +46,7 @@ public class ServicoController {
                 .body(servicoService.criar(empresaId,codigoAcesso, servicoPostPutRequestDto));
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/empresas/{empresaId}/servicos/{id}")
     public ResponseEntity<?> atualizarServico(
             @PathVariable Long id,
             @PathVariable Long empresaId,
@@ -57,7 +57,7 @@ public class ServicoController {
                 .body(servicoService.alterar(empresaId,id,codigoAcesso, servicoPostPutRequestDto));
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/empresas/{empresaId}/servicos/{id}")
     public ResponseEntity<?> excluirSevico(
             @PathVariable Long empresaId,
             @PathVariable Long id,

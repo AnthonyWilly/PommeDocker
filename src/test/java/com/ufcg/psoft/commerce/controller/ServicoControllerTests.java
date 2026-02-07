@@ -1,10 +1,17 @@
 package com.ufcg.psoft.commerce.controller;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.ufcg.psoft.commerce.dto.ServicoPostPutRequestDTO;
+import com.ufcg.psoft.commerce.dto.ServicoResponseDTO;
 import com.ufcg.psoft.commerce.exception.CustomErrorType;
 import com.ufcg.psoft.commerce.model.Empresa;
+import com.ufcg.psoft.commerce.model.Servico;
+import com.ufcg.psoft.commerce.model.TipoServico;
+import com.ufcg.psoft.commerce.model.Urgencia;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
+import com.ufcg.psoft.commerce.repository.ServicoRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -14,6 +21,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -29,6 +38,9 @@ public class ServicoControllerTests {
     @Autowired
     ObjectMapper objectMapper;
     Empresa empresaPadrao;
+    Servico servicoPadrao;
+    ServicoPostPutRequestDTO servicoDTO;
+
     @Autowired
     ServicoRepository servicoRepository;
     final String CODIGO_ACESSO_PADRAO = "123456";
@@ -49,13 +61,13 @@ public class ServicoControllerTests {
         servicoPadrao = servicoRepository.save(Servico.builder()
                 .nome("Pintura")
                 .tipo(TipoServico.PINTURA)
-                .urgencia(Urgencia.BAIXA)
+                .urgencia(Urgencia.NORMAL)
                 .descricao("Pintar determinada area")
                 .preco(100.0)
                 .duracao(3.0)
                 .disponivel(true)
-                .idEmpresa(empresaPadrao.getId())
-                .idPlano("Basico")
+                .empresa(empresaPadrao)
+                .plano("Basico")
                 .build()
 
         );
@@ -63,12 +75,12 @@ public class ServicoControllerTests {
         servicoDTO = ServicoPostPutRequestDTO.builder()
                 .nome("Pintura")
                 .tipo(TipoServico.PINTURA)
-                .urgencia(Urgencia.MEDIA)
+                .urgencia(Urgencia.URGENTE)
                 .descricao("Pintar determinada area")
                 .preco(100.0)
                 .duracao(3.0)
                 .disponivel(true)
-                .idPlano("Basico")
+                .plano("Basico")
                 .build();
     }
     @AfterEach
@@ -95,7 +107,7 @@ public class ServicoControllerTests {
 
         assertAll(
                 () -> assertEquals("Pintura", resultado.getNome()),
-                () -> assertEquals(empresaPadrao.getId(), resultado.getIdEmpresa())
+                () -> assertEquals(empresaPadrao.getId(), resultado.getEmpresaId())
         );
     }
     @Test
@@ -124,12 +136,12 @@ public class ServicoControllerTests {
         ServicoPostPutRequestDTO hidraulicaDTO = ServicoPostPutRequestDTO.builder()
                 .nome("Reparo Hidraulico")
                 .tipo(TipoServico.HIDRAULICA)
-                .urgencia(Urgencia.MEDIA)
+                .urgencia(Urgencia._24)
                 .descricao("Troca de tubulação")
                 .preco(150.0)
                 .duracao(1.5)
                 .disponivel(true)
-                .idPlano("Basico")
+                .plano("Basico")
                 .build();
 
         String responseJsonString = driver.perform(
@@ -156,12 +168,12 @@ public class ServicoControllerTests {
         ServicoPostPutRequestDTO marcenariaDTO = ServicoPostPutRequestDTO.builder()
                 .nome("Reparo de Marcenaria")
                 .tipo(TipoServico.MARCENARIA)
-                .urgencia(Urgencia.BAIXA)
+                .urgencia(Urgencia.NORMAL)
                 .descricao("Troca de puxadores")
                 .preco(80.0)
                 .duracao(1.0)
                 .disponivel(true)
-                .idPlano("Basico")
+                .plano("Basico")
                 .build();
 
         String responseJsonString = driver.perform(
@@ -220,13 +232,13 @@ public class ServicoControllerTests {
         servicoRepository.save(Servico.builder()
                 .nome("Instalacao Eletrica")
                 .tipo(TipoServico.ELETRICA)
-                .urgencia(Urgencia.ALTA)
+                .urgencia(Urgencia._24)
                 .descricao("Troca de fiação")
                 .preco(200.0)
                 .duracao(2.0)
                 .disponivel(true)
-                .idEmpresa(empresaPadrao.getId())
-                .idPlano("Premium")
+                .empresa(empresaPadrao)
+                .plano("Premium")
                 .build());
 
         String responseJsonString = driver.perform(

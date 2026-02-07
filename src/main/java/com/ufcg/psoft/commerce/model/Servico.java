@@ -50,8 +50,8 @@ public class Servico {
     private Empresa empresa;
 
     @JsonIgnore
-    @Column(name = "idPlano")
-    private String idPlano;
+    @Column(name = "plano")
+    private String plano;
 
     @JsonProperty("preco")
     @Column(nullable = false)

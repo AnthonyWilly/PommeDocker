@@ -4,5 +4,6 @@ public enum TipoServico {
     PINTURA,
     HIDRAULICA,
     LIMPEZA,
-    MARCENARIA
+    MARCENARIA,
+    ELETRICA
 }

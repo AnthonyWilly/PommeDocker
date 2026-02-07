@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+
+
 @Service
 public class ServicoServiceImpl implements ServicoService {
     @Autowired
@@ -34,7 +36,7 @@ public class ServicoServiceImpl implements ServicoService {
         Servico servico = buscarServicoPeloId(id);
         modelMapper.map(servicoPostPutRequestDTO, servico);
         servicoRepository.save(servico);
-        return modelMapper.map(servico, ServicoResponseDTO.class);
+        return new ServicoResponseDTO(servico);
     }
 
     @Override
@@ -55,11 +57,13 @@ public class ServicoServiceImpl implements ServicoService {
 
     @Override
     public List<ServicoResponseDTO> listar(Long empresaId) {
-        List<Servico> servicos = servicoRepository.findByIdEmpresa(empresaId);
+        List<Servico> servicos =
+                servicoRepository.findByEmpresa_Id(empresaId);
         return servicos.stream()
                 .map(ServicoResponseDTO::new)
-                .collect(Collectors.toList());
+                .toList();
     }
+
 
     @Override
     public ServicoResponseDTO recuperar(Long empresaId,Long id) {

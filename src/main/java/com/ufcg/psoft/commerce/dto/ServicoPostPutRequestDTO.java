@@ -25,20 +25,16 @@ public class ServicoPostPutRequestDTO {
         @NotNull(message = "urgencia obrigatoria")
         private Urgencia urgencia;
 
-        @NotNull
-        @NotBlank(message = "preço obrigatorio")
+        @NotNull (message = "preço obrigatorio")
         private Double preco;
 
-        @NotNull
-        @NotBlank(message = "disponivel obrigatorio")
+        @NotNull(message = "disponivel obrigatorio")
         private Boolean disponivel;
 
-        @NotBlank
         @NotBlank(message = "idPlano obrigatorio")
-        private String idPlano;
+        private String plano;
 
-        @NotNull
-        @NotBlank(message = "duracao obrigatoria")
+        @NotNull(message = "duracao obrigatoria")
         private Double duracao;
 
     }

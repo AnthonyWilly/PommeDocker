@@ -1,14 +1,22 @@
 package com.ufcg.psoft.commerce.service.servico;
+import com.ufcg.psoft.commerce.dto.ServicoPostPutRequestDTO;
+import com.ufcg.psoft.commerce.dto.ServicoResponseDTO;
 import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
 import com.ufcg.psoft.commerce.model.Empresa;
+import com.ufcg.psoft.commerce.model.Servico;
+import com.ufcg.psoft.commerce.model.TipoServico;
+import com.ufcg.psoft.commerce.model.Urgencia;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
+import com.ufcg.psoft.commerce.repository.ServicoRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.modelmapper.ModelMapper;
 
 import java.util.Optional;
 
@@ -21,10 +29,14 @@ import static org.mockito.Mockito.times;
 public class ServicoServiceTest {
     @Mock
     private EmpresaRepository empresaRepository;
+    @Spy
+    private ModelMapper modelMapper = new ModelMapper();
     @Mock
     private ServicoRepository servicoRepository;
     @InjectMocks
     private ServicoServiceImpl servicoService;
+    private Servico servicoEletrica;
+    private ServicoPostPutRequestDTO servicoDTO;
     private Empresa empresa;
     @BeforeEach
     void setUp() {
@@ -40,10 +52,10 @@ public class ServicoServiceTest {
                 .nome("Instalacao de Chuveiro")
                 .tipo(TipoServico.ELETRICA)
                 .descricao("instala um chuveiro")
-                .urgencia(Urgencia.MEDIA)
+                .urgencia(Urgencia.NORMAL)
                 .preco(150.0)
                 .disponivel(true)
-                .idPlano("Basico")
+                .plano("Basico")
                 .duracao(3.0)
                 .empresa(empresa)
                 .build();
@@ -51,12 +63,12 @@ public class ServicoServiceTest {
         servicoDTO = ServicoPostPutRequestDTO.builder()
                 .nome("Instalacao de Chuveiro")
                 .tipo(TipoServico.ELETRICA)
-                .urgencia(Urgencia.MEDIA)
+                .urgencia(Urgencia._24)
                 .duracao(3.0)
                 .disponivel(true)
                 .descricao("instala um chuveiro")
                 .preco(150.0)
-                .idPlano("Basico")
+                .plano("Basico")
                 .build();
     }
 
@@ -90,20 +102,19 @@ public class ServicoServiceTest {
     void testAlterarServicoSucesso() {
         when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
         when(servicoRepository.findById(10L)).thenReturn(Optional.of(servicoEletrica));
+        when(servicoRepository.save(any(Servico.class)))
+                .thenReturn(servicoEletrica);
 
         ServicoPostPutRequestDTO updateDTO = ServicoPostPutRequestDTO.builder()
                 .nome("Reparo de Cano")
                 .tipo(TipoServico.HIDRAULICA)
-                .urgencia(Urgencia.MEDIA)
+                .urgencia(Urgencia.NORMAL)
                 .duracao(3.0)
                 .disponivel(true)
                 .descricao("instala um chuveiro")
                 .preco(80.0)
-                .idPlano("Basico")
+                .plano("Basico")
                 .build();
-
-        when(servicoRepository.save(any(Servico.class)))
-                .thenReturn(servicoEletrica);
 
         ServicoResponseDTO resultado =
                 servicoService.alterar(1L, 10L, "123456", updateDTO);
