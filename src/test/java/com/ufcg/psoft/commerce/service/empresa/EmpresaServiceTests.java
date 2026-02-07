@@ -12,7 +12,7 @@ import com.ufcg.psoft.commerce.model.PagamentoCredito;
 import com.ufcg.psoft.commerce.model.PagamentoDebito;
 import com.ufcg.psoft.commerce.model.PagamentoPix;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
-import com.ufcg.psoft.commerce.service.empresa.EmpresaServiceImpl;
+// import com.ufcg.psoft.commerce.service.empresa.EmpresaServiceImpl;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
@@ -39,23 +40,11 @@ public class EmpresaServiceTests {
     @InjectMocks
     private EmpresaServiceImpl empresaService;
 
-    @Mock
-    private PagamentoCredito pagamentoCredito;
-
-    @Mock
-    private PagamentoDebito pagamentoDebito;
-
-    @Mock
-    private PagamentoPix pagamentoPix;
-
     private EmpresaPostPutRequestDTO empresaDTO;
     private Empresa empresa;
 
     @BeforeEach
     void setUp() {
-        when(pagamentoCredito.getMetodo()).thenReturn("Credito");
-        when(pagamentoDebito.getMetodo()).thenReturn("Debito");
-        when(pagamentoPix.getMetodo()).thenReturn("Pix");
         empresaService.inicializarMapaDePagamentos();
 
         empresaDTO = EmpresaPostPutRequestDTO.builder()
@@ -150,7 +139,6 @@ public class EmpresaServiceTests {
     @DisplayName("Pagamento credito nao aplica desconto (empresa disponibiliza)")
     void pagamentoCreditoSemDesconto() {
         when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
-        when(pagamentoCredito.aplicarDesconto(new BigDecimal("100.00"))).thenReturn(new BigDecimal("100.00"));
 
         PagamentoRequestDTO request = PagamentoRequestDTO.builder()
                 .valorTotal(new BigDecimal("100.00"))
@@ -166,7 +154,6 @@ public class EmpresaServiceTests {
     @DisplayName("Pagamento debito aplica 2,5% de desconto")
     void pagamentoDebitoComDesconto() {
         when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
-        when(pagamentoDebito.aplicarDesconto(new BigDecimal("100.00"))).thenReturn(new BigDecimal("97.50"));
 
         PagamentoRequestDTO request = PagamentoRequestDTO.builder()
                 .valorTotal(new BigDecimal("100.00"))
@@ -182,7 +169,6 @@ public class EmpresaServiceTests {
     @DisplayName("Pagamento pix aplica 5% de desconto")
     void pagamentoPixComDesconto() {
         when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
-        when(pagamentoPix.aplicarDesconto(new BigDecimal("100.00"))).thenReturn(new BigDecimal("95.00"));
 
         PagamentoRequestDTO request = PagamentoRequestDTO.builder()
                 .valorTotal(new BigDecimal("100.00"))
