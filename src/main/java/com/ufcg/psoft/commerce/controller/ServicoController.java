@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping(
-        value = "/servicos",
+        value = "/empresas/{empresaId}/servicos",
         produces = MediaType.APPLICATION_JSON_VALUE
 )
 public class ServicoController {
@@ -19,52 +19,50 @@ public class ServicoController {
     ServicoService servicoService;
     @GetMapping("/{id}")
     public ResponseEntity<?> recuperarServico(
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            @PathVariable Long empresaId
+    ) {
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(servicoService.recuperar(id));
+                .body(servicoService.recuperar(empresaId, id));
     }
 
     @GetMapping("")
     public ResponseEntity<?> listarServicos(
-            @RequestParam(required = false, defaultValue = "") String nome) {
-
-        if (nome != null && !nome.isEmpty()) {
-            return ResponseEntity
-                    .status(HttpStatus.OK)
-                    .body(servicoService.listarPorNome(nome));
-        }
+            @PathVariable Long empresaId ){
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(servicoService.listar());
+                .body(servicoService.listar(empresaId));
     }
 
     @PostMapping()
     public ResponseEntity<?> criarServico(
+            @PathVariable Long empresaId,
             @RequestBody @Valid ServicoPostPutRequestDTO servicoPostPutRequestDto,
-            @RequestHeader("codigo-acesso") String codigoAcesso)
+            @RequestHeader("codigoAcesso") String codigoAcesso)
      {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(servicoService.criar(servicoPostPutRequestDto,codigoAcesso));
+                .body(servicoService.criar(servicoPostPutRequestDto,codigoAcesso, empresaId));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<?> atualizarServico(
             @PathVariable Long id,
-            @RequestHeader("codigo-acesso") String codigoAcesso,
+            @PathVariable Long empresaId,
+            @RequestHeader("codigoAcesso") String codigoAcesso,
             @RequestBody @Valid ServicoPostPutRequestDTO servicoPostPutRequestDto) {
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(servicoService.alterar(id, servicoPostPutRequestDto,codigoAcesso));
+                .body(servicoService.alterar(empresaId,id, servicoPostPutRequestDto,codigoAcesso));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> excluirSevico(
-            @PathVariable Long idServico,
-            @RequestParam Long empresaId,
-            @RequestHeader ("codigo-acesso") String codigoAcesso) {
-        servicoService.remover(empresaId, idServico, codigoAcesso);
+            @PathVariable Long empresaId,
+            @PathVariable Long id,
+            @RequestHeader ("codigoAcesso") String codigoAcesso) {
+        servicoService.remover(empresaId, id, codigoAcesso);
         return ResponseEntity
                 .status(HttpStatus.NO_CONTENT)
                 .body("");

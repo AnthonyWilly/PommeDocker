@@ -7,5 +7,4 @@ import java.util.List;
 
 public interface ServicoRepository extends JpaRepository<Servico, Long> {
     List<Servico> findByIdEmpresa(Long idServico);
-
 }

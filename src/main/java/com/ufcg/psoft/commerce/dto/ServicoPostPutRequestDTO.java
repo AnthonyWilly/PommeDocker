@@ -40,7 +40,4 @@ public class ServicoPostPutRequestDTO {
         @NotBlank(message = "duracao obrigatoria")
         private Double duracao;
 
-        @NotBlank
-        @NotBlank(message = "empresaId obrigatorio")
-        private Long empresaId;
     }
