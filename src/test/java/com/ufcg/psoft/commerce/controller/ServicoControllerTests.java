@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ufcg.psoft.commerce.model.Cliente;
 import com.ufcg.psoft.commerce.model.Empresa;
 import com.ufcg.psoft.commerce.model.Servico;
+import com.ufcg.psoft.commerce.model.TipoServico;
 import com.ufcg.psoft.commerce.repository.ClienteRepository;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
 import com.ufcg.psoft.commerce.repository.ServicoRepository;
@@ -79,17 +80,17 @@ public class ServicoControllerTests {
 
         servicoBasico = servicoRepository.save(Servico.builder()
                 .nome("Reparo Hidraulico")
-                .tipo("Hidraulica")
-                .precoBase(100.0)
-                .disponibilidadePlano("Basico") 
+                .tipo(TipoServico.HIDRAULICA)
+                .preco(100.0)
+                .idPlano("Basico") 
                 .empresa(empresa)
                 .build());
 
         servicoPremium = servicoRepository.save(Servico.builder()
                 .nome("Guinchar carro")
-                .tipo("Emergencia")
-                .precoBase(500.0)
-                .disponibilidadePlano("Premium")
+                .tipo(TipoServico.LIMPEZA)
+                .preco(500.0)
+                .idPlano("Premium")
                 .empresa(empresa)
                 .build());
     }
@@ -182,7 +183,7 @@ public class ServicoControllerTests {
 
             assertAll(
                 () -> assertEquals(1, resultado.size()),
-                () -> assertTrue(resultado.get(0).getPrecoBase() <= 200.0)
+                () -> assertTrue(resultado.get(0).getPreco() <= 200.0)
             );
             
         }
