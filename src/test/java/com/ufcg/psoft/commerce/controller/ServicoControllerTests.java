@@ -82,7 +82,7 @@ public class ServicoControllerTests {
     void criarServicoComSucesso() throws Exception {
         String response = driver.perform(
                         post("/empresas/" + empresaPadrao.getId() + "/servicos")
-                                .param("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                                .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(servicoDTO))
                 )
@@ -103,7 +103,7 @@ public class ServicoControllerTests {
     void adicionarServicoCodigoAcessoIncorreto() throws Exception {
         String responseJsonString = driver.perform(
                         post("/empresas/" + empresaPadrao.getId() + "/servicos")
-                                .param("codigoAcesso", "999999")
+                                .header("codigoAcesso", "999999")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(servicoDTO))
                 )
@@ -134,7 +134,8 @@ public class ServicoControllerTests {
 
         String responseJsonString = driver.perform(
                         put("/empresas/" + empresaPadrao.getId() +
-                                "/servicos/" + servicoPadrao.getId())                                .param("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                                "/servicos/" + servicoPadrao.getId())
+                                .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(hidraulicaDTO))
                 )
@@ -165,7 +166,8 @@ public class ServicoControllerTests {
 
         String responseJsonString = driver.perform(
                         put("/empresas/" + empresaPadrao.getId() +
-                                "/servicos/" + servicoPadrao.getId())                                .param("codigoAcesso", "000000")
+                                "/servicos/" + servicoPadrao.getId())
+                                .header("codigoAcesso", "000000")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(marcenariaDTO))
                 )
@@ -192,7 +194,7 @@ public class ServicoControllerTests {
         driver.perform(
                         delete("/empresas/" + empresaPadrao.getId() +
                                 "/servicos/" + servicoPadrao.getId())
-                                .param("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                                .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
                 )
                 .andExpect(status().isNoContent());
 
@@ -204,7 +206,7 @@ public class ServicoControllerTests {
         driver.perform(
                         delete("/empresas/" + empresaPadrao.getId() +
                                 "/servicos/" + servicoPadrao.getId())
-                                .param("codigoAcesso", "000000")
+                                .header("codigoAcesso", "000000")
                 )
                 .andExpect(status().isBadRequest())
                 .andExpect(result ->
