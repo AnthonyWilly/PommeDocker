@@ -1,4 +1,4 @@
-package com.ufcg.psoft.commerce.service;
+package com.ufcg.psoft.commerce.service.chamado;
 
 import com.ufcg.psoft.commerce.dto.ChamadoPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ChamadoResponseDTO;
@@ -9,7 +9,6 @@ import com.ufcg.psoft.commerce.repository.ChamadoRepository;
 import com.ufcg.psoft.commerce.repository.ClienteRepository;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
 import com.ufcg.psoft.commerce.repository.ServicoRepository;
-import com.ufcg.psoft.commerce.service.chamado.ChamadoServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,11 +16,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.modelmapper.ModelMapper;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -36,6 +38,8 @@ public class ChamadoServiceTests {
     private EmpresaRepository empresaRepository;
     @Mock
     private ServicoRepository servicoRepository;
+    @Mock
+    private ModelMapper modelMapper;
 
     @InjectMocks
     private ChamadoServiceImpl chamadoService;
@@ -46,30 +50,46 @@ public class ChamadoServiceTests {
     private Servico servicoComum;
     private Servico servicoExclusivo;
     private Chamado chamado;
+    private Empresa empresa;
 
     @BeforeEach
     void setUp() {
+        lenient().when(modelMapper.map(any(), eq(ChamadoResponseDTO.class)))
+                .thenAnswer(invocation -> {
+                    Chamado c = invocation.getArgument(0);
+                    return ChamadoResponseDTO.builder()
+                            .id(c.getId())
+                            .status(c.getStatus())
+                            .enderecoAtendimento(c.getEnderecoAtendimento())
+                            .build();
+                });
+
+        empresa = Empresa.builder()
+                .id(1L)
+                .nome("Service Corp")
+                .codigoAcesso("101010")
+                .cnpj("12.345.678/0001-90")
+                .build();
 
         clienteBasico = Cliente.builder()
                 .id(1L)
-                .codigoAcesso("123456")
-                .plano("Basico")
-                .enderecoPrincipal("Rua A, 100")
+                .codigo("123456")
+                .planoAtual("Basico")
+                .endereco("Rua A, 100")
+                .dataCobranca(LocalDate.now())
                 .build();
         
         clientePremium = Cliente.builder()
                 .id(2L)
-                .codigoAcesso("654321")
-                .plano("Premium")
-                .enderecoPrincipal("Rua B, 200")
+                .codigo("654321")
+                .planoAtual("Premium")
+                .endereco("Rua B, 200")
+                .dataCobranca(LocalDate.now())
                 .build();
 
         servicoComum = Servico.builder()
                 .id(1L)
                 .nome("Reparo Simples")
-                .descricao("Reparo elétrico básico de tomadas")
-                .nivelUrgencia("NORMAL")
-                .duracaoEstimada("30 min")
                 .valor(100.0)
                 .empresa(empresa)
                 .tipo("Basico")
@@ -78,12 +98,10 @@ public class ChamadoServiceTests {
         servicoExclusivo = Servico.builder()
                 .id(2L)
                 .nome("Instalação 24h")
-                .descricao("Instalação elétrica completa de urgência")
-                .nivelUrgencia("ALTA")
-                .duracaoEstimada("120 min")
                 .valor(300.0)
                 .empresa(empresa)
-                .tipo("Prem
+                .tipo("Premium")
+                .build();
 
         chamadoDTO = ChamadoPostPutRequestDTO.builder()
                 .empresaId(1L)
@@ -96,17 +114,19 @@ public class ChamadoServiceTests {
                 .servico(servicoComum)
                 .status("AGUARDANDO_PAGAMENTO")
                 .build();
+        
+        chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
     }
 
     @Test
     @DisplayName("Cliente Premium solicita serviço Premium com sucesso")
     void testClientePremiumSolicitaServicoPremium() {
         chamadoDTO.setServicoId(servicoExclusivo.getId());
-        chamadoDTO.setCodigoAcessoCliente(clientePremium.getCodigoAcesso());
+        chamadoDTO.setCodigoAcessoCliente(clientePremium.getCodigo());
 
         when(clienteRepository.findById(anyLong())).thenReturn(Optional.of(clientePremium));
         when(servicoRepository.findById(servicoExclusivo.getId())).thenReturn(Optional.of(servicoExclusivo));
-        when(empresaRepository.findById(anyLong())).thenReturn(Optional.of(Empresa.builder().build()));
+        when(empresaRepository.findById(anyLong())).thenReturn(Optional.of(empresa));
         when(chamadoRepository.save(any(Chamado.class))).thenReturn(chamado);
 
         ChamadoResponseDTO resultado = chamadoService.criarChamado(clientePremium.getId(), chamadoDTO);
@@ -119,11 +139,11 @@ public class ChamadoServiceTests {
     @DisplayName("Cliente Premium solicita serviço Basico com sucesso")
     void testClientePremiumSolicitaServicoComum() {
         chamadoDTO.setServicoId(servicoComum.getId());
-        chamadoDTO.setCodigoAcessoCliente(clientePremium.getCodigoAcesso());
+        chamadoDTO.setCodigoAcessoCliente(clientePremium.getCodigo());
 
         when(clienteRepository.findById(anyLong())).thenReturn(Optional.of(clientePremium));
         when(servicoRepository.findById(servicoComum.getId())).thenReturn(Optional.of(servicoComum));
-        when(empresaRepository.findById(anyLong())).thenReturn(Optional.of(Empresa.builder().build()));
+        when(empresaRepository.findById(anyLong())).thenReturn(Optional.of(empresa));
         when(chamadoRepository.save(any(Chamado.class))).thenReturn(chamado);
 
         ChamadoResponseDTO resultado = chamadoService.criarChamado(clientePremium.getId(), chamadoDTO);
@@ -135,10 +155,11 @@ public class ChamadoServiceTests {
     @DisplayName("Cliente Basico solicita serviço Premium deve falhar")
     void testClienteBasicoSolicitaServicoPremium() {
         chamadoDTO.setServicoId(servicoExclusivo.getId());
-        chamadoDTO.setCodigoAcessoCliente(clienteBasico.getCodigoAcesso());
+        chamadoDTO.setCodigoAcessoCliente(clienteBasico.getCodigo());
 
         when(clienteRepository.findById(anyLong())).thenReturn(Optional.of(clienteBasico));
         when(servicoRepository.findById(servicoExclusivo.getId())).thenReturn(Optional.of(servicoExclusivo));
+        when(empresaRepository.findById(anyLong())).thenReturn(Optional.of(empresa));
 
         assertThrows(PlanoInvalidoException.class, () -> {
             chamadoService.criarChamado(clienteBasico.getId(), chamadoDTO);
@@ -154,7 +175,7 @@ public class ChamadoServiceTests {
         
         when(clienteRepository.findById(anyLong())).thenReturn(Optional.of(clienteBasico));
         when(servicoRepository.findById(servicoComum.getId())).thenReturn(Optional.of(servicoComum));
-        when(empresaRepository.findById(anyLong())).thenReturn(Optional.of(Empresa.builder().build()));
+        when(empresaRepository.findById(anyLong())).thenReturn(Optional.of(empresa));
         when(chamadoRepository.save(any(Chamado.class))).thenReturn(chamado);
 
         ChamadoResponseDTO resultado = chamadoService.criarChamado(clienteBasico.getId(), chamadoDTO);
@@ -170,13 +191,13 @@ public class ChamadoServiceTests {
 
         when(clienteRepository.findById(anyLong())).thenReturn(Optional.of(clienteBasico));
         when(servicoRepository.findById(servicoComum.getId())).thenReturn(Optional.of(servicoComum));
-        when(empresaRepository.findById(anyLong())).thenReturn(Optional.of(Empresa.builder().build()));
+        when(empresaRepository.findById(anyLong())).thenReturn(Optional.of(empresa));
         
         when(chamadoRepository.save(any(Chamado.class))).thenAnswer(i -> i.getArgument(0));
 
         ChamadoResponseDTO resultado = chamadoService.criarChamado(clienteBasico.getId(), chamadoDTO);
 
-        assertEquals(clienteBasico.getEnderecoPrincipal(), resultado.getEnderecoAtendimento());
+        assertEquals(clienteBasico.getEndereco(), resultado.getEnderecoAtendimento());
     }
 
     @Test
@@ -190,7 +211,7 @@ public class ChamadoServiceTests {
             return c;
         });
 
-        ChamadoResponseDTO resultado = chamadoService.confirmarPagamento(1L, clienteBasico.getCodigoAcesso(), "PIX");
+        ChamadoResponseDTO resultado = chamadoService.confirmarPagamento(1L, clienteBasico.getCodigo(), "PIX");
 
         assertEquals("EM_PROCESSAMENTO", resultado.getStatus());
     }

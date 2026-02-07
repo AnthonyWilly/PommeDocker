@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.ufcg.psoft.commerce.dto.ChamadoPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ChamadoResponseDTO;
+import com.ufcg.psoft.commerce.exception.PlanoInvalidoException;
 import com.ufcg.psoft.commerce.model.*;
 import com.ufcg.psoft.commerce.repository.*;
 import org.junit.jupiter.api.AfterEach;
@@ -15,6 +16,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -59,20 +62,21 @@ public class ChamadoControllerTests {
 
         clienteBasico = clienteRepository.save(Cliente.builder()
                 .nome("Teste Basico")
-                .codigoAcesso("123456")
-                .enderecoPrincipal("Rua Base, 100")
-                .plano("Basico")
+                .codigo("123456")
+                .endereco("Rua Base, 100")
+                .planoAtual("Basico")
+                .dataCobranca(LocalDate.now())
                 .build());
         
         clientePremium = clienteRepository.save(Cliente.builder()
                 .nome("Teste Premium")
-                .codigoAcesso("654321")
-                .enderecoPrincipal("Rua VIP, 200")
-                .plano("Premium")
+                .codigo("654321")
+                .endereco("Rua VIP, 200")
+                .planoAtual("Premium")
+                .dataCobranca(LocalDate.now())
                 .build());
 
-        servicoComum = Servico.save(Cliente.builder()
-                .id(1L)
+        servicoComum = servicoRepository.save(Servico.builder()
                 .nome("Reparo Simples")
                 .descricao("Reparo elétrico básico de tomadas")
                 .nivelUrgencia("NORMAL")
@@ -80,10 +84,9 @@ public class ChamadoControllerTests {
                 .valor(100.0)
                 .empresa(empresa)
                 .tipo("Basico")
-                .build();
+                .build());
         
-        servicoExclusivo = Servico.save(Cliente.builder()
-                .id(2L)
+        servicoExclusivo = servicoRepository.save(Servico.builder()
                 .nome("Instalação 24h")
                 .descricao("Instalação elétrica completa de urgência") 
                 .nivelUrgencia("ALTA")
@@ -91,7 +94,7 @@ public class ChamadoControllerTests {
                 .valor(300.0)
                 .empresa(empresa)
                 .tipo("Premium")
-                .build();
+                .build());
     }
 
     @AfterEach
@@ -108,7 +111,7 @@ public class ChamadoControllerTests {
         ChamadoPostPutRequestDTO dto = ChamadoPostPutRequestDTO.builder()
                 .servicoId(servicoComum.getId())
                 .empresaId(empresa.getId())
-                .codigoAcessoCliente(clienteBasico.getCodigoAcesso())
+                .codigoAcessoCliente(clienteBasico.getCodigo())
                 .build();
 
         String response = driver.perform(post("/clientes/" + clienteBasico.getId() + "/chamados")
@@ -121,7 +124,7 @@ public class ChamadoControllerTests {
         ChamadoResponseDTO result = objectMapper.readValue(response, ChamadoResponseDTO.class);
         
         assertNotNull(result.getId());
-        assertEquals(clienteBasico.getEnderecoPrincipal(), result.getEnderecoAtendimento());
+        assertEquals(clienteBasico.getEndereco(), result.getEnderecoAtendimento());
     }
 
     @Test
@@ -130,7 +133,7 @@ public class ChamadoControllerTests {
         ChamadoPostPutRequestDTO dto = ChamadoPostPutRequestDTO.builder()
                 .servicoId(servicoExclusivo.getId())
                 .empresaId(empresa.getId())
-                .codigoAcessoCliente(clientePremium.getCodigoAcesso())
+                .codigoAcessoCliente(clientePremium.getCodigo())
                 .enderecoAtendimento("Casa de Praia")
                 .build();
 
@@ -150,15 +153,17 @@ public class ChamadoControllerTests {
     @Test
     @DisplayName("Confirmar pagamento com sucesso")
     void confirmarPagamentoSucesso() throws Exception {
-        Chamado chamado = chamadoRepository.save(Chamado.builder()
+        Chamado chamado = Chamado.builder()
                 .cliente(clienteBasico)
                 .empresa(empresa)
                 .servico(servicoComum)
                 .status("AGUARDANDO_PAGAMENTO")
-                .build());
+                .build();
+        chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
+        chamado = chamadoRepository.save(chamado);
 
         driver.perform(put(URI_CHAMADOS + "/" + chamado.getId() + "/pagamento")
-                        .param("codigoAcesso", clienteBasico.getCodigoAcesso())
+                        .param("codigoAcesso", clienteBasico.getCodigo())
                         .param("metodoPagamento", "PIX")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -175,6 +180,7 @@ public class ChamadoControllerTests {
                 .cliente(clienteBasico)
                 .empresa(empresa)
                 .servico(servicoComum)
+                .status("AGUARDANDO_PAGAMENTO")
                 .build());
 
         driver.perform(delete(URI_CHAMADOS + "/" + chamado.getId())
@@ -193,10 +199,11 @@ public class ChamadoControllerTests {
                 .cliente(clienteBasico)
                 .empresa(empresa)
                 .servico(servicoComum)
+                .status("AGUARDANDO_PAGAMENTO")
                 .build());
 
         driver.perform(delete(URI_CHAMADOS + "/" + chamado.getId())
-                        .param("codigoAcesso", clienteBasico.getCodigoAcesso())
+                        .param("codigoAcesso", clienteBasico.getCodigo())
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNoContent())
                 .andDo(print());
@@ -211,6 +218,7 @@ public class ChamadoControllerTests {
                 .cliente(clienteBasico)
                 .empresa(empresa)
                 .servico(servicoComum)
+                .status("AGUARDANDO_PAGAMENTO")
                 .build());
 
         driver.perform(delete(URI_CHAMADOS + "/" + chamado.getId())
@@ -228,7 +236,7 @@ public class ChamadoControllerTests {
         ChamadoPostPutRequestDTO dto = ChamadoPostPutRequestDTO.builder()
                 .servicoId(servicoExclusivo.getId())
                 .empresaId(empresa.getId())
-                .codigoAcessoCliente(clienteBasico.getCodigoAcesso())
+                .codigoAcessoCliente(clienteBasico.getCodigo())
                 .enderecoAtendimento("Rua Teste, 123")
                 .build();
 
