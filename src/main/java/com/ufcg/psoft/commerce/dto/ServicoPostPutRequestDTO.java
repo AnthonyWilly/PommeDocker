@@ -31,7 +31,7 @@ public class ServicoPostPutRequestDTO {
         @NotNull(message = "disponivel obrigatorio")
         private Boolean disponivel;
 
-        @NotBlank(message = "idPlano obrigatorio")
+        @NotBlank(message = "plano obrigatorio")
         private String plano;
 
         @NotNull(message = "duracao obrigatoria")

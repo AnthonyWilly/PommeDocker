@@ -20,16 +20,16 @@ import lombok.NoArgsConstructor;
 public class ServicoResponseDTO {
     @JsonProperty("id")
     @Id
-    @NotBlank(message = "Id obrigatorio")
+    @NotBlank(message = "id obrigatorio")
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long id;
 
     @JsonProperty("nome")
-    @NotBlank(message = "Id obrigatorio")
+    @NotBlank(message = "nome obrigatorio")
     private String nome;
 
     @JsonProperty("tipo")
-    @NotNull(message = "Id obrigatorio")
+    @NotNull(message = "tipo obrigatorio")
     private TipoServico tipo;
 
     @JsonProperty("descricao")
@@ -57,7 +57,7 @@ public class ServicoResponseDTO {
     private Double duracao;
 
     @JsonProperty("empresaId")
-    @NotNull(message = "Id obrigatorio")
+    @NotNull(message = "empresaId obrigatorio")
     private Long empresaId;
 
     public ServicoResponseDTO(Servico servico) {
