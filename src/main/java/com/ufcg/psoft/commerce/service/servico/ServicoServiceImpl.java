@@ -29,7 +29,7 @@ public class ServicoServiceImpl implements ServicoService {
     @Override
     public ServicoResponseDTO alterar(Long empresaId,Long id, ServicoPostPutRequestDTO servicoPostPutRequestDTO, String codigoAcesso) {
         Servico servico = buscarServicoPeloId(id);
-        Empresa empresa = validarEmpresa(empresaId, codigoAcesso);
+        validarEmpresa(empresaId, codigoAcesso);
         modelMapper.map(servicoPostPutRequestDTO, servico);
 
         return modelMapper.map(servico, ServicoResponseDTO.class);
@@ -47,7 +47,7 @@ public class ServicoServiceImpl implements ServicoService {
     @Override
     public void remover(Long empresaId,Long id, String codigoAcesso) {
         Servico servico = buscarServicoPeloId(id);
-        Empresa empresa = validarEmpresa(empresaId, codigoAcesso);
+        validarEmpresa(empresaId, codigoAcesso);
         servicoRepository.delete(servico);
     }
 
