@@ -7,6 +7,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -28,7 +29,7 @@ public class ServicoResponseDTO {
     private String nome;
 
     @JsonProperty("tipo")
-    @NotBlank(message = "Id obrigatorio")
+    @NotNull(message = "Id obrigatorio")
     private TipoServico tipo;
 
     @JsonProperty("descricao")
@@ -36,15 +37,15 @@ public class ServicoResponseDTO {
     private String descricao;
 
     @JsonProperty("urgencia")
-    @NotBlank(message = "urgencia obrigatoria")
+    @NotNull(message = "urgencia obrigatoria")
     private Urgencia urgencia;
 
     @JsonProperty("preco")
-    @NotBlank(message = "preco obrigatorio")
+    @NotNull(message = "preco obrigatorio")
     private Double preco;
 
     @JsonProperty("disponivel")
-    @NotBlank(message = "disponibilidade obrigatoria")
+    @NotNull(message = "disponibilidade obrigatoria")
     private Boolean disponivel;
 
     @JsonProperty("idPlano")
@@ -52,11 +53,11 @@ public class ServicoResponseDTO {
     private String idPlano;
 
     @JsonProperty("duracao")
-    @NotBlank(message = "duracao obrigatoria")
+    @NotNull(message = "duracao obrigatoria")
     private Double duracao;
 
     @JsonProperty("empresaId")
-    @NotBlank(message = "Id obrigatorio")
+    @NotNull(message = "Id obrigatorio")
     private Long empresaId;
 
     public ServicoResponseDTO(Servico servico) {

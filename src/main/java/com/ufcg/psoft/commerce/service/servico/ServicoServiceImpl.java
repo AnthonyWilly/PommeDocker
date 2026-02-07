@@ -1,6 +1,8 @@
 package com.ufcg.psoft.commerce.service.servico;
 import com.ufcg.psoft.commerce.dto.ServicoPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ServicoResponseDTO;
+import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
+import com.ufcg.psoft.commerce.exception.EmpresaNaoExisteException;
 import com.ufcg.psoft.commerce.exception.ServicoNaoExisteException;
 import com.ufcg.psoft.commerce.model.*;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
@@ -27,16 +29,16 @@ public class ServicoServiceImpl implements ServicoService {
     }
 
     @Override
-    public ServicoResponseDTO alterar(Long empresaId,Long id, ServicoPostPutRequestDTO servicoPostPutRequestDTO, String codigoAcesso) {
-        Servico servico = buscarServicoPeloId(id);
+    public ServicoResponseDTO alterar(Long empresaId,Long id, String codigoAcesso,ServicoPostPutRequestDTO servicoPostPutRequestDTO) {
         validarEmpresa(empresaId, codigoAcesso);
+        Servico servico = buscarServicoPeloId(id);
         modelMapper.map(servicoPostPutRequestDTO, servico);
-
+        servicoRepository.save(servico);
         return modelMapper.map(servico, ServicoResponseDTO.class);
     }
 
     @Override
-    public ServicoResponseDTO criar(ServicoPostPutRequestDTO servicoPostPutRequestDTO,  String codigoAcesso, Long empresaId) {
+    public ServicoResponseDTO criar(Long empresaId, String codigoAcesso, ServicoPostPutRequestDTO servicoPostPutRequestDTO) {
         Empresa empresa = validarEmpresa(empresaId, codigoAcesso);
         Servico servico = modelMapper.map(servicoPostPutRequestDTO, Servico.class);
         servico.setEmpresa(empresa);
@@ -46,8 +48,8 @@ public class ServicoServiceImpl implements ServicoService {
 
     @Override
     public void remover(Long empresaId,Long id, String codigoAcesso) {
-        Servico servico = buscarServicoPeloId(id);
         validarEmpresa(empresaId, codigoAcesso);
+        Servico servico = buscarServicoPeloId(id);
         servicoRepository.delete(servico);
     }
 
@@ -68,10 +70,10 @@ public class ServicoServiceImpl implements ServicoService {
     private Empresa validarEmpresa(Long empresaId, String codigoAcesso) {
 
         Empresa empresa = empresaRepository.findById(empresaId)
-                .orElseThrow(() -> new RuntimeException("Empresa nao encontrada"));
+                .orElseThrow(EmpresaNaoExisteException::new);
 
         if (!empresa.getCodigoAcesso().equals(codigoAcesso)) {
-            throw new RuntimeException("Codigo de acesso invalido!");
+            throw new CodigoDeAcessoInvalidoException();
         }
 
         return empresa;

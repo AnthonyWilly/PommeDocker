@@ -2,6 +2,7 @@ package com.ufcg.psoft.commerce.dto;
 import com.ufcg.psoft.commerce.model.TipoServico;
 import com.ufcg.psoft.commerce.model.Urgencia;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,20 +16,20 @@ public class ServicoPostPutRequestDTO {
         @NotBlank(message = "nome obrigatorio")
         private String nome;
 
-        @NotBlank(message = "tipo obrigatorio")
+        @NotNull(message = "tipo obrigatorio")
         private TipoServico tipo;
 
         @NotBlank(message = "descricao obrigatoria")
         private String descricao;
 
-        @NotBlank(message = "urgencia obrigatoria")
+        @NotNull(message = "urgencia obrigatoria")
         private Urgencia urgencia;
 
-        @NotBlank
+        @NotNull
         @NotBlank(message = "preço obrigatorio")
         private Double preco;
 
-        @NotBlank
+        @NotNull
         @NotBlank(message = "disponivel obrigatorio")
         private Boolean disponivel;
 
@@ -36,7 +37,7 @@ public class ServicoPostPutRequestDTO {
         @NotBlank(message = "idPlano obrigatorio")
         private String idPlano;
 
-        @NotBlank
+        @NotNull
         @NotBlank(message = "duracao obrigatoria")
         private Double duracao;
 

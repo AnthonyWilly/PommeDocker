@@ -43,7 +43,7 @@ public class ServicoController {
      {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(servicoService.criar(servicoPostPutRequestDto,codigoAcesso, empresaId));
+                .body(servicoService.criar(empresaId,codigoAcesso, servicoPostPutRequestDto));
     }
 
     @PutMapping("/{id}")
@@ -54,7 +54,7 @@ public class ServicoController {
             @RequestBody @Valid ServicoPostPutRequestDTO servicoPostPutRequestDto) {
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(servicoService.alterar(empresaId,id, servicoPostPutRequestDto,codigoAcesso));
+                .body(servicoService.alterar(empresaId,id,codigoAcesso, servicoPostPutRequestDto));
     }
 
     @DeleteMapping("/{id}")
