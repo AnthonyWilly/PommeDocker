@@ -34,7 +34,7 @@ public class ClienteServiceImpl implements ClienteService {
   
     @Autowired
     private PlanoPremium planoPremium;
-  
+
     @Autowired
     private HistoricoPlanoRepository  historicoRepository;
   

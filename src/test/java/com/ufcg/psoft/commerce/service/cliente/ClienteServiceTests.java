@@ -23,6 +23,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 
 import java.time.LocalDate;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -46,6 +47,7 @@ public class ClienteServiceTests {
   
     @Mock
     PlanoPremium planoPremium;
+
   
     @InjectMocks
     ClienteServiceImpl clienteService;
@@ -111,6 +113,7 @@ public class ClienteServiceTests {
 
             assertEquals("João Atualizado", resultado.getNome());
             assertEquals("Rua Nova, 999", resultado.getEndereco());
+
             verify(clienteRepository, times(1)).save(cliente);
         }
 
