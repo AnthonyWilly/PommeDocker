@@ -11,7 +11,11 @@ public class PagamentoCredito implements Pagamento {
 
     @Override
     public BigDecimal aplicarDesconto(BigDecimal valorTotal) {
-        throw new UnsupportedOperationException("Calculo de desconto para credito nao implementado");
+        if (valorTotal == null) {
+            return BigDecimal.ZERO;
+        }
+
+        return valorTotal.setScale(2, java.math.RoundingMode.HALF_UP);
     }
 
     @Override

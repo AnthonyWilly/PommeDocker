@@ -11,7 +11,13 @@ public class PagamentoPix implements Pagamento {
 
     @Override
     public BigDecimal aplicarDesconto(BigDecimal valorTotal) {
-        throw new UnsupportedOperationException("Calculo de desconto para pix nao implementado");
+        if (valorTotal == null) {
+            return BigDecimal.ZERO;
+        }
+
+        BigDecimal fatorDesconto = BigDecimal.ONE.subtract(PERCENTUAL_DESCONTO);
+        return valorTotal.multiply(fatorDesconto)
+                .setScale(2, java.math.RoundingMode.HALF_UP);
     }
 
     @Override
