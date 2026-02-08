@@ -205,6 +205,7 @@ public class ClienteServiceTests {
             verify(clienteRepository, times(1)).delete(cliente);
         }
 
+
         @Test
         @DisplayName("Deve falhar ao remover cliente com código incorreto")
         void deveFalharRemoverCodigoIncorreto() {
