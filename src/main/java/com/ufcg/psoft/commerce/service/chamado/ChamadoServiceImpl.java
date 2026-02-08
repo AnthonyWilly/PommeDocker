@@ -42,8 +42,9 @@ public class ChamadoServiceImpl implements ChamadoService {
             throw new CodigoDeAcessoInvalidoException();
         }
 
-        boolean servicoIsPremium = "Premium".equalsIgnoreCase(servico.getTipo());
-        boolean clienteIsPremium = "Premium".equalsIgnoreCase(cliente.getPlanoAtual());
+        boolean servicoIsPremium = servico.getPlano() == Plano.PREMIUM;
+        
+        boolean clienteIsPremium = cliente.getPlanoAtual() == Plano.PREMIUM;
 
         if (servicoIsPremium && !clienteIsPremium) {
             throw new PlanoInvalidoException();
@@ -72,7 +73,7 @@ public class ChamadoServiceImpl implements ChamadoService {
     @Override
     public ChamadoResponseDTO confirmarPagamento(Long chamadoId, String codigoAcesso, String metodoPagamento) {
         Chamado chamado = chamadoRepository.findById(chamadoId)
-                .orElseThrow(() -> new CommerceException("Chamado não encontrado")); 
+                .orElseThrow(() -> new CommerceException("Chamado não encontrado"));
 
         if (!chamado.getCliente().getCodigo().equals(codigoAcesso)) {
             throw new CodigoDeAcessoInvalidoException();
