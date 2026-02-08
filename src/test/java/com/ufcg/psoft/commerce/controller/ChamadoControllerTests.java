@@ -7,6 +7,8 @@ import com.ufcg.psoft.commerce.dto.ChamadoResponseDTO;
 import com.ufcg.psoft.commerce.exception.PlanoInvalidoException;
 import com.ufcg.psoft.commerce.model.*;
 import com.ufcg.psoft.commerce.repository.*;
+import com.ufcg.psoft.commerce.model.Plano;
+import com.ufcg.psoft.commerce.model.Urgencia;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -64,7 +66,7 @@ public class ChamadoControllerTests {
                 .nome("Teste Basico")
                 .codigo("123456")
                 .endereco("Rua Base, 100")
-                .planoAtual("Basico")
+                .planoAtual(Plano.BASICO)
                 .dataCobranca(LocalDate.now())
                 .build());
         
@@ -72,28 +74,28 @@ public class ChamadoControllerTests {
                 .nome("Teste Premium")
                 .codigo("654321")
                 .endereco("Rua VIP, 200")
-                .planoAtual("Premium")
+                .planoAtual(Plano.PREMIUM)
                 .dataCobranca(LocalDate.now())
                 .build());
 
         servicoComum = servicoRepository.save(Servico.builder()
                 .nome("Reparo Simples")
                 .descricao("Reparo elétrico básico de tomadas")
-                .nivelUrgencia("NORMAL")
+                .nivelUrgencia(Urgencia.NORMAL)
                 .duracaoEstimada("30 min")
                 .valor(100.0)
                 .empresa(empresa)
-                .tipo("Basico")
+                .tipo(Plano.BASICO)
                 .build());
         
         servicoExclusivo = servicoRepository.save(Servico.builder()
                 .nome("Instalação 24h")
                 .descricao("Instalação elétrica completa de urgência") 
-                .nivelUrgencia("ALTA")
+                .nivelUrgencia(Urgencia.ALTA)
                 .duracaoEstimada("120 min")
                 .valor(300.0)
                 .empresa(empresa)
-                .tipo("Premium")
+                .tipo(Plano.PREMIUM)
                 .build());
     }
 
@@ -111,10 +113,10 @@ public class ChamadoControllerTests {
         ChamadoPostPutRequestDTO dto = ChamadoPostPutRequestDTO.builder()
                 .servicoId(servicoComum.getId())
                 .empresaId(empresa.getId())
-                .codigoAcessoCliente(clienteBasico.getCodigo())
                 .build();
 
         String response = driver.perform(post("/clientes/" + clienteBasico.getId() + "/chamados")
+                        .header("codigoAcesso", clienteBasico.getCodigo())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isCreated())
@@ -133,11 +135,11 @@ public class ChamadoControllerTests {
         ChamadoPostPutRequestDTO dto = ChamadoPostPutRequestDTO.builder()
                 .servicoId(servicoExclusivo.getId())
                 .empresaId(empresa.getId())
-                .codigoAcessoCliente(clientePremium.getCodigo())
                 .enderecoAtendimento("Casa de Praia")
                 .build();
 
         String response = driver.perform(post("/clientes/" + clientePremium.getId() + "/chamados")
+                        .header("codigoAcesso", clientePremium.getCodigo())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isCreated())
@@ -163,7 +165,7 @@ public class ChamadoControllerTests {
         chamado = chamadoRepository.save(chamado);
 
         driver.perform(put(URI_CHAMADOS + "/" + chamado.getId() + "/pagamento")
-                        .param("codigoAcesso", clienteBasico.getCodigo())
+                        .header("codigoAcesso", clienteBasico.getCodigo())
                         .param("metodoPagamento", "PIX")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -184,10 +186,9 @@ public class ChamadoControllerTests {
                 .build());
 
         driver.perform(delete(URI_CHAMADOS + "/" + chamado.getId())
-                        .param("codigoAcesso", "000000")
+                        .header("codigoAcesso", "000000")
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andDo(print());
+                .andExpect(status().isForbidden()) 
         
         assertTrue(chamadoRepository.existsById(chamado.getId()));
     }
@@ -203,7 +204,7 @@ public class ChamadoControllerTests {
                 .build());
 
         driver.perform(delete(URI_CHAMADOS + "/" + chamado.getId())
-                        .param("codigoAcesso", clienteBasico.getCodigo())
+                        .header("codigoAcesso", clienteBasico.getCodigo()) 
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNoContent())
                 .andDo(print());
@@ -222,7 +223,7 @@ public class ChamadoControllerTests {
                 .build());
 
         driver.perform(delete(URI_CHAMADOS + "/" + chamado.getId())
-                        .param("codigoAcesso", empresa.getCodigoAcesso())
+                        .header("codigoAcesso", empresa.getCodigoAcesso())
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNoContent())
                 .andDo(print());
@@ -236,11 +237,12 @@ public class ChamadoControllerTests {
         ChamadoPostPutRequestDTO dto = ChamadoPostPutRequestDTO.builder()
                 .servicoId(servicoExclusivo.getId())
                 .empresaId(empresa.getId())
-                .codigoAcessoCliente(clienteBasico.getCodigo())
+
                 .enderecoAtendimento("Rua Teste, 123")
                 .build();
 
         driver.perform(post("/clientes/" + clienteBasico.getId() + "/chamados")
+                        .header("codigoAcesso", clienteBasico.getCodigo())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isBadRequest())
