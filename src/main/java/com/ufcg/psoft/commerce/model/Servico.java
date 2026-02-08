@@ -56,5 +56,4 @@ public class Servico {
     @JsonProperty("preco")
     @Column(nullable = false)
     private double preco;
-
 }
