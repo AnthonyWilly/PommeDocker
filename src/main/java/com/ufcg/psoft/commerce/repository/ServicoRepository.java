@@ -1,18 +1,13 @@
 package com.ufcg.psoft.commerce.repository;
 
+import com.ufcg.psoft.commerce.model.Servico;
+import org.springframework.data.jpa.repository.JpaRepository;
+
 import java.util.List;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-
-import com.ufcg.psoft.commerce.model.Servico;
-import com.ufcg.psoft.commerce.model.TipoServico;
-import com.ufcg.psoft.commerce.model.Urgencia;
-
 public interface ServicoRepository extends JpaRepository<Servico, Long> {
-    List<Servico> findByIdEmpresa(Long idServico);
-
+    List<Servico> findByEmpresa_Id(Long empresaId);
+    
     @Query("SELECT s FROM Servico s WHERE " +
            "s.idPlano IN :planosPermitidos AND " + 
            "(:tipo IS NULL OR s.tipo = :tipo) AND " +

@@ -1,14 +1,14 @@
 package com.ufcg.psoft.commerce.dto;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ufcg.psoft.commerce.model.Plano;
 import com.ufcg.psoft.commerce.model.Servico;
 import com.ufcg.psoft.commerce.model.TipoServico;
 import com.ufcg.psoft.commerce.model.Urgencia;
-
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,19 +19,18 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ServicoResponseDTO {
-
     @JsonProperty("id")
     @Id
-    @NotBlank(message = "Id obrigatorio")
+    @NotBlank(message = "id obrigatorio")
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long id;
 
     @JsonProperty("nome")
-    @NotBlank(message = "Id obrigatorio")
+    @NotBlank(message = "nome obrigatorio")
     private String nome;
 
     @JsonProperty("tipo")
-    @NotBlank(message = "Id obrigatorio")
+    @NotNull(message = "tipo obrigatorio")
     private TipoServico tipo;
 
     @JsonProperty("descricao")
@@ -39,27 +38,27 @@ public class ServicoResponseDTO {
     private String descricao;
 
     @JsonProperty("urgencia")
-    @NotBlank(message = "urgencia obrigatoria")
+    @NotNull(message = "urgencia obrigatoria")
     private Urgencia urgencia;
 
     @JsonProperty("preco")
-    @NotBlank(message = "preco obrigatorio")
+    @NotNull(message = "preco obrigatorio")
     private Double preco;
 
     @JsonProperty("disponivel")
-    @NotBlank(message = "disponibilidade obrigatoria")
+    @NotNull(message = "disponibilidade obrigatoria")
     private Boolean disponivel;
 
-    @JsonProperty("idPlano")
-    @NotBlank(message = "idPlano obrigatorio")
-    private String idPlano;
+    @JsonProperty("plano")
+    @NotNull(message = "plano obrigatorio")
+    private Plano plano;
 
     @JsonProperty("duracao")
-    @NotBlank(message = "duracao obrigatoria")
+    @NotNull(message = "duracao obrigatoria")
     private Double duracao;
 
     @JsonProperty("empresaId")
-    @NotBlank(message = "Id obrigatorio")
+    @NotNull(message = "empresaId obrigatorio")
     private Long empresaId;
 
     public ServicoResponseDTO(Servico servico) {
@@ -70,9 +69,8 @@ public class ServicoResponseDTO {
         this.urgencia = servico.getUrgencia();
         this.preco = servico.getPreco();
         this.disponivel = servico.isDisponivel();
-        this.idPlano = servico.getIdPlano();
+        this.plano = servico.getPlano();
         this.duracao = servico.getDuracao();
         this.empresaId = servico.getEmpresa().getId();
     }
-
 }

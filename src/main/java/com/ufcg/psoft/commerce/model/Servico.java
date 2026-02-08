@@ -2,15 +2,7 @@ package com.ufcg.psoft.commerce.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -58,8 +50,8 @@ public class Servico {
     private Empresa empresa;
 
     @JsonIgnore
-    @Column(name = "idPlano")
-    private String idPlano;
+    @Column(name = "plano")
+    private Plano plano;
 
     @JsonProperty("preco")
     @Column(nullable = false)
