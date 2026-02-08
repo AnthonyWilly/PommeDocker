@@ -36,9 +36,10 @@ public class Chamado {
     private ChamadoEstado estado;
 
     public Chamado() {
-        this.estado = new ChamadoEstadoAguardandoPagamento();
-        this.status = this.estado.getNome();
+        this.estado = ChamadoStatus.AGUARDANDO_PAGAMENTO.getInstancia();
+        this.status = ChamadoStatus.AGUARDANDO_PAGAMENTO.getNome();
     }
+
     public void mudaEstado(ChamadoEstado novoEstado) {
         this.estado = novoEstado;
         this.status = novoEstado.getNome();
@@ -50,20 +51,6 @@ public class Chamado {
 
     @PostLoad
     private void carregarEstado() {
-        if (this.status == null) {
-            this.estado = new ChamadoEstadoAguardandoPagamento();
-            return;
-        }
-        
-        switch (this.status) {
-            case "AGUARDANDO_PAGAMENTO":
-                this.estado = new ChamadoEstadoAguardandoPagamento();
-                break;
-            case "EM_PROCESSAMENTO":
-                this.estado = new ChamadoEstadoEmProcessamento();
-                break;
-            default:
-                this.estado = new ChamadoEstadoAguardandoPagamento();
-        }
+        this.estado = ChamadoStatus.obterEstado(this.status);
     }
 }
