@@ -20,7 +20,9 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+
 import java.util.List;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -53,7 +55,6 @@ public class EmpresaControllerTests {
 
     @Autowired
     TecnicoRepository tecnicoRepository;
-
     Tecnico tecnicoPadrao;
 
     @BeforeEach
@@ -73,7 +74,7 @@ public class EmpresaControllerTests {
                 .codigoAcesso(empresaPadrao.getCodigoAcesso())
                 .senhaAdmin(SENHA_ADMIN)
                 .build();
-        
+
         tecnicoPadrao = tecnicoRepository.save(Tecnico.builder()
                 .nome("Tecnico Teste")
                 .acesso("123456")
@@ -103,7 +104,7 @@ public class EmpresaControllerTests {
                 .andReturn().getResponse().getContentAsString();
 
         EmpresaResponseDTO resultado = objectMapper.readValue(responseJsonString, EmpresaResponseDTO.class);
-        
+
         assertNotNull(resultado.getId());
         assertEquals(empresaPostPutRequestDTO.getNome(), resultado.getNome());
         assertEquals(empresaPostPutRequestDTO.getCnpj(), resultado.getCnpj());
@@ -189,7 +190,7 @@ public class EmpresaControllerTests {
                 .andReturn().getResponse().getContentAsString();
 
         EmpresaResponseDTO resultado = objectMapper.readValue(responseJsonString, EmpresaResponseDTO.class);
-        
+
         assertEquals("Empresa Atualizada", resultado.getNome());
     }
 
@@ -260,10 +261,10 @@ public class EmpresaControllerTests {
                         .content(objectMapper.writeValueAsString(deleteDTO)))
                 .andExpect(status().isNoContent())
                 .andDo(print());
-        
+
         assertFalse(empresaRepository.findById(empresaSalva.getId()).isPresent());
     }
-    
+
     @Test
     @DisplayName("Falhar ao criar empresa com senha de administrador incorreta")
     void criarEmpresaSenhaAdminIncorreta() throws Exception {
@@ -323,7 +324,8 @@ public class EmpresaControllerTests {
                 .andDo(print())
                 .andReturn().getResponse().getContentAsString();
 
-        List<EmpresaResponseDTO> resultado = objectMapper.readValue(responseJsonString, new TypeReference<List<EmpresaResponseDTO>>() {});
+        List<EmpresaResponseDTO> resultado = objectMapper.readValue(responseJsonString, new TypeReference<List<EmpresaResponseDTO>>() {
+        });
 
         assertEquals(1, resultado.size());
     }
@@ -421,7 +423,7 @@ public class EmpresaControllerTests {
                 .cnpj(CNPJ_PADRAO)
                 .codigoAcesso(CODIGO_ACESSO_PADRAO)
                 .senhaAdmin(SENHA_ADMIN)
-                .nome("Teste") 
+                .nome("Teste")
                 .build();
 
         String responseJsonString = driver.perform(delete(URI_EMPRESAS + "/99999")
@@ -464,7 +466,7 @@ public class EmpresaControllerTests {
     @DisplayName("Criar empresa com CNPJ duplicado")
     void criarEmpresaCnpjDuplicado() throws Exception {
         empresaRepository.save(empresaPadrao);
-        
+
         empresaPostPutRequestDTO.setCnpj(empresaPadrao.getCnpj());
 
         String responseJsonString = driver.perform(post(URI_EMPRESAS)
@@ -478,19 +480,22 @@ public class EmpresaControllerTests {
 
         assertEquals("Empresa ja cadastrada!", resultado.getMessage());
     }
+
     @Test
     @DisplayName("Empresa aprova técnico com sucesso")
     @org.springframework.transaction.annotation.Transactional
     void aprovarTecnicoComSucesso() throws Exception {
         driver.perform(put(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/tecnicos/" + tecnicoPadrao.getId())
                         .param("codigoAcesso", CODIGO_ACESSO_PADRAO)
-                        .param("aprovacao", "true") 
+                        .param("aprovacao", "true")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
         Tecnico tecnicoAtualizado = tecnicoRepository.findById(tecnicoPadrao.getId()).orElseThrow();
         assertTrue(tecnicoAtualizado.getEmpresasAprovadoras().contains(empresaPadrao));
         assertTrue(tecnicoAtualizado.isAprovado());
-    }    @Test
+    }
+
+    @Test
     @DisplayName("Empresa rejeita técnico com sucesso")
     @org.springframework.transaction.annotation.Transactional
     void rejeitarTecnicoComSucesso() throws Exception {
@@ -504,7 +509,7 @@ public class EmpresaControllerTests {
                 .andExpect(status().isOk());
 
         Tecnico tecnicoAtualizado = tecnicoRepository.findById(tecnicoPadrao.getId()).orElseThrow();
-        
+
         assertFalse(tecnicoAtualizado.getEmpresasAprovadoras().contains(empresaPadrao));
         assertFalse(tecnicoAtualizado.isAprovado());
     }
@@ -531,5 +536,7 @@ public class EmpresaControllerTests {
                 .andExpect(status().isNotFound())
                 .andDo(print());
     }
+
+
 
 }
