@@ -12,20 +12,14 @@ import com.ufcg.psoft.commerce.exception.SenhaInvalidaException;
 import com.ufcg.psoft.commerce.exception.TecnicoNaoExisteException;
 import com.ufcg.psoft.commerce.model.Empresa;
 import com.ufcg.psoft.commerce.model.Pagamento;
-import com.ufcg.psoft.commerce.model.PagamentoCredito;
-import com.ufcg.psoft.commerce.model.PagamentoDebito;
-import com.ufcg.psoft.commerce.model.PagamentoPix;
 import com.ufcg.psoft.commerce.model.Tecnico;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
 import com.ufcg.psoft.commerce.repository.TecnicoRepository;
-import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -40,30 +34,9 @@ public class EmpresaServiceImpl implements EmpresaService {
     private static final String SENHA_ADMIN_PADRAO = "admin123";
 
     @Autowired
-    private PagamentoCredito pagamentoCredito;
-
-    @Autowired
-    private PagamentoDebito pagamentoDebito;
-
-    @Autowired
-    private PagamentoPix pagamentoPix;
-
-    private Map<String, Pagamento> pagamentos = new HashMap<>();
+    private Pagamento pagamento;
 
     private static final long CHAMADO_MAX_VALIDO = 100;
-
-    @PostConstruct
-    public void inicializarMapaDePagamentos() {
-        pagamentos.clear();
-
-        pagamentoCredito = pagamentoCredito != null ? pagamentoCredito : new PagamentoCredito();
-        pagamentoDebito = pagamentoDebito != null ? pagamentoDebito : new PagamentoDebito();
-        pagamentoPix = pagamentoPix != null ? pagamentoPix : new PagamentoPix();
-
-        pagamentos.put(pagamentoCredito.getMetodo().toUpperCase(), pagamentoCredito);
-        pagamentos.put(pagamentoDebito.getMetodo().toUpperCase(), pagamentoDebito);
-        pagamentos.put(pagamentoPix.getMetodo().toUpperCase(), pagamentoPix);
-    }
 
     @Override
     public EmpresaResponseDTO cadastrar(EmpresaPostPutRequestDTO dto) {
@@ -169,34 +142,14 @@ public class EmpresaServiceImpl implements EmpresaService {
             throw new CommerceException("Metodo de pagamento nao suportado");
         }
 
-        if (pagamentos.isEmpty()) {
-            inicializarMapaDePagamentos();
-        }
-
-        Pagamento pagamento = obterPagamento(pagamentoRequestDTO.getMetodoPagamento());
-
-        BigDecimal valorTotal = pagamentoRequestDTO.getValorTotal();
-        if (valorTotal == null || valorTotal.compareTo(BigDecimal.ZERO) < 0) {
-            throw new CommerceException("Valor total invalido");
-        }
-
-        BigDecimal valorFinal = pagamento.aplicarDesconto(valorTotal);
+        BigDecimal valorFinal = pagamento.calcularValorFinal(
+                pagamentoRequestDTO.getMetodoPagamento(),
+                pagamentoRequestDTO.getValorTotal()
+        );
 
         return PagamentoResponseDTO.builder()
                 .valorFinal(valorFinal)
                 .build();
-    }
-
-    private Pagamento obterPagamento(String metodoPagamento) {
-        if (metodoPagamento == null || metodoPagamento.isBlank()) {
-            throw new CommerceException("Metodo de pagamento nao suportado");
-        }
-
-        Pagamento pagamento = pagamentos.get(metodoPagamento.toUpperCase());
-        if (pagamento == null) {
-            throw new CommerceException("Metodo de pagamento nao suportado");
-        }
-        return pagamento;
     }
 
     private void validarChamado(Long chamadoId) {

@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 
 @Component("Pix")
-public class PagamentoPix implements Pagamento {
+public class PagamentoPix implements PagamentoStrategy {
 
     private static final BigDecimal PERCENTUAL_DESCONTO = BigDecimal.valueOf(0.05);
 

@@ -64,7 +64,7 @@ public class EmpresaController {
     public ResponseEntity<PagamentoResponseDTO> confirmarPagamento(
             @PathVariable Long empresaId,
             @PathVariable Long chamadoId,
-            @RequestHeader String codigoAcesso,
+            @RequestParam String codigoAcesso,
             @RequestBody PagamentoRequestDTO pagamentoRequestDTO) {
         return ResponseEntity.ok(
                 empresaService.confirmarPagamento(empresaId, chamadoId, codigoAcesso, pagamentoRequestDTO)

@@ -8,6 +8,7 @@ import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
 import com.ufcg.psoft.commerce.exception.CommerceException;
 import com.ufcg.psoft.commerce.exception.EmpresaNaoExisteException;
 import com.ufcg.psoft.commerce.model.Empresa;
+import com.ufcg.psoft.commerce.model.Pagamento;
 import com.ufcg.psoft.commerce.model.PagamentoCredito;
 import com.ufcg.psoft.commerce.model.PagamentoDebito;
 import com.ufcg.psoft.commerce.model.PagamentoPix;
@@ -24,6 +25,7 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -37,6 +39,13 @@ public class EmpresaServiceTests {
     @Mock
     private EmpresaRepository empresaRepository;
 
+        @Spy
+        private Pagamento pagamento = new Pagamento(List.of(
+            new PagamentoCredito(),
+            new PagamentoDebito(),
+            new PagamentoPix()
+        ));
+
     @InjectMocks
     private EmpresaServiceImpl empresaService;
 
@@ -45,8 +54,7 @@ public class EmpresaServiceTests {
 
     @BeforeEach
     void setUp() {
-        empresaService.inicializarMapaDePagamentos();
-
+        
         empresaDTO = EmpresaPostPutRequestDTO.builder()
                 .nome("Empresa Exemplo")
                 .cnpj("12345678901234")

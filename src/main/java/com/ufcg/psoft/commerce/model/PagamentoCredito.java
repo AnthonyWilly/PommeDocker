@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 
 @Component("Credito")
-public class PagamentoCredito implements Pagamento {
+public class PagamentoCredito implements PagamentoStrategy {
 
     private static final BigDecimal PERCENTUAL_DESCONTO = BigDecimal.ZERO;
 
