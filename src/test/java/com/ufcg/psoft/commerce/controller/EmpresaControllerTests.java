@@ -544,7 +544,7 @@ public class EmpresaControllerTests {
                 .build();
 
         String responseJsonString = driver.perform(post(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/1/pagamentos")
-                        .param("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                        .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pagamentoRequest)))
                 .andExpect(status().isOk())
@@ -565,7 +565,7 @@ public class EmpresaControllerTests {
                 .build();
 
         String responseJsonString = driver.perform(post(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/2/pagamentos")
-                        .param("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                        .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pagamentoRequest)))
                 .andExpect(status().isOk())
@@ -586,7 +586,7 @@ public class EmpresaControllerTests {
                 .build();
 
         String responseJsonString = driver.perform(post(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/3/pagamentos")
-                        .param("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                        .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pagamentoRequest)))
                 .andExpect(status().isOk())
@@ -607,7 +607,7 @@ public class EmpresaControllerTests {
                 .build();
 
         String responseJsonString = driver.perform(post(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/4/pagamentos")
-                        .param("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                        .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pagamentoRequest)))
                 .andExpect(status().isBadRequest())
@@ -628,7 +628,7 @@ public class EmpresaControllerTests {
                 .build();
 
         String responseJsonString = driver.perform(post(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/5/pagamentos")
-                        .param("codigoAcesso", "000000")
+                        .header("codigoAcesso", "000000")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pagamentoRequest)))
                 .andExpect(status().isBadRequest())
@@ -650,7 +650,7 @@ public class EmpresaControllerTests {
                 .build();
 
         String responseJsonString = driver.perform(post(URI_EMPRESAS + "/99999/chamados/6/pagamentos")
-                        .param("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                        .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pagamentoRequest)))
                 .andExpect(status().isNotFound())
@@ -671,7 +671,7 @@ public class EmpresaControllerTests {
                 .build();
 
         String responseJsonString = driver.perform(post(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/0/pagamentos")
-                        .param("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                        .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pagamentoRequest)))
                 .andExpect(status().isBadRequest())
@@ -691,7 +691,7 @@ public class EmpresaControllerTests {
                 .build();
 
         String responseJsonString = driver.perform(post(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/7/pagamentos")
-                        .param("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                        .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pagamentoRequest)))
                 .andExpect(status().isBadRequest())
