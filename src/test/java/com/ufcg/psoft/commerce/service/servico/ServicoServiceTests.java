@@ -1,12 +1,12 @@
 package com.ufcg.psoft.commerce.service.servico;
-
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -23,14 +23,20 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.modelmapper.ModelMapper;
 
 import com.ufcg.psoft.commerce.dto.ServicoFiltroDTO;
+import com.ufcg.psoft.commerce.dto.ServicoPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ServicoResponseDTO;
+import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
 import com.ufcg.psoft.commerce.model.Cliente;
 import com.ufcg.psoft.commerce.model.Empresa;
+import com.ufcg.psoft.commerce.model.Plano;
 import com.ufcg.psoft.commerce.model.Servico;
 import com.ufcg.psoft.commerce.model.TipoServico;
+import com.ufcg.psoft.commerce.model.Urgencia;
 import com.ufcg.psoft.commerce.repository.ClienteRepository;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
 import com.ufcg.psoft.commerce.repository.ServicoRepository;
@@ -40,32 +46,42 @@ import com.ufcg.psoft.commerce.repository.ServicoRepository;
 public class ServicoServiceTests {
 
     @Mock
-    ServicoRepository servicoRepository;
-
+    private EmpresaRepository empresaRepository;
+    @Mock
+    private ServicoRepository servicoRepository;
     @Mock
     ClienteRepository clienteRepository;
-
-    @Mock
-    EmpresaRepository empresaRepository;
+    
+    @Spy
+    private ModelMapper modelMapper = new ModelMapper();
 
     @InjectMocks
-    ServicoServiceImpl servicoService;
+    private ServicoServiceImpl servicoService;
 
-    Cliente clienteBasico;
-    Cliente clientePremium;
-    Servico servicoBasico;
-    Servico servicoPremium;
-    Empresa empresa;
-    
+    private Empresa empresa;
+    private Cliente clienteBasico;
+    private Cliente clientePremium;
+    private Servico servicoEletrica;
+    private ServicoPostPutRequestDTO servicoDTO;
+    private Servico servicoBasico;
+    private Servico servicoPremium;
+
     @BeforeEach
-    void setup() {
+    void setUp() {
 
-        clienteBasico = Cliente.builder()
+        empresa = Empresa.builder()
+                .id(1L)
+                .nome("Empresa Exemplo")
+                .cnpj("12345678901234")
+                .codigoAcesso("123456")
+                .build();
+        
+       clienteBasico = Cliente.builder()
                 .id(1L)
                 .nome("João da Silva")
                 .endereco("Rua A, 123")
                 .codigo("123456")
-                .planoAtual("BASICO")
+                .planoAtual(Plano.BASICO)
                 .dataCobranca((LocalDate.now().plusDays(30)))
                 .proxPlano(null)
                 .build();
@@ -75,16 +91,33 @@ public class ServicoServiceTests {
                 .nome("João da Silva 2")
                 .endereco("Rua B, 123")
                 .codigo("654321")
-                .planoAtual("PREMIUM")
+                .planoAtual(Plano.PREMIUM)
                 .dataCobranca((LocalDate.now().plusDays(30)))
                 .proxPlano(null)
+                .build(); 
+
+        servicoEletrica = Servico.builder()
+                .id(10L)
+                .nome("Instalacao de Chuveiro")
+                .tipo(TipoServico.ELETRICA)
+                .descricao("instala um chuveiro")
+                .urgencia(Urgencia.NORMAL)
+                .preco(150.0)
+                .disponivel(true)
+                .plano(Plano.BASICO)
+                .duracao(3.0)
+                .empresa(empresa)
                 .build();
 
-        empresa = Empresa.builder()
-                .id(1L)
-                .nome("Empresa Exemplo")
-                .cnpj("12345678901234")
-                .codigoAcesso("123456")
+        servicoDTO = ServicoPostPutRequestDTO.builder()
+                .nome("Instalacao de Chuveiro")
+                .tipo(TipoServico.ELETRICA)
+                .urgencia(Urgencia.ALTA)
+                .duracao(3.0)
+                .disponivel(true)
+                .descricao("instala um chuveiro")
+                .preco(150.0)
+                .plano(Plano.BASICO)
                 .build();
 
         servicoBasico = Servico.builder()
@@ -92,7 +125,7 @@ public class ServicoServiceTests {
                 .nome("Reparo Hidraulico")
                 .tipo(TipoServico.HIDRAULICA)
                 .preco(100.0)
-                .idPlano("BASICO") 
+                .plano(Plano.BASICO)
                 .empresa(empresa)
                 .build();
 
@@ -101,10 +134,97 @@ public class ServicoServiceTests {
                 .nome("Guinchar carro")
                 .tipo(TipoServico.LIMPEZA)
                 .preco(500.0)
-                .idPlano("PREMIUM")
+                .plano(Plano.PREMIUM)
                 .empresa(empresa)
                 .build();
+    }
 
+    @Test
+    @DisplayName("Adicionar serviço à empresa com sucesso")
+    void testAdicionarServicoSucesso() {
+        when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
+        when(servicoRepository.save(any(Servico.class))).thenReturn(servicoEletrica);
+
+        ServicoResponseDTO resultado =
+                servicoService.criar(1L, "123456", servicoDTO);
+
+        assertNotNull(resultado);
+        assertEquals("Instalacao de Chuveiro", resultado.getNome());
+        verify(servicoRepository, times(1)).save(any(Servico.class));
+    }
+
+    @Test
+    @DisplayName("Falhar ao adicionar serviço com código inválido")
+    void testAdicionarServicoCodigoInvalido() {
+        when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
+
+        assertThrows(CodigoDeAcessoInvalidoException.class,
+                () -> servicoService.criar(1L, "000000", servicoDTO));
+
+        verify(servicoRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Alterar serviço com sucesso")
+    void testAlterarServicoSucesso() {
+        when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
+        when(servicoRepository.findById(10L)).thenReturn(Optional.of(servicoEletrica));
+        when(servicoRepository.save(any(Servico.class)))
+                .thenReturn(servicoEletrica);
+
+        ServicoPostPutRequestDTO updateDTO = ServicoPostPutRequestDTO.builder()
+                .nome("Reparo de Cano")
+                .tipo(TipoServico.HIDRAULICA)
+                .urgencia(Urgencia.NORMAL)
+                .duracao(3.0)
+                .disponivel(true)
+                .descricao("instala um chuveiro")
+                .preco(80.0)
+                .plano(Plano.BASICO)
+                .build();
+
+        ServicoResponseDTO resultado =
+                servicoService.alterar(1L, 10L, "123456", updateDTO);
+
+        assertEquals("Reparo de Cano", resultado.getNome());
+    }
+
+
+    @Test
+    @DisplayName("Falhar ao alterar serviço com código de acesso inválido")
+    void testAlterarServicoCodigoAcessoInvalido() {
+
+        when(empresaRepository.findById(1L))
+                .thenReturn(Optional.of(empresa));
+
+        assertThrows(CodigoDeAcessoInvalidoException.class, () -> {
+            servicoService.alterar(1L, 10L, "000000", servicoDTO);
+        });
+
+        verify(servicoRepository, never()).save(any(Servico.class));
+    }
+
+
+    @Test
+    @DisplayName("Remover serviço com sucesso")
+    void testRemoverServicoSucesso() {
+        when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
+        when(servicoRepository.findById(10L)).thenReturn(Optional.of(servicoEletrica));
+        servicoService.remover(1L, 10L, "123456");
+        verify(servicoRepository, times(1)).delete(servicoEletrica);
+    }
+
+
+    @Test
+    @DisplayName("Falhar ao remover serviço com código de acesso inválido")
+    void testRemoverServicoCodigoAcessoInvalido() {
+        when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
+
+        assertThrows(CodigoDeAcessoInvalidoException.class, () -> {
+            servicoService.remover(1L, 10L, "000000");
+        });
+
+        verify(servicoRepository, never()).delete(any(Servico.class));
     }
 
     @Nested
@@ -117,7 +237,7 @@ public class ServicoServiceTests {
 
             // Arrange
             when(clienteRepository.findById(1L)).thenReturn(Optional.of(clienteBasico));
-            when(servicoRepository.findAllComFiltros(any(), any(), any(), any(), any(), eq(Arrays.asList("BASICO"))))
+            when(servicoRepository.findAllComFiltros(any(), any(), any(), any(), any(), eq(Arrays.asList(Plano.BASICO))))
                 .thenReturn(Arrays.asList(servicoBasico));
 
             // Act
@@ -127,7 +247,7 @@ public class ServicoServiceTests {
             assertAll(
                 () -> assertEquals(1, resultado.size()),
                 () -> assertEquals("Reparo Hidraulico", resultado.get(0).getNome()),
-                () -> verify(servicoRepository, times(1)).findAllComFiltros(any(), any(), any(), any(), any(), eq(Arrays.asList("BASICO")))
+                () -> verify(servicoRepository, times(1)).findAllComFiltros(any(), any(), any(), any(), any(), eq(Arrays.asList(Plano.BASICO)))
             );
         }
 
@@ -137,7 +257,7 @@ public class ServicoServiceTests {
 
             // Arrange
             when(clienteRepository.findById(2L)).thenReturn(Optional.of(clientePremium));
-            when(servicoRepository.findAllComFiltros(any(), any(), any(), any(), any(), eq(Arrays.asList("BASICO", "PREMIUM"))))
+            when(servicoRepository.findAllComFiltros(any(), any(), any(), any(), any(), eq(Arrays.asList(Plano.BASICO, Plano.PREMIUM))))
                 .thenReturn(Arrays.asList(servicoBasico, servicoPremium));
             
             // Act
@@ -148,7 +268,7 @@ public class ServicoServiceTests {
                 () -> assertEquals(2, resultado.size()),
                 () -> assertEquals("Reparo Hidraulico", resultado.get(0).getNome()),
                 () -> assertEquals("Guinchar carro", resultado.get(1).getNome()),
-                () -> verify(servicoRepository, times(1)).findAllComFiltros(any(), any(), any(), any(), any(), eq(Arrays.asList("BASICO", "PREMIUM")))
+                () -> verify(servicoRepository, times(1)).findAllComFiltros(any(), any(), any(), any(), any(), eq(Arrays.asList(Plano.BASICO, Plano.PREMIUM)))
             );
         }
 
@@ -170,7 +290,7 @@ public class ServicoServiceTests {
 
             // arrange
             when(clienteRepository.findById(2L)).thenReturn(Optional.of(clientePremium));
-            when(servicoRepository.findAllComFiltros(eq(TipoServico.HIDRAULICA), any(), any(), any(), any(), eq(Arrays.asList("BASICO", "PREMIUM"))))
+            when(servicoRepository.findAllComFiltros(eq(TipoServico.HIDRAULICA), any(), any(), any(), any(), eq(Arrays.asList(Plano.BASICO, Plano.PREMIUM))))
                 .thenReturn(Arrays.asList(servicoBasico));
             ServicoFiltroDTO filtro = ServicoFiltroDTO.builder()
                                 .tipo(TipoServico.HIDRAULICA)
@@ -182,7 +302,7 @@ public class ServicoServiceTests {
             assertAll(
                 () -> assertEquals(1, resultado.size()),
                 () -> assertEquals("Reparo Hidraulico", resultado.get(0).getNome()),
-                () -> verify(servicoRepository, times(1)).findAllComFiltros(eq(TipoServico.HIDRAULICA), any(), any(), any(), any(), eq(Arrays.asList("BASICO", "PREMIUM")))
+                () -> verify(servicoRepository, times(1)).findAllComFiltros(eq(TipoServico.HIDRAULICA), any(), any(), any(), any(), eq(Arrays.asList(Plano.BASICO, Plano.PREMIUM)))
             );
         }
 
@@ -192,7 +312,7 @@ public class ServicoServiceTests {
 
             // Arrange
             when(clienteRepository.findById(1L)).thenReturn(Optional.of(clienteBasico));
-            when(servicoRepository.findAllComFiltros(eq(TipoServico.LIMPEZA), any(), any(), any(), any(), eq(Arrays.asList("BASICO"))))
+            when(servicoRepository.findAllComFiltros(eq(TipoServico.LIMPEZA), any(), any(), any(), any(), eq(Arrays.asList(Plano.BASICO))))
                 .thenReturn(Arrays.asList());
             ServicoFiltroDTO filtro = ServicoFiltroDTO.builder()
                                 .tipo(TipoServico.LIMPEZA)
@@ -204,7 +324,7 @@ public class ServicoServiceTests {
             // Assert
             assertAll(
                 () -> assertEquals(0, resultado.size()),
-                () -> verify(servicoRepository, times(1)).findAllComFiltros(eq(TipoServico.LIMPEZA), any(), any(), any(), any(), eq(Arrays.asList("BASICO")))
+                () -> verify(servicoRepository, times(1)).findAllComFiltros(eq(TipoServico.LIMPEZA), any(), any(), any(), any(), eq(Arrays.asList(Plano.BASICO)))
             );
         }
 
@@ -214,7 +334,7 @@ public class ServicoServiceTests {
 
             // Arrange
             when(clienteRepository.findById(1L)).thenReturn(Optional.of(clienteBasico));
-            when(servicoRepository.findAllComFiltros(any(), eq(empresa.getId()), any(), any(), any(), eq(Arrays.asList("BASICO"))))
+            when(servicoRepository.findAllComFiltros(any(), eq(empresa.getId()), any(), any(), any(), eq(Arrays.asList(Plano.BASICO))))
                 .thenReturn(Arrays.asList(servicoBasico));
             ServicoFiltroDTO filtro = ServicoFiltroDTO.builder()
                                 .empresaId(empresa.getId())
@@ -227,7 +347,7 @@ public class ServicoServiceTests {
             assertAll(
                 () -> assertEquals(1, resultado.size()),
                 () -> assertEquals(1L, resultado.get(0).getEmpresaId()),
-                () -> verify(servicoRepository, times(1)).findAllComFiltros(any(), eq(empresa.getId()), any(), any(), any(), eq(Arrays.asList("BASICO")))
+                () -> verify(servicoRepository, times(1)).findAllComFiltros(any(), eq(empresa.getId()), any(), any(), any(), eq(Arrays.asList(Plano.BASICO)))
             );
         }
 
@@ -237,7 +357,7 @@ public class ServicoServiceTests {
 
             // Arrange
             when(clienteRepository.findById(1L)).thenReturn(Optional.of(clienteBasico));
-            when(servicoRepository.findAllComFiltros(any(), eq(2L), any(), any(), any(), eq(Arrays.asList("BASICO"))))
+            when(servicoRepository.findAllComFiltros(any(), eq(2L), any(), any(), any(), eq(Arrays.asList(Plano.BASICO))))
                 .thenReturn(Arrays.asList());
             ServicoFiltroDTO filtro = ServicoFiltroDTO.builder()
                                 .empresaId(2L)
@@ -249,7 +369,7 @@ public class ServicoServiceTests {
             // Assert
             assertAll(
                 () -> assertEquals(0, resultado.size()),
-                () -> verify(servicoRepository, times(1)).findAllComFiltros(any(), eq(2L), any(), any(), any(), eq(Arrays.asList("BASICO")))
+                () -> verify(servicoRepository, times(1)).findAllComFiltros(any(), eq(2L), any(), any(), any(), eq(Arrays.asList(Plano.BASICO)))
             );
         }
 
@@ -259,7 +379,7 @@ public class ServicoServiceTests {
 
             // Arrange
             when(clienteRepository.findById(2L)).thenReturn(Optional.of(clientePremium));
-            when(servicoRepository.findAllComFiltros(any(), any(), any(), any(), eq(200.00), eq(Arrays.asList("BASICO", "PREMIUM"))))
+            when(servicoRepository.findAllComFiltros(any(), any(), any(), any(), eq(200.00), eq(Arrays.asList(Plano.BASICO, Plano.PREMIUM))))
                 .thenReturn(Arrays.asList(servicoBasico));
             ServicoFiltroDTO filtro = ServicoFiltroDTO.builder()
                                 .precoMax(200.00)
@@ -272,7 +392,7 @@ public class ServicoServiceTests {
             assertAll(
                 () -> assertEquals(1, resultado.size()),
                 () -> assertTrue(resultado.get(0).getPreco() <= 200.00),
-                () -> verify(servicoRepository, times(1)).findAllComFiltros(any(), any(), any(), any(), eq(200.00), eq(Arrays.asList("BASICO", "PREMIUM")))
+                () -> verify(servicoRepository, times(1)).findAllComFiltros(any(), any(), any(), any(), eq(200.00), eq(Arrays.asList(Plano.BASICO, Plano.PREMIUM)))
             );
         }
     }

@@ -1,17 +1,23 @@
 package com.ufcg.psoft.commerce.controller;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.ufcg.psoft.commerce.dto.ServicoPostPutRequestDTO;
-import com.ufcg.psoft.commerce.dto.ServicoResponseDTO;
-import com.ufcg.psoft.commerce.exception.CustomErrorType;
-import com.ufcg.psoft.commerce.model.*;
-import com.ufcg.psoft.commerce.repository.EmpresaRepository;
-import com.ufcg.psoft.commerce.repository.ServicoRepository;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.time.LocalDate;
+import java.util.List;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -19,11 +25,21 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.ufcg.psoft.commerce.dto.ServicoPostPutRequestDTO;
+import com.ufcg.psoft.commerce.dto.ServicoResponseDTO;
+import com.ufcg.psoft.commerce.exception.CustomErrorType;
+import com.ufcg.psoft.commerce.model.Cliente;
+import com.ufcg.psoft.commerce.model.Empresa;
+import com.ufcg.psoft.commerce.model.Plano;
+import com.ufcg.psoft.commerce.model.Servico;
+import com.ufcg.psoft.commerce.model.TipoServico;
+import com.ufcg.psoft.commerce.model.Urgencia;
+import com.ufcg.psoft.commerce.repository.ClienteRepository;
+import com.ufcg.psoft.commerce.repository.EmpresaRepository;
+import com.ufcg.psoft.commerce.repository.ServicoRepository;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -66,16 +82,29 @@ public class ServicoControllerTests {
                 .build()
         );
         
+        empresa = empresaRepository.save(Empresa.builder()
+                .nome("Empresa Exemplo 2")
+                .cnpj("99.999.999/9999-99")
+                .codigoAcesso(CODIGO_ACESSO_PADRAO)
+                .build()
+        );
+        
         clienteBasico = clienteRepository.save(Cliente.builder()
                 .nome("Cliente Basico")
-                .planoAtual("Basico")
+                .endereco("Rua dos Testes, 123")
+                .planoAtual(Plano.BASICO)
                 .codigo("111111")
+                .proxPlano(null)
+                .dataCobranca(LocalDate.now().plusDays(30))
                 .build());
 
         clientePremium = clienteRepository.save(Cliente.builder()
                 .nome("Cliente Premium")
-                .planoAtual("Premium")
+                .endereco("Rua dos Testes, 123")
+                .planoAtual(Plano.PREMIUM)
                 .codigo("222222")
+                .proxPlano(null)
+                .dataCobranca(LocalDate.now().plusDays(30))
                 .build());
 
         servicoPadrao = servicoRepository.save(Servico.builder()
@@ -85,7 +114,7 @@ public class ServicoControllerTests {
                 .descricao("Pintar determinada area")
                 .preco(100.0)
                 .duracao(3.0)
-                .disponivel(true)
+                .disponivel(false)
                 .empresa(empresaPadrao)
                 .plano(Plano.BASICO)
                 .build()
@@ -98,7 +127,7 @@ public class ServicoControllerTests {
                 .descricao("Pintar determinada area")
                 .preco(100.0)
                 .duracao(3.0)
-                .disponivel(true)
+                .disponivel(false)
                 .plano(Plano.PREMIUM)
                 .build();
 
@@ -106,11 +135,12 @@ public class ServicoControllerTests {
                 .nome("Reparo Hidraulico")
                 .tipo(TipoServico.HIDRAULICA)
                 .urgencia(Urgencia.BAIXA)
+                .descricao("Reparo Hidraulico completo")
                 .preco(100.0)
                 .duracao(1.0)
                 .disponivel(true)
                 .plano(Plano.BASICO) 
-                .empresa(empresaPadrao)
+                .empresa(empresa)
                 .build());
 
         servicoPremium = servicoRepository.save(Servico.builder()
@@ -122,7 +152,7 @@ public class ServicoControllerTests {
                 .duracao(2.0)
                 .disponivel(true)
                 .plano(Plano.PREMIUM)
-                .empresa(empresaPadrao)
+                .empresa(empresa)
                 .build());
         
     }
@@ -363,14 +393,14 @@ public class ServicoControllerTests {
         void quandoFiltramosPorTipo() throws Exception {
             String responJsoString = driver.perform(get(URI_SERVICOS + URI_CATALOGO)
                         .param("clienteId", clientePremium.getId().toString())
-                        .param("tipo", "Hidraulica")
+                        .param("tipo", "HIDRAULICA")
                         .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
                     .andReturn().getResponse().getContentAsString();
 
             List<Servico> resultado = objectMapper.readValue(responJsoString, new TypeReference<List<Servico>>() {});
 
-            assertTrue(resultado.stream().allMatch(s -> s.getTipo().equals("Hidraulica")));
+            assertTrue(resultado.stream().allMatch(s -> s.getTipo().equals(TipoServico.HIDRAULICA)));
         }
 
         @Test
@@ -399,7 +429,7 @@ public class ServicoControllerTests {
 
             String responseJsonString = driver.perform(get(URI_SERVICOS + URI_CATALOGO)
                             .param("clienteId", clientePremium.getId().toString())
-                            .param("empresaId", empresaPadrao.getId().toString())
+                            .param("empresaId", empresa.getId().toString())
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
                     .andReturn().getResponse().getContentAsString();
@@ -411,5 +441,6 @@ public class ServicoControllerTests {
             );
 
         }
-        
+
+        }
 }

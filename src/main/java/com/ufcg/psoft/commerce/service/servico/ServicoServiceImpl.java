@@ -1,16 +1,20 @@
 package com.ufcg.psoft.commerce.service.servico;
+import com.ufcg.psoft.commerce.dto.ServicoFiltroDTO;
 import com.ufcg.psoft.commerce.dto.ServicoPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ServicoResponseDTO;
+import com.ufcg.psoft.commerce.exception.ClienteNaoExisteException;
 import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
 import com.ufcg.psoft.commerce.exception.EmpresaNaoExisteException;
 import com.ufcg.psoft.commerce.exception.ServicoNaoExisteException;
 import com.ufcg.psoft.commerce.model.*;
+import com.ufcg.psoft.commerce.repository.ClienteRepository;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
 import com.ufcg.psoft.commerce.repository.ServicoRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -91,11 +95,11 @@ public class ServicoServiceImpl implements ServicoService {
         Cliente cliente = clienteRepository.findById(clienteId)
                 .orElseThrow(() -> new ClienteNaoExisteException());
 
-        List<Planos> planos = new ArrayList<Planos>();
-        planos.add(PLANO.BASICO);
+        List<Plano> planos = new ArrayList<Plano>();
+        planos.add(Plano.BASICO);
 
-        if("PREMIUM".equals(cliente.getPlanoAtual().toUpperCase()))
-            planos.add(PLANO.PREMIUM);
+        if(Plano.PREMIUM.equals(cliente.getPlanoAtual()))
+            planos.add(Plano.PREMIUM);
 
         List<Servico> servicos = servicoRepository.findAllComFiltros(
             filtro.getTipo(),

@@ -1,4 +1,5 @@
 package com.ufcg.psoft.commerce.service.servico;
+import com.ufcg.psoft.commerce.dto.ServicoFiltroDTO;
 import com.ufcg.psoft.commerce.dto.ServicoPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ServicoResponseDTO;
 import java.util.List;
