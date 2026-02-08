@@ -2,6 +2,8 @@ package com.ufcg.psoft.commerce.controller;
 
 import com.ufcg.psoft.commerce.dto.EmpresaPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.EmpresaResponseDTO;
+import com.ufcg.psoft.commerce.dto.PagamentoRequestDTO;
+import com.ufcg.psoft.commerce.dto.PagamentoResponseDTO;
 import com.ufcg.psoft.commerce.service.empresa.EmpresaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -56,5 +58,16 @@ public class EmpresaController {
             empresaService.rejeitarTecnico(empresaId, tecnicoId, codigoAcesso);
         }
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{empresaId}/chamados/{chamadoId}/pagamentos")
+    public ResponseEntity<PagamentoResponseDTO> confirmarPagamento(
+            @PathVariable Long empresaId,
+            @PathVariable Long chamadoId,
+            @RequestHeader String codigoAcesso,
+            @RequestBody PagamentoRequestDTO pagamentoRequestDTO) {
+        return ResponseEntity.ok(
+                empresaService.confirmarPagamento(empresaId, chamadoId, codigoAcesso, pagamentoRequestDTO)
+        );
     }
 }

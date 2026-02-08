@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.ufcg.psoft.commerce.dto.EmpresaPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.EmpresaResponseDTO;
+import com.ufcg.psoft.commerce.dto.PagamentoRequestDTO;
+import com.ufcg.psoft.commerce.dto.PagamentoResponseDTO;
 import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
 import com.ufcg.psoft.commerce.exception.CustomErrorType;
 import com.ufcg.psoft.commerce.model.Empresa;
@@ -20,7 +22,10 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.math.BigDecimal;
 import java.util.List;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -53,7 +58,6 @@ public class EmpresaControllerTests {
 
     @Autowired
     TecnicoRepository tecnicoRepository;
-
     Tecnico tecnicoPadrao;
 
     @BeforeEach
@@ -73,7 +77,7 @@ public class EmpresaControllerTests {
                 .codigoAcesso(empresaPadrao.getCodigoAcesso())
                 .senhaAdmin(SENHA_ADMIN)
                 .build();
-        
+
         tecnicoPadrao = tecnicoRepository.save(Tecnico.builder()
                 .nome("Tecnico Teste")
                 .acesso("123456")
@@ -103,7 +107,7 @@ public class EmpresaControllerTests {
                 .andReturn().getResponse().getContentAsString();
 
         EmpresaResponseDTO resultado = objectMapper.readValue(responseJsonString, EmpresaResponseDTO.class);
-        
+
         assertNotNull(resultado.getId());
         assertEquals(empresaPostPutRequestDTO.getNome(), resultado.getNome());
         assertEquals(empresaPostPutRequestDTO.getCnpj(), resultado.getCnpj());
@@ -189,7 +193,7 @@ public class EmpresaControllerTests {
                 .andReturn().getResponse().getContentAsString();
 
         EmpresaResponseDTO resultado = objectMapper.readValue(responseJsonString, EmpresaResponseDTO.class);
-        
+
         assertEquals("Empresa Atualizada", resultado.getNome());
     }
 
@@ -260,10 +264,10 @@ public class EmpresaControllerTests {
                         .content(objectMapper.writeValueAsString(deleteDTO)))
                 .andExpect(status().isNoContent())
                 .andDo(print());
-        
+
         assertFalse(empresaRepository.findById(empresaSalva.getId()).isPresent());
     }
-    
+
     @Test
     @DisplayName("Falhar ao criar empresa com senha de administrador incorreta")
     void criarEmpresaSenhaAdminIncorreta() throws Exception {
@@ -323,7 +327,8 @@ public class EmpresaControllerTests {
                 .andDo(print())
                 .andReturn().getResponse().getContentAsString();
 
-        List<EmpresaResponseDTO> resultado = objectMapper.readValue(responseJsonString, new TypeReference<List<EmpresaResponseDTO>>() {});
+        List<EmpresaResponseDTO> resultado = objectMapper.readValue(responseJsonString, new TypeReference<List<EmpresaResponseDTO>>() {
+        });
 
         assertEquals(1, resultado.size());
     }
@@ -421,7 +426,7 @@ public class EmpresaControllerTests {
                 .cnpj(CNPJ_PADRAO)
                 .codigoAcesso(CODIGO_ACESSO_PADRAO)
                 .senhaAdmin(SENHA_ADMIN)
-                .nome("Teste") 
+                .nome("Teste")
                 .build();
 
         String responseJsonString = driver.perform(delete(URI_EMPRESAS + "/99999")
@@ -464,7 +469,7 @@ public class EmpresaControllerTests {
     @DisplayName("Criar empresa com CNPJ duplicado")
     void criarEmpresaCnpjDuplicado() throws Exception {
         empresaRepository.save(empresaPadrao);
-        
+
         empresaPostPutRequestDTO.setCnpj(empresaPadrao.getCnpj());
 
         String responseJsonString = driver.perform(post(URI_EMPRESAS)
@@ -478,19 +483,22 @@ public class EmpresaControllerTests {
 
         assertEquals("Empresa ja cadastrada!", resultado.getMessage());
     }
+
     @Test
     @DisplayName("Empresa aprova técnico com sucesso")
     @org.springframework.transaction.annotation.Transactional
     void aprovarTecnicoComSucesso() throws Exception {
         driver.perform(put(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/tecnicos/" + tecnicoPadrao.getId())
                         .param("codigoAcesso", CODIGO_ACESSO_PADRAO)
-                        .param("aprovacao", "true") 
+                        .param("aprovacao", "true")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
         Tecnico tecnicoAtualizado = tecnicoRepository.findById(tecnicoPadrao.getId()).orElseThrow();
         assertTrue(tecnicoAtualizado.getEmpresasAprovadoras().contains(empresaPadrao));
         assertTrue(tecnicoAtualizado.isAprovado());
-    }    @Test
+    }
+
+    @Test
     @DisplayName("Empresa rejeita técnico com sucesso")
     @org.springframework.transaction.annotation.Transactional
     void rejeitarTecnicoComSucesso() throws Exception {
@@ -504,7 +512,7 @@ public class EmpresaControllerTests {
                 .andExpect(status().isOk());
 
         Tecnico tecnicoAtualizado = tecnicoRepository.findById(tecnicoPadrao.getId()).orElseThrow();
-        
+
         assertFalse(tecnicoAtualizado.getEmpresasAprovadoras().contains(empresaPadrao));
         assertFalse(tecnicoAtualizado.isAprovado());
     }
@@ -529,6 +537,189 @@ public class EmpresaControllerTests {
                         .param("aprovacao", "true")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound())
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("Pagamento credito nao aplica desconto")
+    void pagamentoCreditoSemDesconto() throws Exception {
+        PagamentoRequestDTO pagamentoRequest = PagamentoRequestDTO.builder()
+                .valorTotal(new BigDecimal("100.00"))
+                .metodoPagamento("Credito")
+                .build();
+
+        String responseJsonString = driver.perform(post(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/1/pagamentos")
+                        .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(pagamentoRequest)))
+                .andExpect(status().isOk())
+                .andDo(print())
+                .andReturn().getResponse().getContentAsString();
+
+        PagamentoResponseDTO resultado = objectMapper.readValue(responseJsonString, PagamentoResponseDTO.class);
+
+        assertEquals(new BigDecimal("100.00"), resultado.getValorFinal());
+    }
+
+    @Test
+    @DisplayName("Pagamento debito aplica 2,5% de desconto")
+    void pagamentoDebitoComDesconto() throws Exception {
+        PagamentoRequestDTO pagamentoRequest = PagamentoRequestDTO.builder()
+                .valorTotal(new BigDecimal("100.00"))
+                .metodoPagamento("Debito")
+                .build();
+
+        String responseJsonString = driver.perform(post(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/2/pagamentos")
+                        .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(pagamentoRequest)))
+                .andExpect(status().isOk())
+                .andDo(print())
+                .andReturn().getResponse().getContentAsString();
+
+        PagamentoResponseDTO resultado = objectMapper.readValue(responseJsonString, PagamentoResponseDTO.class);
+
+        assertEquals(new BigDecimal("97.50"), resultado.getValorFinal());
+    }
+
+    @Test
+    @DisplayName("Pagamento pix aplica 5% de desconto")
+    void pagamentoPixComDesconto() throws Exception {
+        PagamentoRequestDTO pagamentoRequest = PagamentoRequestDTO.builder()
+                .valorTotal(new BigDecimal("100.00"))
+                .metodoPagamento("Pix")
+                .build();
+
+        String responseJsonString = driver.perform(post(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/3/pagamentos")
+                        .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(pagamentoRequest)))
+                .andExpect(status().isOk())
+                .andDo(print())
+                .andReturn().getResponse().getContentAsString();
+
+        PagamentoResponseDTO resultado = objectMapper.readValue(responseJsonString, PagamentoResponseDTO.class);
+
+        assertEquals(new BigDecimal("95.00"), resultado.getValorFinal());
+    }
+
+    @Test
+    @DisplayName("Pagamento com metodo invalido deve falhar")
+    void pagamentoMetodoInvalido() throws Exception {
+        PagamentoRequestDTO pagamentoRequest = PagamentoRequestDTO.builder()
+                .valorTotal(new BigDecimal("100.00"))
+                .metodoPagamento("Boleto")
+                .build();
+
+        String responseJsonString = driver.perform(post(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/4/pagamentos")
+                        .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(pagamentoRequest)))
+                .andExpect(status().isBadRequest())
+                .andDo(print())
+                .andReturn().getResponse().getContentAsString();
+
+        CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
+
+        assertEquals("Metodo de pagamento nao suportado", resultado.getMessage());
+    }
+
+    @Test
+    @DisplayName("Pagamento com codigo de acesso invalido deve ser rejeitado")
+    void pagamentoCodigoAcessoInvalido() throws Exception {
+        PagamentoRequestDTO pagamentoRequest = PagamentoRequestDTO.builder()
+                .valorTotal(new BigDecimal("100.00"))
+                .metodoPagamento("Pix")
+                .build();
+
+        String responseJsonString = driver.perform(post(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/5/pagamentos")
+                        .header("codigoAcesso", "000000")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(pagamentoRequest)))
+                .andExpect(status().isBadRequest())
+                .andExpect(result -> assertTrue(result.getResolvedException() instanceof CodigoDeAcessoInvalidoException))
+                .andDo(print())
+                .andReturn().getResponse().getContentAsString();
+
+        CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
+
+        assertEquals("Codigo de acesso invalido!", resultado.getMessage());
+    }
+
+    @Test
+    @DisplayName("Pagamento falha para empresa inexistente")
+    void pagamentoEmpresaInexistente() throws Exception {
+        PagamentoRequestDTO pagamentoRequest = PagamentoRequestDTO.builder()
+                .valorTotal(new BigDecimal("75.00"))
+                .metodoPagamento("Pix")
+                .build();
+
+        String responseJsonString = driver.perform(post(URI_EMPRESAS + "/99999/chamados/6/pagamentos")
+                        .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(pagamentoRequest)))
+                .andExpect(status().isNotFound())
+                .andDo(print())
+                .andReturn().getResponse().getContentAsString();
+
+        CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
+
+        assertEquals("A empresa consultada nao existe!", resultado.getMessage());
+    }
+
+    @Test
+    @DisplayName("Pagamento com chamado invalido deve falhar")
+    void pagamentoChamadoInvalido() throws Exception {
+        PagamentoRequestDTO pagamentoRequest = PagamentoRequestDTO.builder()
+                .valorTotal(new BigDecimal("60.00"))
+                .metodoPagamento("Debito")
+                .build();
+
+        String responseJsonString = driver.perform(post(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/0/pagamentos")
+                        .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(pagamentoRequest)))
+                .andExpect(status().isBadRequest())
+                .andDo(print())
+                .andReturn().getResponse().getContentAsString();
+
+        CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
+
+        assertEquals("Chamado invalido", resultado.getMessage());
+    }
+
+    @Test
+    @DisplayName("Pagamento sem metodo informado deve falhar")
+    void pagamentoSemMetodo() throws Exception {
+        PagamentoRequestDTO pagamentoRequest = PagamentoRequestDTO.builder()
+                .valorTotal(new BigDecimal("50.00"))
+                .build();
+
+        String responseJsonString = driver.perform(post(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/7/pagamentos")
+                        .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(pagamentoRequest)))
+                .andExpect(status().isBadRequest())
+                .andDo(print())
+                .andReturn().getResponse().getContentAsString();
+
+        CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
+
+        assertEquals("Metodo de pagamento nao suportado", resultado.getMessage());
+    }
+
+    @Test
+    @DisplayName("Pagamento sem codigo de acesso deve retornar erro de parametro")
+    void pagamentoSemCodigoAcesso() throws Exception {
+        PagamentoRequestDTO pagamentoRequest = PagamentoRequestDTO.builder()
+                .valorTotal(new BigDecimal("40.00"))
+                .metodoPagamento("Pix")
+                .build();
+
+        driver.perform(post(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/8/pagamentos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(pagamentoRequest)))
+                .andExpect(status().isBadRequest())
                 .andDo(print());
     }
 

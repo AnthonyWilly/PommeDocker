@@ -81,4 +81,5 @@ public class ClienteController {
                         return ResponseEntity.ok(clienteService.setPlanoBasico(id, codigo));
                 return ResponseEntity.badRequest().body("Plano invalido");
         }
+
 }

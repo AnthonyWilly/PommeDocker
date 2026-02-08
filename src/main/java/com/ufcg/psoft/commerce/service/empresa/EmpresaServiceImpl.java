@@ -2,18 +2,23 @@ package com.ufcg.psoft.commerce.service.empresa;
 
 import com.ufcg.psoft.commerce.dto.EmpresaPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.EmpresaResponseDTO;
+import com.ufcg.psoft.commerce.dto.PagamentoRequestDTO;
+import com.ufcg.psoft.commerce.dto.PagamentoResponseDTO;
 import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
+import com.ufcg.psoft.commerce.exception.CommerceException;
 import com.ufcg.psoft.commerce.exception.EmpresaJaCadastradaException;
 import com.ufcg.psoft.commerce.exception.EmpresaNaoExisteException;
 import com.ufcg.psoft.commerce.exception.SenhaInvalidaException;
 import com.ufcg.psoft.commerce.exception.TecnicoNaoExisteException;
 import com.ufcg.psoft.commerce.model.Empresa;
+import com.ufcg.psoft.commerce.model.Pagamento;
 import com.ufcg.psoft.commerce.model.Tecnico;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
 import com.ufcg.psoft.commerce.repository.TecnicoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,6 +32,11 @@ public class EmpresaServiceImpl implements EmpresaService {
     private TecnicoRepository tecnicoRepository;
 
     private static final String SENHA_ADMIN_PADRAO = "admin123";
+
+    @Autowired
+    private Pagamento pagamento;
+
+    private static final long CHAMADO_MAX_VALIDO = 100;
 
     @Override
     public EmpresaResponseDTO cadastrar(EmpresaPostPutRequestDTO dto) {
@@ -120,5 +130,31 @@ public class EmpresaServiceImpl implements EmpresaService {
         
         tecnico.getEmpresasAprovadoras().remove(empresa);
         tecnicoRepository.save(tecnico);
+    }
+
+    @Override
+    public PagamentoResponseDTO confirmarPagamento(Long empresaId, Long chamadoId, String codigoAcesso, PagamentoRequestDTO pagamentoRequestDTO) {
+        Empresa empresa = buscarEmpresaPeloId(empresaId);
+        validarCodigoAcesso(empresa, codigoAcesso);
+        validarChamado(chamadoId);
+
+        if (pagamentoRequestDTO == null) {
+            throw new CommerceException("Metodo de pagamento nao suportado");
+        }
+
+        BigDecimal valorFinal = pagamento.calcularValorFinal(
+                pagamentoRequestDTO.getMetodoPagamento(),
+                pagamentoRequestDTO.getValorTotal()
+        );
+
+        return PagamentoResponseDTO.builder()
+                .valorFinal(valorFinal)
+                .build();
+    }
+
+    private void validarChamado(Long chamadoId) {
+        if (chamadoId == null || chamadoId <= 0 || chamadoId > CHAMADO_MAX_VALIDO) {
+            throw new CommerceException("Chamado invalido");
+        }
     }
 }

@@ -6,8 +6,9 @@ import com.ufcg.psoft.commerce.exception.ClienteNaoExisteException;
 import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
 import com.ufcg.psoft.commerce.model.Cliente;
 import com.ufcg.psoft.commerce.model.HistoricoPlano;
-import com.ufcg.psoft.commerce.model.PlanoBasico;
-import com.ufcg.psoft.commerce.model.PlanoPremium;
+import com.ufcg.psoft.commerce.model.Plano;
+// import com.ufcg.psoft.commerce.model.PlanoBasico;
+// import com.ufcg.psoft.commerce.model.PlanoPremium;
 import com.ufcg.psoft.commerce.repository.ClienteRepository;
 import com.ufcg.psoft.commerce.repository.HistoricoPlanoRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,12 +42,6 @@ public class ClienteServiceTests {
     @Mock
     HistoricoPlanoRepository historicoRepository;
   
-    @Mock
-    PlanoBasico planoBasico;
-  
-    @Mock
-    PlanoPremium planoPremium;
-  
     @InjectMocks
     ClienteServiceImpl clienteService;
 
@@ -59,14 +54,13 @@ public class ClienteServiceTests {
     @BeforeEach
     void setup() {
         modelMapper.getConfiguration().setSkipNullEnabled(true);
-        clienteService.inicializarMapaDePlanos();
-      
+
         cliente = Cliente.builder()
                 .id(1L)
                 .nome("João da Silva")
                 .endereco("Rua A, 123")
                 .codigo("123456")
-                .planoAtual("Basico")
+                .planoAtual(Plano.BASICO)
                 .dataCobranca((LocalDate.now().plusDays(30)))
                 .proxPlano(null)
                 .build();
@@ -91,7 +85,7 @@ public class ClienteServiceTests {
             ClienteResponseDTO resultado = clienteService.criar(clienteDTO);
 
             assertNotNull(resultado);
-            assertEquals("Basico", resultado.getPlanoAtual());
+            assertEquals(Plano.BASICO, resultado.getPlanoAtual());
             verify(clienteRepository, times(1)).save(any(Cliente.class));
         }
 
@@ -111,6 +105,7 @@ public class ClienteServiceTests {
 
             assertEquals("João Atualizado", resultado.getNome());
             assertEquals("Rua Nova, 999", resultado.getEndereco());
+
             verify(clienteRepository, times(1)).save(cliente);
         }
 
@@ -156,8 +151,8 @@ public class ClienteServiceTests {
 
             clienteService.setPlanoPremium(1L, "123456");
 
-            assertEquals("Premium", cliente.getProxPlano());
-            assertEquals("Basico", cliente.getPlanoAtual());
+            assertEquals(Plano.PREMIUM, cliente.getProxPlano());
+            assertEquals(Plano.BASICO, cliente.getPlanoAtual());
             verify(clienteRepository, times(1)).save(cliente);
             verify(historicoRepository, times(1)).save(any());
         }
@@ -168,12 +163,12 @@ public class ClienteServiceTests {
             when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente));
             when(clienteRepository.save(any(Cliente.class))).thenReturn(cliente);
 
-            cliente.setPlanoAtual("Premium");
+            cliente.setPlanoAtual(Plano.PREMIUM);
 
             clienteService.setPlanoBasico(1L, "123456");
 
-            assertEquals("Basico", cliente.getProxPlano());
-            assertEquals("Premium", cliente.getPlanoAtual());
+            assertEquals(Plano.BASICO, cliente.getProxPlano());
+            assertEquals(Plano.PREMIUM, cliente.getPlanoAtual());
             verify(clienteRepository, times(1)).save(cliente);
             verify(historicoRepository, times(1)).save(any());
         }
@@ -270,7 +265,7 @@ public class ClienteServiceTests {
             // Assert
             assertAll(
                     () -> assertNotNull(response),
-                    () -> assertEquals("Premium", response.getProxPlano(),
+                    () -> assertEquals(Plano.PREMIUM, response.getProxPlano(),
                             "O próximo plano do cliente deve ser Premium")
             );
 
@@ -290,7 +285,7 @@ public class ClienteServiceTests {
             // Assert
             assertAll(
                     () -> assertNotNull(response),
-                    () -> assertEquals("Basico", response.getProxPlano(),
+                    () -> assertEquals(Plano.BASICO, response.getProxPlano(),
                             "O próximo plano do cliente deve ser Basico")
             );
             verify(clienteRepository).save(any(Cliente.class));
@@ -336,7 +331,7 @@ public class ClienteServiceTests {
             verify(historicoRepository).save(historicoCaptor.capture());
             HistoricoPlano historicoSalvo = historicoCaptor.getValue();
 
-            assertEquals("Basico", historicoSalvo.getIdPlanoAntigo(), "O histórico deve registrar a string 'Basico'");
+            assertEquals(Plano.BASICO, historicoSalvo.getPlanoAntigo(), "O histórico deve registrar a string 'Basico'");
         }
 
         @Test
@@ -351,7 +346,7 @@ public class ClienteServiceTests {
             verify(historicoRepository).save(historicoCaptor.capture());
             HistoricoPlano historicoSalvo = historicoCaptor.getValue();
 
-            assertEquals("Basico", historicoSalvo.getIdPlanoAntigo(), "O histórico deve registrar a string 'Basico'");
+            assertEquals(Plano.BASICO, historicoSalvo.getPlanoAntigo(), "O histórico deve registrar o enum 'Basico'");
         }
 
         @Test
