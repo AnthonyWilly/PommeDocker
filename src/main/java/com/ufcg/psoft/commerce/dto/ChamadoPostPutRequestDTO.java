@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 @Data
@@ -20,10 +19,6 @@ public class ChamadoPostPutRequestDTO {
     @NotNull(message = "Id da empresa é obrigatório")
     @JsonProperty("empresaId")
     private Long empresaId;
-
-    @NotBlank(message = "Código de acesso do cliente é obrigatório")
-    @JsonProperty("codigoAcessoCliente")
-    private String codigoAcessoCliente;
 
     @JsonProperty("enderecoAtendimento")
     private String enderecoAtendimento;

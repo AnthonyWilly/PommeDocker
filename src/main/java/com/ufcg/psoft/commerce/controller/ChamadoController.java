@@ -20,16 +20,17 @@ public class ChamadoController {
     @PostMapping("/clientes/{clienteId}/chamados")
     public ResponseEntity<ChamadoResponseDTO> criarChamado(
             @PathVariable Long clienteId,
+            @RequestHeader("codigoAcesso") String codigoAcesso,
             @RequestBody @Valid ChamadoPostPutRequestDTO dto) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(chamadoService.criarChamado(clienteId, dto));
+                .body(chamadoService.criarChamado(clienteId, codigoAcesso, dto));
     }
 
     @PutMapping("/chamados/{chamadoId}/pagamento")
     public ResponseEntity<ChamadoResponseDTO> confirmarPagamento(
             @PathVariable Long chamadoId,
-            @RequestParam String codigoAcesso,
+            @RequestHeader("codigoAcesso") String codigoAcesso,
             @RequestParam String metodoPagamento) {
         return ResponseEntity
                 .ok(chamadoService.confirmarPagamento(chamadoId, codigoAcesso, metodoPagamento));
@@ -38,7 +39,7 @@ public class ChamadoController {
     @DeleteMapping("/chamados/{chamadoId}")
     public ResponseEntity<Void> removerChamado(
             @PathVariable Long chamadoId,
-            @RequestParam String codigoAcesso) {
+            @RequestHeader("codigoAcesso") String codigoAcesso) {
         chamadoService.removerChamado(chamadoId, codigoAcesso);
         return ResponseEntity
                 .noContent()

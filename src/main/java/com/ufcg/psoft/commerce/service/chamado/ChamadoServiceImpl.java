@@ -28,7 +28,7 @@ public class ChamadoServiceImpl implements ChamadoService {
     private ModelMapper modelMapper;
 
     @Override
-    public ChamadoResponseDTO criarChamado(Long clienteId, ChamadoPostPutRequestDTO dto) {
+    public ChamadoResponseDTO criarChamado(Long clienteId, String codigoAcesso, ChamadoPostPutRequestDTO dto) {
         Cliente cliente = clienteRepository.findById(clienteId)
                 .orElseThrow(ClienteNaoExisteException::new);
         
@@ -38,12 +38,11 @@ public class ChamadoServiceImpl implements ChamadoService {
         Servico servico = servicoRepository.findById(dto.getServicoId())
                 .orElseThrow(ServicoNaoExisteException::new);
 
-        if (!cliente.getCodigo().equals(dto.getCodigoAcessoCliente())) {
+        if (!cliente.getCodigo().equals(codigoAcesso)) {
             throw new CodigoDeAcessoInvalidoException();
         }
 
         boolean servicoIsPremium = servico.getPlano() == Plano.PREMIUM;
-        
         boolean clienteIsPremium = cliente.getPlanoAtual() == Plano.PREMIUM;
 
         if (servicoIsPremium && !clienteIsPremium) {
