@@ -1,6 +1,7 @@
 package com.ufcg.psoft.commerce.controller;
 
 import com.ufcg.psoft.commerce.dto.ChamadoPostPutRequestDTO;
+import com.ufcg.psoft.commerce.dto.ChamadoResponseDTO;
 import com.ufcg.psoft.commerce.service.chamado.ChamadoService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +18,7 @@ public class ChamadoController {
     private ChamadoService chamadoService;
 
     @PostMapping("/clientes/{clienteId}/chamados")
-    public ResponseEntity<?> criarChamado(
+    public ResponseEntity<ChamadoResponseDTO> criarChamado(
             @PathVariable Long clienteId,
             @RequestBody @Valid ChamadoPostPutRequestDTO dto) {
         return ResponseEntity
@@ -26,7 +27,7 @@ public class ChamadoController {
     }
 
     @PutMapping("/chamados/{chamadoId}/pagamento")
-    public ResponseEntity<?> confirmarPagamento(
+    public ResponseEntity<ChamadoResponseDTO> confirmarPagamento(
             @PathVariable Long chamadoId,
             @RequestParam String codigoAcesso,
             @RequestParam String metodoPagamento) {
@@ -35,7 +36,7 @@ public class ChamadoController {
     }
 
     @DeleteMapping("/chamados/{chamadoId}")
-    public ResponseEntity<?> removerChamado(
+    public ResponseEntity<Void> removerChamado(
             @PathVariable Long chamadoId,
             @RequestParam String codigoAcesso) {
         chamadoService.removerChamado(chamadoId, codigoAcesso);

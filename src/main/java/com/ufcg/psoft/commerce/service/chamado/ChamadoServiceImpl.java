@@ -1,6 +1,4 @@
 package com.ufcg.psoft.commerce.service.chamado;
-import com.ufcg.psoft.commerce.service.chamado.ChamadoService;
-import com.ufcg.psoft.commerce.repository.ServicoRepository;
 
 import com.ufcg.psoft.commerce.dto.ChamadoPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ChamadoResponseDTO;
@@ -32,11 +30,13 @@ public class ChamadoServiceImpl implements ChamadoService {
     @Override
     public ChamadoResponseDTO criarChamado(Long clienteId, ChamadoPostPutRequestDTO dto) {
         Cliente cliente = clienteRepository.findById(clienteId)
-                .orElseThrow(() -> new ClienteNaoExisteException());
+                .orElseThrow(ClienteNaoExisteException::new);
+        
         Empresa empresa = empresaRepository.findById(dto.getEmpresaId())
-                .orElseThrow(() -> new EmpresaNaoExisteException());
+                .orElseThrow(EmpresaNaoExisteException::new);
+        
         Servico servico = servicoRepository.findById(dto.getServicoId())
-                .orElseThrow(() -> new RuntimeException("Servico não existe"));
+                .orElseThrow(ServicoNaoExisteException::new);
 
         if (!cliente.getCodigo().equals(dto.getCodigoAcessoCliente())) {
             throw new CodigoDeAcessoInvalidoException();
@@ -72,7 +72,7 @@ public class ChamadoServiceImpl implements ChamadoService {
     @Override
     public ChamadoResponseDTO confirmarPagamento(Long chamadoId, String codigoAcesso, String metodoPagamento) {
         Chamado chamado = chamadoRepository.findById(chamadoId)
-                .orElseThrow(() -> new RuntimeException("Chamado não encontrado"));
+                .orElseThrow(() -> new CommerceException("Chamado não encontrado")); 
 
         if (!chamado.getCliente().getCodigo().equals(codigoAcesso)) {
             throw new CodigoDeAcessoInvalidoException();
@@ -87,7 +87,7 @@ public class ChamadoServiceImpl implements ChamadoService {
     @Override
     public void removerChamado(Long chamadoId, String codigoAcesso) {
         Chamado chamado = chamadoRepository.findById(chamadoId)
-                .orElseThrow(() -> new RuntimeException("Chamado não encontrado"));
+                .orElseThrow(() -> new CommerceException("Chamado não encontrado"));
 
         boolean isCliente = chamado.getCliente().getCodigo().equals(codigoAcesso);
         boolean isEmpresa = chamado.getEmpresa().getCodigoAcesso().equals(codigoAcesso);
@@ -110,7 +110,7 @@ public class ChamadoServiceImpl implements ChamadoService {
     @Override
     public ChamadoResponseDTO buscarChamado(Long chamadoId) {
         Chamado chamado = chamadoRepository.findById(chamadoId)
-                .orElseThrow(() -> new RuntimeException("Chamado não encontrado"));
+                .orElseThrow(() -> new CommerceException("Chamado não encontrado"));
         return modelMapper.map(chamado, ChamadoResponseDTO.class);
     }
 }
