@@ -1,7 +1,12 @@
 package com.ufcg.psoft.commerce.controller;
+import com.ufcg.psoft.commerce.dto.ServicoFiltroDTO;
 import com.ufcg.psoft.commerce.dto.ServicoPostPutRequestDTO;
+import com.ufcg.psoft.commerce.dto.ServicoResponseDTO;
 import com.ufcg.psoft.commerce.service.servico.ServicoService;
 import jakarta.validation.Valid;
+
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -66,6 +71,13 @@ public class ServicoController {
         return ResponseEntity
                 .status(HttpStatus.NO_CONTENT)
                 .body("");
+    }
+    
+    @GetMapping("/servicos/catalogo")
+    public ResponseEntity<List<ServicoResponseDTO>> listarCatalogoServicoClient(
+        @RequestParam Long clienteId, 
+        ServicoFiltroDTO filtro) {
+            return ResponseEntity.ok(servicoService.listarCatalogoServicoCliente(clienteId, filtro));
     }
 
 }

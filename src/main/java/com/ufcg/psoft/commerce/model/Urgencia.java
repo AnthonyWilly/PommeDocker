@@ -5,5 +5,4 @@ public enum Urgencia {
     NORMAL,
     ALTA,
     URGENTE,
-
 }

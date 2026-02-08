@@ -1,16 +1,20 @@
 package com.ufcg.psoft.commerce.service.servico;
+import com.ufcg.psoft.commerce.dto.ServicoFiltroDTO;
 import com.ufcg.psoft.commerce.dto.ServicoPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ServicoResponseDTO;
+import com.ufcg.psoft.commerce.exception.ClienteNaoExisteException;
 import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
 import com.ufcg.psoft.commerce.exception.EmpresaNaoExisteException;
 import com.ufcg.psoft.commerce.exception.ServicoNaoExisteException;
 import com.ufcg.psoft.commerce.model.*;
+import com.ufcg.psoft.commerce.repository.ClienteRepository;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
 import com.ufcg.psoft.commerce.repository.ServicoRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,6 +26,8 @@ public class ServicoServiceImpl implements ServicoService {
     ServicoRepository servicoRepository;
     @Autowired
     EmpresaRepository empresaRepository;
+    @Autowired
+    ClienteRepository clienteRepository;
     @Autowired
     ModelMapper modelMapper;
 
@@ -81,6 +87,32 @@ public class ServicoServiceImpl implements ServicoService {
         }
 
         return empresa;
+    }
+
+    @Override
+    public List<ServicoResponseDTO> listarCatalogoServicoCliente(Long clienteId, ServicoFiltroDTO filtro) {
+
+        Cliente cliente = clienteRepository.findById(clienteId)
+                .orElseThrow(() -> new ClienteNaoExisteException());
+
+        List<Plano> planos = new ArrayList<Plano>();
+        planos.add(Plano.BASICO);
+
+        if(Plano.PREMIUM.equals(cliente.getPlanoAtual()))
+            planos.add(Plano.PREMIUM);
+
+        List<Servico> servicos = servicoRepository.findAllComFiltros(
+            filtro.getTipo(),
+            filtro.getEmpresaId(),
+            filtro.getUrgencia(),
+            filtro.getPrecoMin(),
+            filtro.getPrecoMax(),
+            planos
+        );
+
+        return servicos.stream()
+                .map(ServicoResponseDTO::new)
+                .collect(Collectors.toList());
     }
 
 }

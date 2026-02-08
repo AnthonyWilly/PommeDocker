@@ -1,17 +1,23 @@
 package com.ufcg.psoft.commerce.controller;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.ufcg.psoft.commerce.dto.ServicoPostPutRequestDTO;
-import com.ufcg.psoft.commerce.dto.ServicoResponseDTO;
-import com.ufcg.psoft.commerce.exception.CustomErrorType;
-import com.ufcg.psoft.commerce.model.*;
-import com.ufcg.psoft.commerce.repository.EmpresaRepository;
-import com.ufcg.psoft.commerce.repository.ServicoRepository;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.time.LocalDate;
+import java.util.List;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -19,30 +25,52 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.ufcg.psoft.commerce.dto.ServicoPostPutRequestDTO;
+import com.ufcg.psoft.commerce.dto.ServicoResponseDTO;
+import com.ufcg.psoft.commerce.exception.CustomErrorType;
+import com.ufcg.psoft.commerce.model.Cliente;
+import com.ufcg.psoft.commerce.model.Empresa;
+import com.ufcg.psoft.commerce.model.Plano;
+import com.ufcg.psoft.commerce.model.Servico;
+import com.ufcg.psoft.commerce.model.TipoServico;
+import com.ufcg.psoft.commerce.model.Urgencia;
+import com.ufcg.psoft.commerce.repository.ClienteRepository;
+import com.ufcg.psoft.commerce.repository.EmpresaRepository;
+import com.ufcg.psoft.commerce.repository.ServicoRepository;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 public class ServicoControllerTests {
+    
     @Autowired
     MockMvc driver;
     @Autowired
+    ObjectMapper objectMapper;
+    @Autowired
     EmpresaRepository empresaRepository;
     @Autowired
-    ObjectMapper objectMapper;
-    Empresa empresaPadrao;
-    Servico servicoPadrao;
-    ServicoPostPutRequestDTO servicoDTO;
-
+    ClienteRepository clienteRepository;
     @Autowired
     ServicoRepository servicoRepository;
+    
+    Empresa empresaPadrao;
+    Empresa empresa;
+    Cliente clienteBasico;
+    Cliente clientePremium;
+    Servico servicoPadrao;
+    Servico servicoBasico;
+    Servico servicoPremium;
+    ServicoPostPutRequestDTO servicoDTO;
+    
+    final String URI_SERVICOS = "/servicos";
+    final String URI_CATALOGO = "/catalogo";
     final String CODIGO_ACESSO_PADRAO = "123456";
     final String CNPJ_PADRAO = "12.345.678/0001-90";
     final String NOME_PADRAO = "Empresa Exemplo";
+    
     @BeforeEach
     void setup() {
         objectMapper.registerModule(new JavaTimeModule());
@@ -53,7 +81,31 @@ public class ServicoControllerTests {
                 .codigoAcesso(CODIGO_ACESSO_PADRAO)
                 .build()
         );
+        
+        empresa = empresaRepository.save(Empresa.builder()
+                .nome("Empresa Exemplo 2")
+                .cnpj("99.999.999/9999-99")
+                .codigoAcesso(CODIGO_ACESSO_PADRAO)
+                .build()
+        );
+        
+        clienteBasico = clienteRepository.save(Cliente.builder()
+                .nome("Cliente Basico")
+                .endereco("Rua dos Testes, 123")
+                .planoAtual(Plano.BASICO)
+                .codigo("111111")
+                .proxPlano(null)
+                .dataCobranca(LocalDate.now().plusDays(30))
+                .build());
 
+        clientePremium = clienteRepository.save(Cliente.builder()
+                .nome("Cliente Premium")
+                .endereco("Rua dos Testes, 123")
+                .planoAtual(Plano.PREMIUM)
+                .codigo("222222")
+                .proxPlano(null)
+                .dataCobranca(LocalDate.now().plusDays(30))
+                .build());
 
         servicoPadrao = servicoRepository.save(Servico.builder()
                 .nome("Pintura")
@@ -62,11 +114,10 @@ public class ServicoControllerTests {
                 .descricao("Pintar determinada area")
                 .preco(100.0)
                 .duracao(3.0)
-                .disponivel(true)
+                .disponivel(false)
                 .empresa(empresaPadrao)
                 .plano(Plano.BASICO)
                 .build()
-
         );
 
         servicoDTO = ServicoPostPutRequestDTO.builder()
@@ -76,13 +127,40 @@ public class ServicoControllerTests {
                 .descricao("Pintar determinada area")
                 .preco(100.0)
                 .duracao(3.0)
-                .disponivel(true)
+                .disponivel(false)
                 .plano(Plano.PREMIUM)
                 .build();
+
+        servicoBasico = servicoRepository.save(Servico.builder()
+                .nome("Reparo Hidraulico")
+                .tipo(TipoServico.HIDRAULICA)
+                .urgencia(Urgencia.BAIXA)
+                .descricao("Reparo Hidraulico completo")
+                .preco(100.0)
+                .duracao(1.0)
+                .disponivel(true)
+                .plano(Plano.BASICO) 
+                .empresa(empresa)
+                .build());
+
+        servicoPremium = servicoRepository.save(Servico.builder()
+                .nome("Guinchar carro")
+                .tipo(TipoServico.LIMPEZA)
+                .urgencia(Urgencia.URGENTE)
+                .descricao("Recuperar carro")
+                .preco(500.0)
+                .duracao(2.0)
+                .disponivel(true)
+                .plano(Plano.PREMIUM)
+                .empresa(empresa)
+                .build());
+        
     }
+    
     @AfterEach
     void tearDown() {
         servicoRepository.deleteAll();
+        clienteRepository.deleteAll();
         empresaRepository.deleteAll();
     }
 
@@ -259,8 +337,110 @@ public class ServicoControllerTests {
         );
     }
 
+    @Nested
+    @DisplayName("Conjunto de testes de verificação de catálogo de serviços por plano")
+    class catalogoDeServicosPorPlano {
+    
+        @Test
+        @DisplayName("Deve listar apenas serviços do plano básico para cliente com plano básico")
+        void quandoClienteBasicoAcessaCatalogo() throws Exception {
 
+            String responseJsoString = driver.perform(get(URI_SERVICOS + URI_CATALOGO)
+                            .param("clienteId", clienteBasico.getId().toString())
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andDo(print())
+                    .andReturn().getResponse().getContentAsString();
 
+            List<Servico> resultados = objectMapper.readValue(responseJsoString, new TypeReference<List<Servico>>() {});
 
+            assertAll(
+                () -> assertEquals(1, resultados.size()),
+                () -> assertEquals("Reparo Hidraulico", resultados.get(0).getNome())
+            );
 
+        }                    
+
+        @Test
+        @DisplayName("Deve listar apenas serviços do plano premium para cliente com plano premium")
+        void quandoClientePremiumAcessaCatalogo() throws Exception {
+
+            String responseJsoString = driver.perform(get(URI_SERVICOS + URI_CATALOGO)
+                            .param("clienteId", clientePremium.getId().toString())
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andDo(print())
+                    .andReturn().getResponse().getContentAsString();
+
+            List<Servico> resultados = objectMapper.readValue(responseJsoString, new TypeReference<List<Servico>>() {});
+
+            assertAll(
+                () -> assertEquals(2, resultados.size()),
+                () -> assertEquals("Reparo Hidraulico", resultados.get(0).getNome()),
+                () -> assertEquals("Guinchar carro", resultados.get(1).getNome())
+            );
+
+        }                    
+        
+    }
+
+    @Nested
+    @DisplayName("Conjunto de casos de teste de verificação de filtros")
+    class catalogoDeServicosPorFiltro {
+
+        @Test
+        @DisplayName("Quando filtramos por tipo de serviço")
+        void quandoFiltramosPorTipo() throws Exception {
+            String responJsoString = driver.perform(get(URI_SERVICOS + URI_CATALOGO)
+                        .param("clienteId", clientePremium.getId().toString())
+                        .param("tipo", "HIDRAULICA")
+                        .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+
+            List<Servico> resultado = objectMapper.readValue(responJsoString, new TypeReference<List<Servico>>() {});
+
+            assertTrue(resultado.stream().allMatch(s -> s.getTipo().equals(TipoServico.HIDRAULICA)));
+        }
+
+        @Test
+        @DisplayName("Quando filtramos por faixa de preço")
+        void quandoFiltramosPorPreco() throws Exception {
+            
+            String responseJsonString = driver.perform(get(URI_SERVICOS + URI_CATALOGO)
+                            .param("clienteId", clientePremium.getId().toString())
+                            .param("precoMax", "200.0")
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+
+            List<Servico> resultado = objectMapper.readValue(responseJsonString, new TypeReference<List<Servico>>() {});
+
+            assertAll(
+                () -> assertEquals(1, resultado.size()),
+                () -> assertTrue(resultado.get(0).getPreco() <= 200.0)
+            );
+            
+        }
+
+        @Test
+        @DisplayName("Quando filtramos por empresa")
+        void quandoFiltramosPorEmpresa() throws Exception {
+
+            String responseJsonString = driver.perform(get(URI_SERVICOS + URI_CATALOGO)
+                            .param("clienteId", clientePremium.getId().toString())
+                            .param("empresaId", empresa.getId().toString())
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+
+            List<Servico> resultado = objectMapper.readValue(responseJsonString, new TypeReference<List<Servico>>() {}); 
+
+            assertAll(
+                () -> assertEquals(2, resultado.size())
+            );
+
+        }
+
+        }
 }
