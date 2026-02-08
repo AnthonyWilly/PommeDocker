@@ -48,9 +48,9 @@ public class EmpresaServiceTests {
 
     @InjectMocks
     private EmpresaServiceImpl empresaService;
-
     private EmpresaPostPutRequestDTO empresaDTO;
     private Empresa empresa;
+
 
     @BeforeEach
     void setUp() {
@@ -68,15 +68,14 @@ public class EmpresaServiceTests {
                 .cnpj("12345678901234")
                 .codigoAcesso("123456")
                 .build();
+
     }
 
     @Test
     @DisplayName("Cadastrar empresa com sucesso")
     void testCadastrarEmpresaSucesso() {
         when(empresaRepository.save(any(Empresa.class))).thenReturn(empresa);
-
         EmpresaResponseDTO resultado = empresaService.cadastrar(empresaDTO);
-
         assertNotNull(resultado);
         assertEquals(empresa.getNome(), resultado.getNome());
         assertEquals(empresa.getCnpj(), resultado.getCnpj());
@@ -87,9 +86,7 @@ public class EmpresaServiceTests {
     @DisplayName("Recuperar empresa com sucesso")
     void testRecuperarEmpresaSucesso() {
         when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
-
         EmpresaResponseDTO resultado = empresaService.recuperar(1L);
-
         assertNotNull(resultado);
         assertEquals(empresa.getId(), resultado.getId());
         verify(empresaRepository, times(1)).findById(1L);
@@ -100,9 +97,7 @@ public class EmpresaServiceTests {
     void testAlterarEmpresaSucesso() {
         when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
         when(empresaRepository.save(any(Empresa.class))).thenReturn(empresa);
-
         EmpresaResponseDTO resultado = empresaService.alterar(1L, "123456", empresaDTO);
-
         assertNotNull(resultado);
         assertEquals(empresa.getNome(), resultado.getNome());
         verify(empresaRepository, times(1)).save(any(Empresa.class));
@@ -113,9 +108,7 @@ public class EmpresaServiceTests {
     void testRemoverEmpresaSucesso() {
         when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
         doNothing().when(empresaRepository).delete(any(Empresa.class));
-
         empresaService.remover(1L, "123456", "admin123");
-
         verify(empresaRepository, times(1)).delete(any(Empresa.class));
     }
 
@@ -123,11 +116,9 @@ public class EmpresaServiceTests {
     @DisplayName("Alterar empresa com código de acesso inválido")
     void testAlterarEmpresaCodigoAcessoInvalido() {
         when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
-
         assertThrows(CodigoDeAcessoInvalidoException.class, () -> {
             empresaService.alterar(1L, "000000", empresaDTO);
         });
-
         verify(empresaRepository, never()).save(any(Empresa.class));
     }
 
@@ -135,11 +126,9 @@ public class EmpresaServiceTests {
     @DisplayName("Remover empresa com código de acesso inválido")
     void testRemoverEmpresaCodigoAcessoInvalido() {
         when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
-
         assertThrows(CodigoDeAcessoInvalidoException.class, () -> {
             empresaService.remover(1L, "000000", "admin123");
         });
-
         verify(empresaRepository, never()).delete(any(Empresa.class));
     }
 

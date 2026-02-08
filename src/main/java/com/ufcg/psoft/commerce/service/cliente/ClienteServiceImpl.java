@@ -1,6 +1,4 @@
 package com.ufcg.psoft.commerce.service.cliente;
-
-import com.ufcg.psoft.commerce.dto.ClientePlanoPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ClientePostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ClienteResponseDTO;
 import com.ufcg.psoft.commerce.exception.ClienteNaoExisteException;
@@ -9,15 +7,11 @@ import com.ufcg.psoft.commerce.exception.CommerceException;
 import com.ufcg.psoft.commerce.model.*;
 import com.ufcg.psoft.commerce.repository.ClienteRepository;
 import com.ufcg.psoft.commerce.repository.HistoricoPlanoRepository;
-import jakarta.annotation.PostConstruct;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,23 +22,9 @@ public class ClienteServiceImpl implements ClienteService {
 
     @Autowired
     ModelMapper modelMapper;
-  
-    @Autowired
-    private PlanoBasico planoBasico;
-  
-    @Autowired
-    private PlanoPremium planoPremium;
-
     @Autowired
     private HistoricoPlanoRepository  historicoRepository;
-  
-    private Map<String, Plano> estrategias = new HashMap<>();
 
-    @PostConstruct
-    public void inicializarMapaDePlanos() {
-        estrategias.put("Basico", planoBasico);
-        estrategias.put("Premium", planoPremium);
-    }
 
     @Override
     public ClienteResponseDTO alterar(Long id, String codigoAcesso, ClientePostPutRequestDTO clientePostPutRequestDTO) {
@@ -60,7 +40,7 @@ public class ClienteServiceImpl implements ClienteService {
     @Override
     public ClienteResponseDTO criar(ClientePostPutRequestDTO clientePostPutRequestDTO) {
         Cliente cliente = modelMapper.map(clientePostPutRequestDTO, Cliente.class);
-        cliente.setPlanoAtual("Basico");
+        cliente.setPlanoAtual(Plano.BASICO);
         cliente.setProxPlano(null);
         cliente.setDataCobranca(LocalDate.now().plusDays(30));
         clienteRepository.save(cliente);
@@ -100,11 +80,15 @@ public class ClienteServiceImpl implements ClienteService {
 
     private ClienteResponseDTO alterarPlano(Long id, String codigoAcesso, String novoPlano) {
         Cliente cliente = buscarValidandoAcesso(id, codigoAcesso);
-        if (!estrategias.containsKey(novoPlano))
+        Plano planoEnum;
+        try {
+            planoEnum = Plano.valueOf(novoPlano.toUpperCase());
+        } catch (IllegalArgumentException | NullPointerException e) {
             throw new CommerceException("Plano não encontrado: " + novoPlano);
+        }
         HistoricoPlano historico = criarHistorico(cliente.getId(), cliente.getPlanoAtual());
         historicoRepository.save(historico);
-        cliente.setProxPlano(novoPlano);
+        cliente.setProxPlano(planoEnum);
         clienteRepository.save(cliente);
         return modelMapper.map(cliente, ClienteResponseDTO.class);
     }
@@ -119,10 +103,10 @@ public class ClienteServiceImpl implements ClienteService {
         return alterarPlano(id, codigoAcesso, "Basico");
     }
 
-    private HistoricoPlano criarHistorico(long idCliente, String plano) {
+    private HistoricoPlano criarHistorico(long idCliente, Plano plano) {
         HistoricoPlano h = new HistoricoPlano();
         h.setIdCliente(idCliente);
-        h.setIdPlanoAntigo(plano);
+        h.setPlanoAntigo(plano);
         h.setData(LocalDate.now());
         return h;
     }

@@ -18,9 +18,9 @@ public class HistoricoPlano {
     @Column(nullable = false)
     private long idCliente;
 
-    @JsonProperty("idPlanoAntigo")
+    @JsonProperty("planoAntigo")
     @Column(nullable = false)
-    private String idPlanoAntigo;
+    private Plano planoAntigo;
 
     @JsonProperty("data")
     @Column(nullable = false)
