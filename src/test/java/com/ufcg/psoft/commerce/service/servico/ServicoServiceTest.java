@@ -63,7 +63,7 @@ public class ServicoServiceTest {
         servicoDTO = ServicoPostPutRequestDTO.builder()
                 .nome("Instalacao de Chuveiro")
                 .tipo(TipoServico.ELETRICA)
-                .urgencia(Urgencia._24)
+                .urgencia(Urgencia.ALTA)
                 .duracao(3.0)
                 .disponivel(true)
                 .descricao("instala um chuveiro")
