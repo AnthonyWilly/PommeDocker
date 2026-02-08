@@ -7,6 +7,8 @@ import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
 import com.ufcg.psoft.commerce.model.Cliente;
 import com.ufcg.psoft.commerce.model.HistoricoPlano;
 import com.ufcg.psoft.commerce.model.Plano;
+// import com.ufcg.psoft.commerce.model.PlanoBasico;
+// import com.ufcg.psoft.commerce.model.PlanoPremium;
 import com.ufcg.psoft.commerce.repository.ClienteRepository;
 import com.ufcg.psoft.commerce.repository.HistoricoPlanoRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,7 +24,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 
 import java.time.LocalDate;
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -40,13 +41,6 @@ public class ClienteServiceTests {
 
     @Mock
     HistoricoPlanoRepository historicoRepository;
-  
-    @Mock
-    PlanoBasico planoBasico;
-  
-    @Mock
-    PlanoPremium planoPremium;
-
   
     @InjectMocks
     ClienteServiceImpl clienteService;
