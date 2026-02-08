@@ -43,7 +43,7 @@ public class ChamadoServiceImpl implements ChamadoService {
         }
 
         
-        boolean servicoIsPremium = servico.getPlano() == Plano.PREMIUM
+        boolean servicoIsPremium = servico.getPlano() == Plano.PREMIUM;
         boolean clienteIsPremium = cliente.getPlanoAtual() == Plano.PREMIUM; 
 
         if (servicoIsPremium && !clienteIsPremium) {

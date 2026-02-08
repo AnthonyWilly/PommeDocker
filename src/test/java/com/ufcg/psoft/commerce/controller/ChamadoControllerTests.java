@@ -9,6 +9,7 @@ import com.ufcg.psoft.commerce.model.*;
 import com.ufcg.psoft.commerce.repository.*;
 import com.ufcg.psoft.commerce.model.Plano;
 import com.ufcg.psoft.commerce.model.Urgencia;
+import com.ufcg.psoft.commerce.model.TipoServico;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -79,23 +80,27 @@ public class ChamadoControllerTests {
                 .build());
 
         servicoComum = servicoRepository.save(Servico.builder()
-                .nome("Reparo Simples")
-                .descricao("Reparo elétrico básico de tomadas")
-                .nivelUrgencia(Urgencia.NORMAL)
-                .duracaoEstimada("30 min")
-                .valor(100.0)
+                .nome("Pintura Simples")
+                .descricao("Pintura de um quarto")
+                .urgencia(Urgencia.NORMAL)
+                .duracao(30.0)
+                .preco(100.0)
                 .empresa(empresa)
-                .tipo(Plano.BASICO)
+                .plano(Plano.BASICO)
+                .disponivel(true)
+                .tipo(TipoServico.PINTURA)             
                 .build());
         
         servicoExclusivo = servicoRepository.save(Servico.builder()
                 .nome("Instalação 24h")
                 .descricao("Instalação elétrica completa de urgência") 
-                .nivelUrgencia(Urgencia.ALTA)
-                .duracaoEstimada("120 min")
-                .valor(300.0)
+                .urgencia(Urgencia.ALTA)
+                .duracao(120.0)
+                .preco(300.0)
                 .empresa(empresa)
-                .tipo(Plano.PREMIUM)
+                .plano(Plano.PREMIUM)
+                .disponivel(true)
+                .tipo(TipoServico.ELETRICA)
                 .build());
     }
 
@@ -188,7 +193,7 @@ public class ChamadoControllerTests {
         driver.perform(delete(URI_CHAMADOS + "/" + chamado.getId())
                         .header("codigoAcesso", "000000")
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden()) 
+                .andExpect(status().isBadRequest());
         
         assertTrue(chamadoRepository.existsById(chamado.getId()));
     }

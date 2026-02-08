@@ -16,9 +16,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.modelmapper.ModelMapper;\
+import org.modelmapper.ModelMapper;
 import com.ufcg.psoft.commerce.model.Plano;
 import com.ufcg.psoft.commerce.model.Urgencia;
+import com.ufcg.psoft.commerce.model.TipoServico;
 
 import java.time.LocalDate;
 import java.util.Optional;
@@ -92,17 +93,27 @@ public class ChamadoServiceTests {
         servicoComum = Servico.builder()
                 .id(1L)
                 .nome("Reparo Simples")
-                .valor(100.0)
+                .preco(100.0)
+                .urgencia(Urgencia.NORMAL)
+                .plano(Plano.BASICO)
                 .empresa(empresa)
-                .tipo(Plano.BASICO)
+                .descricao("Reparo simples de tomadas")
+                .duracao(30.0)
+                .disponivel(true)
+                .tipo(TipoServico.ELETRICA)
                 .build();
         
         servicoExclusivo = Servico.builder()
                 .id(2L)
                 .nome("Instalação 24h")
-                .valor(300.0)
+                .preco(300.0)
+                .urgencia(Urgencia.ALTA)
+                .plano(Plano.PREMIUM)
                 .empresa(empresa)
-                .tipo(Plano.PREMIUM)
+                .descricao("Instalação completa urgente")
+                .duracao(120.0)
+                .disponivel(true)
+                .tipo(TipoServico.PINTURA)
                 .build();
 
         chamadoDTO = ChamadoPostPutRequestDTO.builder()
