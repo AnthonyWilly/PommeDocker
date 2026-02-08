@@ -1,8 +1,14 @@
 package com.ufcg.psoft.commerce.model;
 
-import java.math.BigDecimal;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
-public interface Plano {
-   String getPlano();
-   BigDecimal getValorDesconto();
+@Getter
+@AllArgsConstructor
+public enum Plano {
+    BASICO("Basico",15.50),
+    PREMIUM("Premium",30.0) ;
+
+    private final String tipoPlano;
+    private final double preco;
 }

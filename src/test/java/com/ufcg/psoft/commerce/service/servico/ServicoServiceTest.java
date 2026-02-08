@@ -2,10 +2,7 @@ package com.ufcg.psoft.commerce.service.servico;
 import com.ufcg.psoft.commerce.dto.ServicoPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ServicoResponseDTO;
 import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
-import com.ufcg.psoft.commerce.model.Empresa;
-import com.ufcg.psoft.commerce.model.Servico;
-import com.ufcg.psoft.commerce.model.TipoServico;
-import com.ufcg.psoft.commerce.model.Urgencia;
+import com.ufcg.psoft.commerce.model.*;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
 import com.ufcg.psoft.commerce.repository.ServicoRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,7 +52,7 @@ public class ServicoServiceTest {
                 .urgencia(Urgencia.NORMAL)
                 .preco(150.0)
                 .disponivel(true)
-                .plano("Basico")
+                .plano(Plano.BASICO)
                 .duracao(3.0)
                 .empresa(empresa)
                 .build();
@@ -68,7 +65,7 @@ public class ServicoServiceTest {
                 .disponivel(true)
                 .descricao("instala um chuveiro")
                 .preco(150.0)
-                .plano("Basico")
+                .plano(Plano.BASICO)
                 .build();
     }
 
@@ -113,7 +110,7 @@ public class ServicoServiceTest {
                 .disponivel(true)
                 .descricao("instala um chuveiro")
                 .preco(80.0)
-                .plano("Basico")
+                .plano(Plano.BASICO)
                 .build();
 
         ServicoResponseDTO resultado =

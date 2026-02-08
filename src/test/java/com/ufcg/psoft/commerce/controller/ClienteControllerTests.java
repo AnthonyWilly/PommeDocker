@@ -16,6 +16,7 @@ import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 
+import com.ufcg.psoft.commerce.model.Plano;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -71,7 +72,7 @@ public class ClienteControllerTests {
                 .nome("Cliente Um da Silva")
                 .endereco("Rua dos Testes, 123")
                 .codigo("123456")
-                .planoAtual("Basico")
+                .planoAtual(Plano.BASICO)
                 .proxPlano(null)
                 .dataCobranca(LocalDate.now().plusDays(30))
                 .build()
@@ -332,7 +333,7 @@ public class ClienteControllerTests {
                     .nome("Cliente Dois Almeida")
                     .endereco("Av. da Pits A, 100")
                     .codigo("246810")
-                    .planoAtual("Basico")
+                    .planoAtual(Plano.BASICO)
                     .proxPlano(null)
                     .dataCobranca(LocalDate.now().plusDays(30))
                     .build();
@@ -340,7 +341,7 @@ public class ClienteControllerTests {
                     .nome("Cliente Três Lima")
                     .endereco("Distrito dos Testadores, 200")
                     .codigo("135790")
-                    .planoAtual("Premium")
+                    .planoAtual(Plano.PREMIUM)
                     .proxPlano(null)
                     .dataCobranca(LocalDate.now().plusDays(30))
                     .build();
@@ -408,7 +409,7 @@ public class ClienteControllerTests {
             assertAll(
                     () -> assertNotNull(resultado.getId()),
                     () -> assertEquals(clientePostPutRequestDTO.getNome(), resultado.getNome()),
-                    () -> assertEquals("Basico", resultado.getPlanoAtual())
+                    () -> assertEquals(Plano.BASICO, resultado.getPlanoAtual())
             );
 
         }
@@ -536,14 +537,14 @@ public class ClienteControllerTests {
                     .andDo(print())
                     .andReturn().getResponse().getContentAsString();
             ClienteResponseDTO resultado = objectMapper.readValue(responseJsonString, ClienteResponseDTO.class);
-            assertEquals("Basico", resultado.getPlanoAtual());
-            assertEquals("Premium", resultado.getProxPlano());
+            assertEquals(Plano.BASICO, resultado.getPlanoAtual());
+            assertEquals(Plano.PREMIUM, resultado.getProxPlano());
         }
 
         @Test
         @DisplayName("Deve alterar o plano para Basico com dados Validos")
         void quandoAlteramosPlanoParaBasico() throws Exception {
-            cliente.setPlanoAtual("Premium");
+            cliente.setPlanoAtual(Plano.PREMIUM);
             cliente.setProxPlano(null);
             cliente = clienteRepository.save(cliente);
             String uri = URI_CLIENTES + "/" + cliente.getId() + URI_PLANO;
@@ -556,8 +557,8 @@ public class ClienteControllerTests {
                     .andReturn().getResponse().getContentAsString();
 
             ClienteResponseDTO resultado = objectMapper.readValue(responseJsonString, ClienteResponseDTO.class);
-            assertEquals("Basico", resultado.getProxPlano());
-            assertEquals("Premium", resultado.getPlanoAtual());
+            assertEquals(Plano.BASICO, resultado.getProxPlano());
+            assertEquals(Plano.PREMIUM, resultado.getPlanoAtual());
         }
         
         @Test

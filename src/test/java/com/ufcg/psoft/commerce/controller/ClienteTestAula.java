@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.ufcg.psoft.commerce.dto.ClienteResponseDTO;
 import com.ufcg.psoft.commerce.model.Cliente;
+import com.ufcg.psoft.commerce.model.Plano;
 import com.ufcg.psoft.commerce.repository.ClienteRepository;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,7 +47,7 @@ public class ClienteTestAula {
                         .nome("Cliente")
                         .endereco("Rua 123")
                         .codigo("123456")
-                        .planoAtual("Basico")
+                        .planoAtual(Plano.BASICO)
                         .dataCobranca(LocalDate.now())
                         .build()
         );
@@ -56,7 +57,7 @@ public class ClienteTestAula {
                         .nome("Clienta")
                         .endereco("Rua 234")
                         .codigo("123456")
-                        .planoAtual("Basico")
+                        .planoAtual(Plano.BASICO)
                         .dataCobranca(LocalDate.now())
                         .build()
         );

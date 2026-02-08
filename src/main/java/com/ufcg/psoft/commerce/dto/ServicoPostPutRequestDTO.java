@@ -1,4 +1,5 @@
 package com.ufcg.psoft.commerce.dto;
+import com.ufcg.psoft.commerce.model.Plano;
 import com.ufcg.psoft.commerce.model.TipoServico;
 import com.ufcg.psoft.commerce.model.Urgencia;
 import jakarta.validation.constraints.NotBlank;
@@ -31,8 +32,8 @@ public class ServicoPostPutRequestDTO {
         @NotNull(message = "disponivel obrigatorio")
         private Boolean disponivel;
 
-        @NotBlank(message = "plano obrigatorio")
-        private String plano;
+        @NotNull(message = "plano obrigatorio")
+        private Plano plano;
 
         @NotNull(message = "duracao obrigatoria")
         private Double duracao;

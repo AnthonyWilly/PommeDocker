@@ -1,5 +1,6 @@
 package com.ufcg.psoft.commerce.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ufcg.psoft.commerce.model.Plano;
 import com.ufcg.psoft.commerce.model.Servico;
 import com.ufcg.psoft.commerce.model.TipoServico;
 import com.ufcg.psoft.commerce.model.Urgencia;
@@ -49,8 +50,8 @@ public class ServicoResponseDTO {
     private Boolean disponivel;
 
     @JsonProperty("plano")
-    @NotBlank(message = "plano obrigatorio")
-    private String plano;
+    @NotNull(message = "plano obrigatorio")
+    private Plano plano;
 
     @JsonProperty("duracao")
     @NotNull(message = "duracao obrigatoria")

@@ -32,10 +32,10 @@ public class Cliente {
 
     @JsonProperty("planoAtual")
     @Column(nullable = false)
-    private String planoAtual;
+    private Plano planoAtual;
 
     @JsonProperty("proxPlano")
-    private String proxPlano;
+    private Plano proxPlano;
 
     @JsonProperty("dataCobranca")
     @Column(nullable = false)
@@ -46,12 +46,12 @@ public class Cliente {
     private String codigo;
 
     public void setPlanoPremium(String senha) {
-        this.setPlano("Premium", senha);
+        this.setPlano(Plano.PREMIUM, senha);
     }
     public void setPlanoBasico(String senha) {
-        this.setPlano("Basico", senha);
+        this.setPlano(Plano.BASICO, senha);
     }
-    private void setPlano(String plano, String senha){
+    private void setPlano(Plano plano, String senha){
         if (!this.codigo.equals(senha)) {
             throw new IllegalArgumentException("Codigo de acesso invalido!");
         }

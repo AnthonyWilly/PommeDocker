@@ -6,10 +6,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.ufcg.psoft.commerce.dto.ServicoPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ServicoResponseDTO;
 import com.ufcg.psoft.commerce.exception.CustomErrorType;
-import com.ufcg.psoft.commerce.model.Empresa;
-import com.ufcg.psoft.commerce.model.Servico;
-import com.ufcg.psoft.commerce.model.TipoServico;
-import com.ufcg.psoft.commerce.model.Urgencia;
+import com.ufcg.psoft.commerce.model.*;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
 import com.ufcg.psoft.commerce.repository.ServicoRepository;
 import org.junit.jupiter.api.AfterEach;
@@ -67,7 +64,7 @@ public class ServicoControllerTests {
                 .duracao(3.0)
                 .disponivel(true)
                 .empresa(empresaPadrao)
-                .plano("Basico")
+                .plano(Plano.BASICO)
                 .build()
 
         );
@@ -80,7 +77,7 @@ public class ServicoControllerTests {
                 .preco(100.0)
                 .duracao(3.0)
                 .disponivel(true)
-                .plano("Basico")
+                .plano(Plano.PREMIUM)
                 .build();
     }
     @AfterEach
@@ -141,7 +138,7 @@ public class ServicoControllerTests {
                 .preco(150.0)
                 .duracao(1.5)
                 .disponivel(true)
-                .plano("Basico")
+                .plano(Plano.BASICO)
                 .build();
 
         String responseJsonString = driver.perform(
@@ -173,7 +170,7 @@ public class ServicoControllerTests {
                 .preco(80.0)
                 .duracao(1.0)
                 .disponivel(true)
-                .plano("Basico")
+                .plano(Plano.BASICO)
                 .build();
 
         String responseJsonString = driver.perform(
@@ -238,7 +235,7 @@ public class ServicoControllerTests {
                 .duracao(2.0)
                 .disponivel(true)
                 .empresa(empresaPadrao)
-                .plano("Premium")
+                .plano(Plano.PREMIUM)
                 .build());
 
         String responseJsonString = driver.perform(

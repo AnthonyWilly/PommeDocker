@@ -51,7 +51,7 @@ public class Servico {
 
     @JsonIgnore
     @Column(name = "plano")
-    private String plano;
+    private Plano plano;
 
     @JsonProperty("preco")
     @Column(nullable = false)
