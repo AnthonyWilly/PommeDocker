@@ -2,7 +2,6 @@ package com.ufcg.psoft.commerce.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.LocalDateTime;
 
 @Entity
@@ -32,37 +31,17 @@ public class Chamado {
 
     private LocalDateTime dataCriacao;
 
-    private String status;
-
-    @Transient
-    private ChamadoEstado estado;
-
-    @PostLoad
-    private void carregarEstado() {
-        if ("AGUARDANDO_PAGAMENTO".equals(this.status)) {
-            this.estado = new ChamadoEstadoAguardandoPagamento();
-        } else if ("EM_PROCESSAMENTO".equals(this.status)) {
-            this.estado = new ChamadoEstadoEmProcessamento();
-        }
-    }
-
-    @PrePersist
-    @PreUpdate
-    private void atualizarStatus() {
-        if (this.estado != null) {
-            this.status = this.estado.getStatus();
-        }
-    }
+    @Enumerated(EnumType.STRING)
+    private StatusChamado status; 
 
     public void confirmarPagamento() {
-        if (this.estado == null) {
-            this.carregarEstado();
+        if (this.status == null) {
+            this.status = StatusChamado.AGUARDANDO_PAGAMENTO; 
         }
-        this.estado.confirmarPagamento(this);
+        this.status.confirmarPagamento(this);
     }
     
-    public void setEstado(ChamadoEstado novoEstado) {
-        this.estado = novoEstado;
-        this.status = novoEstado.getStatus();
+    public void setStatus(StatusChamado novoStatus) {
+        this.status = novoStatus;
     }
 }

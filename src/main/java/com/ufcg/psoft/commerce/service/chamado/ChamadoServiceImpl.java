@@ -54,17 +54,18 @@ public class ChamadoServiceImpl implements ChamadoService {
             enderecoFinal = cliente.getEndereco();
         }
 
+        ChamadoEstado estadoInicial = new ChamadoEstadoAguardandoPagamento();
+
         Chamado chamado = Chamado.builder()
                 .cliente(cliente)
                 .empresa(empresa)
                 .servico(servico)
                 .enderecoAtendimento(enderecoFinal)
                 .dataCriacao(LocalDateTime.now())
-                .status("AGUARDANDO_PAGAMENTO")
+                .estado(estadoInicial)
+                .status(estadoInicial.getStatus())
                 .build();
         
-        chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
-
         Chamado salvo = chamadoRepository.save(chamado);
         return modelMapper.map(salvo, ChamadoResponseDTO.class);
     }
@@ -98,7 +99,7 @@ public class ChamadoServiceImpl implements ChamadoService {
 
         chamadoRepository.delete(chamado);
     }
-
+    
     @Override
     public List<ChamadoResponseDTO> listarChamados(Long clienteId, String codigoAcesso) {
          return chamadoRepository.findAll().stream()
