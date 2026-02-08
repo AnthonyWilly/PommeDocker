@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
@@ -540,6 +541,7 @@ public class ClienteControllerTests {
             assertEquals(Plano.BASICO, resultado.getPlanoAtual());
             assertEquals(Plano.PREMIUM, resultado.getProxPlano());
         }
+
 
         @Test
         @DisplayName("Deve alterar o plano para Basico com dados Validos")

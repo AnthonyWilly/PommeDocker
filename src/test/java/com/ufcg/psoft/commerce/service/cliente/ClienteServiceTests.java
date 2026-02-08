@@ -7,6 +7,8 @@ import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
 import com.ufcg.psoft.commerce.model.Cliente;
 import com.ufcg.psoft.commerce.model.HistoricoPlano;
 import com.ufcg.psoft.commerce.model.Plano;
+// import com.ufcg.psoft.commerce.model.PlanoBasico;
+// import com.ufcg.psoft.commerce.model.PlanoPremium;
 import com.ufcg.psoft.commerce.repository.ClienteRepository;
 import com.ufcg.psoft.commerce.repository.HistoricoPlanoRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,7 +41,7 @@ public class ClienteServiceTests {
 
     @Mock
     HistoricoPlanoRepository historicoRepository;
-
+  
     @InjectMocks
     ClienteServiceImpl clienteService;
 
@@ -103,6 +105,7 @@ public class ClienteServiceTests {
 
             assertEquals("João Atualizado", resultado.getNome());
             assertEquals("Rua Nova, 999", resultado.getEndereco());
+
             verify(clienteRepository, times(1)).save(cliente);
         }
 
