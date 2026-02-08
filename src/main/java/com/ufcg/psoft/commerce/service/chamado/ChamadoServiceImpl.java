@@ -42,8 +42,9 @@ public class ChamadoServiceImpl implements ChamadoService {
             throw new CodigoDeAcessoInvalidoException();
         }
 
-        boolean servicoIsPremium = servico.getPlano() == Plano.PREMIUM;
-        boolean clienteIsPremium = cliente.getPlanoAtual() == Plano.PREMIUM;
+        
+        boolean servicoIsPremium = servico.getPlano() == Plano.PREMIUM
+        boolean clienteIsPremium = cliente.getPlanoAtual() == Plano.PREMIUM; 
 
         if (servicoIsPremium && !clienteIsPremium) {
             throw new PlanoInvalidoException();
@@ -63,7 +64,7 @@ public class ChamadoServiceImpl implements ChamadoService {
                 .enderecoAtendimento(enderecoFinal)
                 .dataCriacao(LocalDateTime.now())
                 .estado(estadoInicial)
-                .status(estadoInicial.getStatus())
+                .status(estadoInicial.getNome())
                 .build();
         
         Chamado salvo = chamadoRepository.save(chamado);
@@ -102,6 +103,13 @@ public class ChamadoServiceImpl implements ChamadoService {
     
     @Override
     public List<ChamadoResponseDTO> listarChamados(Long clienteId, String codigoAcesso) {
+        Cliente cliente = clienteRepository.findById(clienteId)
+                .orElseThrow(ClienteNaoExisteException::new);
+
+        if (!cliente.getCodigo().equals(codigoAcesso)) {
+             throw new CodigoDeAcessoInvalidoException();
+        }
+
          return chamadoRepository.findAll().stream()
                  .filter(c -> c.getCliente().getId().equals(clienteId))
                  .map(c -> modelMapper.map(c, ChamadoResponseDTO.class))

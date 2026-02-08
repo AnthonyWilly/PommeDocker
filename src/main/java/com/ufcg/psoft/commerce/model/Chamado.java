@@ -7,7 +7,6 @@ import java.time.LocalDateTime;
 @Entity
 @Data
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor
 public class Chamado {
 
@@ -28,20 +27,43 @@ public class Chamado {
     private Servico servico;
 
     private String enderecoAtendimento;
-
+    
     private LocalDateTime dataCriacao;
 
-    @Enumerated(EnumType.STRING)
-    private StatusChamado status; 
+    private String status; 
+
+    @Transient
+    private ChamadoEstado estado;
+
+    public Chamado() {
+        this.estado = new ChamadoEstadoAguardandoPagamento();
+        this.status = this.estado.getNome();
+    }
+    public void mudaEstado(ChamadoEstado novoEstado) {
+        this.estado = novoEstado;
+        this.status = novoEstado.getNome();
+    }
 
     public void confirmarPagamento() {
-        if (this.status == null) {
-            this.status = StatusChamado.AGUARDANDO_PAGAMENTO; 
-        }
-        this.status.confirmarPagamento(this);
+        this.estado.confirmarPagamento(this);
     }
-    
-    public void setStatus(StatusChamado novoStatus) {
-        this.status = novoStatus;
+
+    @PostLoad
+    private void carregarEstado() {
+        if (this.status == null) {
+            this.estado = new ChamadoEstadoAguardandoPagamento();
+            return;
+        }
+        
+        switch (this.status) {
+            case "AGUARDANDO_PAGAMENTO":
+                this.estado = new ChamadoEstadoAguardandoPagamento();
+                break;
+            case "EM_PROCESSAMENTO":
+                this.estado = new ChamadoEstadoEmProcessamento();
+                break;
+            default:
+                this.estado = new ChamadoEstadoAguardandoPagamento();
+        }
     }
 }
