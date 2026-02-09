@@ -9,9 +9,18 @@ import com.ufcg.psoft.commerce.dto.PagamentoResponseDTO;
 import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
 import com.ufcg.psoft.commerce.exception.CustomErrorType;
 import com.ufcg.psoft.commerce.model.Empresa;
+import com.ufcg.psoft.commerce.model.Chamado;
+import com.ufcg.psoft.commerce.model.Cliente;
+import com.ufcg.psoft.commerce.model.Servico;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
+import com.ufcg.psoft.commerce.repository.ChamadoRepository;
+import com.ufcg.psoft.commerce.repository.ClienteRepository;
+import com.ufcg.psoft.commerce.repository.ServicoRepository;
 import com.ufcg.psoft.commerce.model.Tecnico;
 import com.ufcg.psoft.commerce.model.TipoVeiculo;
+import com.ufcg.psoft.commerce.model.Plano;
+import com.ufcg.psoft.commerce.model.TipoServico;
+import com.ufcg.psoft.commerce.model.Urgencia;
 import com.ufcg.psoft.commerce.repository.TecnicoRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,6 +33,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -50,11 +61,28 @@ public class EmpresaControllerTests {
     @Autowired
     EmpresaRepository empresaRepository;
 
+        @Autowired
+        ChamadoRepository chamadoRepository;
+
+        @Autowired
+        ClienteRepository clienteRepository;
+
+        @Autowired
+        ServicoRepository servicoRepository;
+
     @Autowired
     ObjectMapper objectMapper;
 
     Empresa empresaPadrao;
     EmpresaPostPutRequestDTO empresaPostPutRequestDTO;
+        Cliente clientePadrao;
+        Servico servicoPadrao;
+        Long chamadoCreditoId;
+        Long chamadoDebitoId;
+        Long chamadoPixId;
+        Long chamadoMetodoInvalidoId;
+        Long chamadoCodigoAcessoInvalidoId;
+        Long chamadoSemMetodoId;
 
     @Autowired
     TecnicoRepository tecnicoRepository;
@@ -78,6 +106,33 @@ public class EmpresaControllerTests {
                 .senhaAdmin(SENHA_ADMIN)
                 .build();
 
+        clientePadrao = clienteRepository.save(Cliente.builder()
+                .nome("Cliente Teste")
+                .endereco("Rua 1")
+                .planoAtual(Plano.BASICO)
+                .dataCobranca(LocalDate.now())
+                .codigo("123456")
+                .build());
+
+        servicoPadrao = servicoRepository.save(Servico.builder()
+                .nome("Servico Teste")
+                .tipo(TipoServico.ELETRICA)
+                .urgencia(Urgencia.NORMAL)
+                .descricao("Reparo")
+                .duracao(1.0)
+                .disponivel(true)
+                .empresa(empresaPadrao)
+                .plano(Plano.BASICO)
+                .preco(100.0)
+                .build());
+
+        chamadoCreditoId = criarChamadoPagamento();
+        chamadoDebitoId = criarChamadoPagamento();
+        chamadoPixId = criarChamadoPagamento();
+        chamadoMetodoInvalidoId = criarChamadoPagamento();
+        chamadoCodigoAcessoInvalidoId = criarChamadoPagamento();
+        chamadoSemMetodoId = criarChamadoPagamento();
+
         tecnicoPadrao = tecnicoRepository.save(Tecnico.builder()
                 .nome("Tecnico Teste")
                 .acesso("123456")
@@ -90,9 +145,22 @@ public class EmpresaControllerTests {
 
     @AfterEach
     void tearDown() {
+                chamadoRepository.deleteAll();
         tecnicoRepository.deleteAll();
+                servicoRepository.deleteAll();
+                clienteRepository.deleteAll();
         empresaRepository.deleteAll();
     }
+
+        private Long criarChamadoPagamento() {
+                Chamado chamado = new Chamado();
+                chamado.setEmpresa(empresaPadrao);
+                chamado.setCliente(clientePadrao);
+                chamado.setServico(servicoPadrao);
+                chamado.setEnderecoAtendimento("Endereco Teste");
+                chamado.setDataCriacao(LocalDateTime.now());
+                return chamadoRepository.save(chamado).getId();
+        }
 
     @Test
     @DisplayName("Criar empresa com sucesso")
@@ -548,7 +616,7 @@ public class EmpresaControllerTests {
                 .metodoPagamento("Credito")
                 .build();
 
-        String responseJsonString = driver.perform(post(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/1/pagamentos")
+        String responseJsonString = driver.perform(post(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/" + chamadoCreditoId + "/pagamentos")
                         .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pagamentoRequest)))
@@ -569,7 +637,7 @@ public class EmpresaControllerTests {
                 .metodoPagamento("Debito")
                 .build();
 
-        String responseJsonString = driver.perform(post(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/2/pagamentos")
+        String responseJsonString = driver.perform(post(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/" + chamadoDebitoId + "/pagamentos")
                         .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pagamentoRequest)))
@@ -590,7 +658,7 @@ public class EmpresaControllerTests {
                 .metodoPagamento("Pix")
                 .build();
 
-        String responseJsonString = driver.perform(post(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/3/pagamentos")
+        String responseJsonString = driver.perform(post(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/" + chamadoPixId + "/pagamentos")
                         .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pagamentoRequest)))
@@ -611,7 +679,7 @@ public class EmpresaControllerTests {
                 .metodoPagamento("Boleto")
                 .build();
 
-        String responseJsonString = driver.perform(post(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/4/pagamentos")
+        String responseJsonString = driver.perform(post(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/" + chamadoMetodoInvalidoId + "/pagamentos")
                         .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pagamentoRequest)))
@@ -632,7 +700,7 @@ public class EmpresaControllerTests {
                 .metodoPagamento("Pix")
                 .build();
 
-        String responseJsonString = driver.perform(post(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/5/pagamentos")
+        String responseJsonString = driver.perform(post(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/" + chamadoCodigoAcessoInvalidoId + "/pagamentos")
                         .header("codigoAcesso", "000000")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pagamentoRequest)))
@@ -695,7 +763,7 @@ public class EmpresaControllerTests {
                 .valorTotal(new BigDecimal("50.00"))
                 .build();
 
-        String responseJsonString = driver.perform(post(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/7/pagamentos")
+        String responseJsonString = driver.perform(post(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/" + chamadoSemMetodoId + "/pagamentos")
                         .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pagamentoRequest)))

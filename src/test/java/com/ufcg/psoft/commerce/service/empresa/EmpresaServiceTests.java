@@ -7,12 +7,15 @@ import com.ufcg.psoft.commerce.dto.PagamentoResponseDTO;
 import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
 import com.ufcg.psoft.commerce.exception.CommerceException;
 import com.ufcg.psoft.commerce.exception.EmpresaNaoExisteException;
+import com.ufcg.psoft.commerce.model.Chamado;
 import com.ufcg.psoft.commerce.model.Empresa;
 import com.ufcg.psoft.commerce.model.Pagamento;
 import com.ufcg.psoft.commerce.model.PagamentoCredito;
 import com.ufcg.psoft.commerce.model.PagamentoDebito;
 import com.ufcg.psoft.commerce.model.PagamentoPix;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
+import com.ufcg.psoft.commerce.repository.ChamadoRepository;
+import com.ufcg.psoft.commerce.repository.ServicoRepository;
 // import com.ufcg.psoft.commerce.service.empresa.EmpresaServiceImpl;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -31,6 +34,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Testes do Serviço de Empresa")
@@ -38,6 +42,12 @@ public class EmpresaServiceTests {
 
     @Mock
     private EmpresaRepository empresaRepository;
+
+    @Mock
+    private ChamadoRepository chamadoRepository;
+
+    @Mock
+    private ServicoRepository servicoRepository;
 
         @Spy
         private Pagamento pagamento = new Pagamento(List.of(
@@ -68,6 +78,21 @@ public class EmpresaServiceTests {
                 .cnpj("12345678901234")
                 .codigoAcesso("123456")
                 .build();
+
+        lenient().when(chamadoRepository.findById(anyLong())).thenAnswer(invocation -> {
+            Long chamadoId = invocation.getArgument(0);
+
+            if (chamadoId == null || chamadoId <= 0 || chamadoId > 100) {
+                return Optional.empty();
+            }
+
+            Chamado chamado = new Chamado();
+            chamado.setId(chamadoId);
+            chamado.setEmpresa(empresa);
+            return Optional.of(chamado);
+        });
+
+        lenient().when(chamadoRepository.save(any(Chamado.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
     }
 

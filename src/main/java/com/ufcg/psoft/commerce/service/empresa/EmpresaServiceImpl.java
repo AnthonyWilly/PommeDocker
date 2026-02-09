@@ -10,13 +10,17 @@ import com.ufcg.psoft.commerce.exception.EmpresaJaCadastradaException;
 import com.ufcg.psoft.commerce.exception.EmpresaNaoExisteException;
 import com.ufcg.psoft.commerce.exception.SenhaInvalidaException;
 import com.ufcg.psoft.commerce.exception.TecnicoNaoExisteException;
+import com.ufcg.psoft.commerce.model.Chamado;
 import com.ufcg.psoft.commerce.model.Empresa;
 import com.ufcg.psoft.commerce.model.Pagamento;
 import com.ufcg.psoft.commerce.model.Tecnico;
+import com.ufcg.psoft.commerce.repository.ChamadoRepository;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
+import com.ufcg.psoft.commerce.repository.ServicoRepository;
 import com.ufcg.psoft.commerce.repository.TecnicoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -29,14 +33,18 @@ public class EmpresaServiceImpl implements EmpresaService {
     private EmpresaRepository empresaRepository;
 
     @Autowired
+    private ChamadoRepository chamadoRepository;
+
+    @Autowired
+    private ServicoRepository servicoRepository;
+
+    @Autowired
     private TecnicoRepository tecnicoRepository;
 
     private static final String SENHA_ADMIN_PADRAO = "admin123";
 
     @Autowired
     private Pagamento pagamento;
-
-    private static final long CHAMADO_MAX_VALIDO = 100;
 
     @Override
     public EmpresaResponseDTO cadastrar(EmpresaPostPutRequestDTO dto) {
@@ -82,12 +90,15 @@ public class EmpresaServiceImpl implements EmpresaService {
     }
 
     @Override
+    @Transactional
     public void remover(Long id, String codigoAcesso, String senhaAdmin) {
         validarSenhaAdmin(senhaAdmin);
 
         Empresa empresa = buscarEmpresaPeloId(id);
         validarCodigoAcesso(empresa, codigoAcesso);
 
+        chamadoRepository.deleteAllByEmpresa(empresa);
+        servicoRepository.deleteAllByEmpresa_Id(empresa.getId());
         empresaRepository.delete(empresa);
     }
 
@@ -135,8 +146,10 @@ public class EmpresaServiceImpl implements EmpresaService {
     @Override
     public PagamentoResponseDTO confirmarPagamento(Long empresaId, Long chamadoId, String codigoAcesso, PagamentoRequestDTO pagamentoRequestDTO) {
         Empresa empresa = buscarEmpresaPeloId(empresaId);
+        Chamado chamado = buscarChamadoPeloId(chamadoId);
+
         validarCodigoAcesso(empresa, codigoAcesso);
-        validarChamado(chamadoId);
+        validarChamado(empresa, chamado);
 
         if (pagamentoRequestDTO == null) {
             throw new CommerceException("Metodo de pagamento nao suportado");
@@ -147,14 +160,29 @@ public class EmpresaServiceImpl implements EmpresaService {
                 pagamentoRequestDTO.getValorTotal()
         );
 
+        chamado.confirmarPagamento();
+        chamadoRepository.save(chamado);
+        
         return PagamentoResponseDTO.builder()
                 .valorFinal(valorFinal)
                 .build();
     }
 
-    private void validarChamado(Long chamadoId) {
-        if (chamadoId == null || chamadoId <= 0 || chamadoId > CHAMADO_MAX_VALIDO) {
+    private Chamado buscarChamadoPeloId(Long chamadoId) {
+        if (chamadoId == null || chamadoId <= 0) {
             throw new CommerceException("Chamado invalido");
+        }
+
+        return chamadoRepository.findById(chamadoId)
+                .orElseThrow(() -> new CommerceException("Chamado invalido"));
+    }
+
+    private void validarChamado(Empresa empresa, Chamado chamado) {
+        if (chamado == null || chamado.getId() == null || chamado.getId() <= 0) {
+            throw new CommerceException("Chamado invalido");
+        }
+        if (!chamado.getEmpresa().getId().equals(empresa.getId())) {
+            throw new CommerceException("Chamado nao pertence a empresa");
         }
     }
 }
