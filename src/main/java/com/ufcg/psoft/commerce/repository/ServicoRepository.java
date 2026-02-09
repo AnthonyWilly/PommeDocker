@@ -13,6 +13,8 @@ import java.util.List;
 
 public interface ServicoRepository extends JpaRepository<Servico, Long> {
     List<Servico> findByEmpresa_Id(Long empresaId);
+
+    void deleteAllByEmpresa_Id(Long empresaId);
     
     @Query("SELECT s FROM Servico s WHERE " +
             "s.disponivel AND " +
