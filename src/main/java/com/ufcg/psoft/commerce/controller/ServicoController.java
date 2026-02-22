@@ -75,9 +75,25 @@ public class ServicoController {
     
     @GetMapping("/servicos/catalogo")
     public ResponseEntity<List<ServicoResponseDTO>> listarCatalogoServicoClient(
-        @RequestParam Long clienteId, 
+        @RequestParam Long clienteId,
         ServicoFiltroDTO filtro) {
             return ResponseEntity.ok(servicoService.listarCatalogoServicoCliente(clienteId, filtro));
+    }
+
+    @PatchMapping("/empresas/{empresaId}/servicos/{id}/disponibilidade")
+    public ResponseEntity<?> alterarDisponibilidade(
+            @PathVariable Long empresaId,
+            @PathVariable Long id,
+            @RequestHeader("codigoAcesso") String codigoAcesso,
+            @RequestParam boolean disponivel) {
+        throw new UnsupportedOperationException("Não implementado");
+    }
+
+    @PostMapping("/servicos/{id}/interesse")
+    public ResponseEntity<?> registrarInteresse(
+            @PathVariable Long id,
+            @RequestParam Long clienteId) {
+        throw new UnsupportedOperationException("Não implementado");
     }
 
 }

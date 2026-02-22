@@ -10,18 +10,23 @@ import com.ufcg.psoft.commerce.model.*;
 import com.ufcg.psoft.commerce.repository.ClienteRepository;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
 import com.ufcg.psoft.commerce.repository.ServicoRepository;
+import com.ufcg.psoft.commerce.service.notificacao.ServicoObserver;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 
 
 @Service
 public class ServicoServiceImpl implements ServicoService {
+
+    private final Set<ServicoObserver> observadores = new LinkedHashSet<>();
     @Autowired
     ServicoRepository servicoRepository;
     @Autowired
@@ -87,6 +92,21 @@ public class ServicoServiceImpl implements ServicoService {
         }
 
         return empresa;
+    }
+
+    @Override
+    public ServicoResponseDTO alterarDisponibilidade(Long empresaId, Long servicoId, String codigoAcesso, boolean disponivel) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @Override
+    public void registrarInteresse(Long clienteId, Long servicoId) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @Override
+    public void adicionarObservador(ServicoObserver observer) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
