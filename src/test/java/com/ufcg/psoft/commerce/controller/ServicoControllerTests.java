@@ -451,7 +451,7 @@ public class ServicoControllerTests {
 
         @Test
         @DisplayName("alterar disponibilidade para false com código válido retorna 200")
-        void should_retornarOk_quandoAlterarDisponibilidadeParaFalsoComCodigoValido() throws Exception {
+        void alterarDisponibilidadeParaFalsoComCodigoValido() throws Exception {
             driver.perform(
                             patch("/empresas/" + empresaPadrao.getId() +
                                     "/servicos/" + servicoPadrao.getId() + "/disponibilidade")
@@ -463,7 +463,7 @@ public class ServicoControllerTests {
 
         @Test
         @DisplayName("alterar disponibilidade para true com código válido retorna 200")
-        void should_retornarOk_quandoAlterarDisponibilidadeParaVerdadeiroComCodigoValido() throws Exception {
+        void alterarDisponibilidadeParaVerdadeiroComCodigoValido() throws Exception {
             driver.perform(
                             patch("/empresas/" + empresaPadrao.getId() +
                                     "/servicos/" + servicoPadrao.getId() + "/disponibilidade")
@@ -476,7 +476,7 @@ public class ServicoControllerTests {
 
         @Test
         @DisplayName("código de acesso inválido ao alterar disponibilidade retorna 400")
-        void should_retornarBadRequest_quandoCodigoAcessoInvalidoNaAlteracaoDisponibilidade() throws Exception {
+        void codigoAcessoInvalidoNaAlteracaoDisponibilidade() throws Exception {
             String response = driver.perform(
                             patch("/empresas/" + empresaPadrao.getId() +
                                     "/servicos/" + servicoPadrao.getId() + "/disponibilidade")
@@ -492,7 +492,7 @@ public class ServicoControllerTests {
 
         @Test
         @DisplayName("serviço inexistente ao alterar disponibilidade retorna 404")
-        void should_retornarNotFound_quandoServicoNaoExisteNaAlteracaoDisponibilidade() throws Exception {
+        void servicoNaoExisteNaAlteracaoDisponibilidade() throws Exception {
             driver.perform(
                             patch("/empresas/" + empresaPadrao.getId() +
                                     "/servicos/999999/disponibilidade")
@@ -504,7 +504,7 @@ public class ServicoControllerTests {
 
         @Test
         @DisplayName("serviço de outra empresa ao alterar disponibilidade retorna 404")
-        void should_retornarNotFound_quandoServicoNaoPertenceAEmpresa() throws Exception {
+        void servicoNaoPertenceAEmpresaNaAlteracaoDisponibilidade() throws Exception {
             driver.perform(
                             patch("/empresas/" + empresaPadrao.getId() +
                                     "/servicos/" + servicoBasico.getId() + "/disponibilidade")
@@ -516,7 +516,7 @@ public class ServicoControllerTests {
 
         @Test
         @DisplayName("catálogo exibe disponíveis primeiro e indisponíveis por último")
-        void should_listarServicosDisponivelPrimeiroEIndisponivelPorUltimo_noCatalogo() throws Exception {
+        void listarServicosDisponivelPrimeiroEIndisponivelPorUltimo() throws Exception {
             String response = driver.perform(get(URI_SERVICOS + URI_CATALOGO)
                             .param("clienteId", clientePremium.getId().toString())
                             .contentType(MediaType.APPLICATION_JSON))
@@ -542,7 +542,7 @@ public class ServicoControllerTests {
 
         @Test
         @DisplayName("registrar interesse em serviço retorna 201")
-        void should_retornarCreated_quandoClienteRegistraInteresseEmServico() throws Exception {
+        void clienteRegistraInteresseEmServico() throws Exception {
             driver.perform(
                             post("/servicos/" + servicoPadrao.getId() + "/interesse")
                                     .param("clienteId", clienteBasico.getId().toString())
@@ -552,7 +552,7 @@ public class ServicoControllerTests {
 
         @Test
         @DisplayName("cliente inexistente ao registrar interesse retorna 404")
-        void should_retornarNotFound_quandoClienteNaoExisteAoRegistrarInteresse() throws Exception {
+        void clienteNaoExisteAoRegistrarInteresse() throws Exception {
             driver.perform(
                             post("/servicos/" + servicoPadrao.getId() + "/interesse")
                                     .param("clienteId", "999999")
@@ -562,7 +562,7 @@ public class ServicoControllerTests {
 
         @Test
         @DisplayName("serviço inexistente ao registrar interesse retorna 404")
-        void should_retornarNotFound_quandoServicoNaoExisteAoRegistrarInteresse() throws Exception {
+        void servicoNaoExisteAoRegistrarInteresse() throws Exception {
             driver.perform(
                             post("/servicos/999999/interesse")
                                     .param("clienteId", clienteBasico.getId().toString())

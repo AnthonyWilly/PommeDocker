@@ -445,7 +445,7 @@ public class ServicoServiceTests {
 
         @Test
         @DisplayName("marcar serviço como disponível com código válido")
-        void should_marcarServicoComoDisponivel_quandoCodigoAcessoValido() {
+        void marcarServicoComoDisponivelComCodigoValido() {
             when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
             when(servicoRepository.findById(10L)).thenReturn(Optional.of(servicoIndisponivel));
             when(servicoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -457,7 +457,7 @@ public class ServicoServiceTests {
 
         @Test
         @DisplayName("marcar serviço como indisponível com código válido")
-        void should_marcarServicoComoIndisponivel_quandoCodigoAcessoValido() {
+        void marcarServicoComoIndisponivelComCodigoValido() {
             when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
             when(servicoRepository.findById(11L)).thenReturn(Optional.of(servicoJaDisponivel));
             when(servicoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -469,7 +469,7 @@ public class ServicoServiceTests {
 
         @Test
         @DisplayName("lança exceção ao alterar disponibilidade com código inválido")
-        void should_lancaExcecao_quandoCodigoAcessoInvalidoNaAlteracaoDisponibilidade() {
+        void lancaExcecaoComCodigoAcessoInvalidoNaAlteracaoDisponibilidade() {
             when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
 
             assertThrows(CodigoDeAcessoInvalidoException.class,
@@ -480,7 +480,7 @@ public class ServicoServiceTests {
 
         @Test
         @DisplayName("notifica observador ao mudar de indisponível para disponível")
-        void should_notificarObservador_quandoServicoMudaDeIndisponivelParaDisponivel() {
+        void notificarObservadorQuandoServicoFicaDisponivel() {
             when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
             when(servicoRepository.findById(10L)).thenReturn(Optional.of(servicoIndisponivel));
             when(servicoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -492,7 +492,7 @@ public class ServicoServiceTests {
 
         @Test
         @DisplayName("não notifica observador ao mudar para indisponível")
-        void should_naoNotificarObservador_quandoServicoMudaDeDisponivelParaIndisponivel() {
+        void naoNotificarObservadorQuandoServicoFicaIndisponivel() {
             when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
             when(servicoRepository.findById(11L)).thenReturn(Optional.of(servicoJaDisponivel));
             when(servicoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -504,7 +504,7 @@ public class ServicoServiceTests {
 
         @Test
         @DisplayName("não notifica observador quando disponibilidade não muda")
-        void should_naoNotificarObservador_quandoDisponibilidadeJaEraVerdadeiraEPermanece() {
+        void naoNotificarObservadorQuandoDisponibilidadeNaoMuda() {
             when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
             when(servicoRepository.findById(11L)).thenReturn(Optional.of(servicoJaDisponivel));
             when(servicoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -516,7 +516,7 @@ public class ServicoServiceTests {
 
         @Test
         @DisplayName("notifica apenas uma vez por mudança de estado para disponível")
-        void should_notificarUmaVez_quandoMudancaDeIndisponivelParaDisponivel() {
+        void notificarObservadorUmaVezQuandoServicoFicaDisponivel() {
             servicoService.adicionarObservador(observer);
 
             when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
@@ -530,7 +530,7 @@ public class ServicoServiceTests {
 
         @Test
         @DisplayName("registrar interesse adiciona cliente como interessado no serviço")
-        void should_adicionarClienteComoInteressado_quandoRegistrarInteresse() {
+        void adicionarClienteComoInteressado() {
             when(clienteRepository.findById(1L)).thenReturn(Optional.of(clienteBasico));
             when(servicoRepository.findById(10L)).thenReturn(Optional.of(servicoIndisponivel));
 
@@ -542,7 +542,7 @@ public class ServicoServiceTests {
 
         @Test
         @DisplayName("notifica cliente interessado quando serviço fica disponível")
-        void should_notificarClienteInteressado_quandoServicoFicaDisponivel() {
+        void notificarClienteInteressadoQuandoServicoFicaDisponivel() {
             when(clienteRepository.findById(1L)).thenReturn(Optional.of(clienteBasico));
             when(servicoRepository.findById(10L)).thenReturn(Optional.of(servicoIndisponivel));
             servicoService.registrarInteresse(1L, 10L);
