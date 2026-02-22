@@ -262,7 +262,17 @@ public class ChamadoServiceTests {
 
         verify(listener, never()).notificarChamado(any());
     }
-
+    @Test
+    @DisplayName("Não deve notificar quando mudar de CHAMADO_RECEBIDO para EM_ANALISE")
+    void naoDeveNotificarQuandoMudarDeRecebidoParaEmAnalise() {
+        Chamado chamado = new Chamado();
+        chamado.mudaEstado(new ChamadoEstadoChamadoRecebido());
+        ListenerChamado listener = mock(ListenerChamado.class);
+        chamado.adicionarListener(listener);
+        chamado.mudaEstado(new ChamadoEstadoEmAnalise());
+        verify(listener, never())
+                .notificarChamado(any());
+    }
     @Test
     @DisplayName("Não deve notificar listener quando entrar em AGUARDANDO_TECNICO")
     void naoDeveNotificarQuandoAguardandoTecnico() {
@@ -295,16 +305,12 @@ public class ChamadoServiceTests {
     @Test
     @DisplayName("Não deve notificar listener quando chamado for cancelado")
     void naoDeveNotificarQuandoCancelado() {
-        // Arrange
         ListenerChamado listener = mock(ListenerChamado.class);
         chamado.adicionarListener(listener);
         chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
         chamado.setStatus("AGUARDANDO_PAGAMENTO");
-        // Act
         chamado.cancelarChamado();
-        // verifica que mudou para cancelado
         assertEquals("CANCELADO", chamado.getStatus());
-        // verifica que NÃO notificou
         verify(listener, never()).notificarChamado(any());
     }
 

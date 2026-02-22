@@ -22,7 +22,11 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
 
+import static jdk.internal.org.objectweb.asm.util.CheckClassAdapter.verify;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.modelmapper.internal.bytebuddy.matcher.ElementMatchers.any;
+import static org.springframework.test.web.client.ExpectedCount.never;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -254,4 +258,199 @@ public class ChamadoControllerTests {
                 .andExpect(result -> assertTrue(result.getResolvedException() instanceof PlanoInvalidoException))
                 .andDo(print());
     }
+    @Test
+    @DisplayName("Deve entrar em EM_ANALISE sem técnico e sem notificar listener")
+    void deveEntrarEmAnaliseSemTecnicoESemNotificar() throws Exception {
+        Chamado chamado = Chamado.builder()
+                .cliente(clienteBasico)
+                .empresa(empresa)
+                .servico(servicoComum)
+                .enderecoAtendimento(clienteBasico.getEndereco())
+                .status("CHAMADO_RECEBIDO")
+                .build();
+        chamado.mudaEstado(new ChamadoEstadoRecebido());
+        chamado = chamadoRepository.save(chamado);
+        driver.perform(
+                        put("/empresas/" + empresa.getId()
+                                + "/chamados/" + chamado.getId())
+                                .header("codigoAcesso", empresa.getCodigoAcesso())
+                                .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isOk());
+
+        Chamado atualizado =
+                chamadoRepository.findById(chamado.getId()).orElseThrow();
+
+        assertEquals(
+                "EM_ANALISE",
+                atualizado.getStatus()
+        );
+        verify(listenerChamado, never())
+                .notificarChamado(any());
+
+    }
+    @Test
+    @DisplayName("Não deve notificar listener quando chamado for concluído")
+    void naoDeveNotificarQuandoChamadoConcluido() throws Exception {
+        Tecnico tecnico = Tecnico.builder()
+                .nome("Carlos Silva")
+                .especialidade("Eletricista")
+                .corVeiculo("Branco")
+                .tipoVeiculo(TipoVeiculo.CARRO)
+                .placaVeiculo("ABC-1234")
+                .acesso("123456")
+                .build();
+        tecnico.getEmpresasAprovadoras().add(empresa);
+        tecnico = tecnicoRepository.save(tecnico);
+        Chamado chamado = Chamado.builder()
+                .cliente(clienteBasico)
+                .empresa(empresa)
+                .servico(servicoComum)
+                .enderecoAtendimento(clienteBasico.getEndereco())
+                .status("EM_ATENDIMENTO")
+                .tecnico(tecnico)
+                .build();
+        chamado.mudaEstado(new ChamadoEstadoEmAtendimento());
+        chamado = chamadoRepository.save(chamado);
+
+        driver.perform(
+
+                        put("/empresas/"
+                                + empresa.getId()
+                                + "/chamados/"
+                                + chamado.getId()
+                                + "/concluido")
+
+                                .header("codigoAcesso", empresa.getCodigoAcesso())
+
+                                .contentType(MediaType.APPLICATION_JSON)
+
+                )
+                .andExpect(status().isOk());
+        Chamado atualizado =
+                chamadoRepository.findById(chamado.getId()).orElseThrow();
+        assertEquals(
+                "CHAMADO_CONCLUIDO",
+                atualizado.getStatus()
+        );
+        verify(listenerChamado, never())
+                .notificarChamado(any());
+    }
+
+    @Test
+    @DisplayName("Não deve notificar listener quando entrar em CHAMADO_RECEBIDO")
+    void naoDeveNotificarQuandoChamadoRecebido() throws Exception {
+
+        // Arrange
+
+        Chamado chamado = Chamado.builder()
+                .cliente(clienteBasico)
+                .empresa(empresa)
+                .servico(servicoComum)
+                .enderecoAtendimento(clienteBasico.getEndereco())
+                .status("AGUARDANDO_PAGAMENTO")
+                .build();
+        chamado.mudaEstado(new ChamadoEstadoAguardandoPagamento());
+        chamado = chamadoRepository.save(chamado);
+        driver.perform(
+                        put("clientes/" + clienteBasico.getId() + "/chamados/" + chamado.getId())
+                                .header("codigoAcesso", clienteBasico.getCodigo())
+                                .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isOk())
+                .andDo(print());
+        // Assert
+        Chamado atualizado =
+                chamadoRepository.findById(chamado.getId()).orElseThrow();
+        assertEquals(
+                "CHAMADO_RECEBIDO",
+                atualizado.getStatus()
+        );
+        verify(listenerChamado, never())
+                .notificarChamado(any());
+
+    }
+
+    @Test
+    @DisplayName("Deve notificar listener quando entrar em EM_ATENDIMENTO")
+    void deveNotificarQuandoEntrarEmAtendimento() throws Exception {
+        Chamado chamado = Chamado.builder()
+                .cliente(clienteBasico)
+                .empresa(empresa)
+                .servico(servicoComum)
+                .enderecoAtendimento(clienteBasico.getEndereco())
+                .status("AGUARDANDO_TECNICO")
+                .build();
+        chamado.mudaEstado(new ChamadoEstadoAguardandoTecnico());
+        chamado = chamadoRepository.save(chamado);
+        String nomeTecnico = "Carlos Silva";
+        String corVeiculo = "Branco";
+        String tipoVeiculo = "CARRO";
+        String placaVeiculo = "ABC-1234";
+        // Act
+        driver.perform(
+                        put("/empresas/" + empresa.getId()
+                                + "/chamados/" + chamado.getId()
+                                + "/atendimento")
+                                .header("codigoAcesso", empresa.getCodigoAcesso())
+                                .param("nomeTecnico", nomeTecnico)
+                                .param("corVeiculo", corVeiculo)
+                                .param("tipoVeiculo", tipoVeiculo)
+                                .param("placaVeiculo", placaVeiculo)
+                                .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isOk())
+                .andDo(print());
+        Chamado atualizado =
+                chamadoRepository.findById(chamado.getId()).orElseThrow();
+        assertEquals(
+                "EM_ATENDIMENTO",
+                atualizado.getStatus()
+        );
+        assertEquals(nomeTecnico, atualizado.getTecnico());
+        verify(listenerChamado)
+                .notificarChamado(any());
+
+    }
+
+    @Test
+    @DisplayName("Não deve notificar listener quando entrar em CANCELADO")
+    void naoDeveNotificarQuandoChamadoCancelado() throws Exception {
+        Chamado chamado = Chamado.builder()
+                .cliente(clienteBasico)
+                .empresa(empresa)
+                .servico(servicoComum)
+                .enderecoAtendimento(clienteBasico.getEndereco())
+                .status("CHAMADO_RECEBIDO")
+                .build();
+
+        chamado.mudaEstado(new ChamadoEstadoRecebido());
+
+        chamado = chamadoRepository.save(chamado);
+
+        driver.perform(
+                        put("/clientes/"
+                                + clienteBasico.getId()
+                                + "/chamados/"
+                                + chamado.getId()
+                                + "/cancelado")
+                                .header("codigoAcesso", clienteBasico.getCodigo())
+                                .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isOk())
+                .andDo(print());
+
+        Chamado atualizado =
+                chamadoRepository.findById(chamado.getId()).orElseThrow();
+
+        assertEquals(
+                "CANCELADO",
+                atualizado.getStatus()
+        );
+        verify(listenerChamado, never())
+                .notificarChamado(any());
+
+    }
+
+
 }
