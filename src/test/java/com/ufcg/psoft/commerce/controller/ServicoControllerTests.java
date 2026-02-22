@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -443,4 +444,130 @@ public class ServicoControllerTests {
         }
 
         }
+
+    @Nested
+    @DisplayName("Disponibilidade de serviço")
+    class DisponibilidadeDeServicoController {
+
+        @Test
+        @DisplayName("alterar disponibilidade para false com código válido retorna 200")
+        void should_retornarOk_quandoAlterarDisponibilidadeParaFalsoComCodigoValido() throws Exception {
+            driver.perform(
+                            patch("/empresas/" + empresaPadrao.getId() +
+                                    "/servicos/" + servicoPadrao.getId() + "/disponibilidade")
+                                    .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                                    .param("disponivel", "false")
+                    )
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("alterar disponibilidade para true com código válido retorna 200")
+        void should_retornarOk_quandoAlterarDisponibilidadeParaVerdadeiroComCodigoValido() throws Exception {
+            driver.perform(
+                            patch("/empresas/" + empresaPadrao.getId() +
+                                    "/servicos/" + servicoPadrao.getId() + "/disponibilidade")
+                                    .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                                    .param("disponivel", "true")
+                    )
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+        }
+
+        @Test
+        @DisplayName("código de acesso inválido ao alterar disponibilidade retorna 400")
+        void should_retornarBadRequest_quandoCodigoAcessoInvalidoNaAlteracaoDisponibilidade() throws Exception {
+            String response = driver.perform(
+                            patch("/empresas/" + empresaPadrao.getId() +
+                                    "/servicos/" + servicoPadrao.getId() + "/disponibilidade")
+                                    .header("codigoAcesso", "000000")
+                                    .param("disponivel", "true")
+                    )
+                    .andExpect(status().isBadRequest())
+                    .andReturn().getResponse().getContentAsString();
+
+            CustomErrorType erro = objectMapper.readValue(response, CustomErrorType.class);
+            assertEquals("Codigo de acesso invalido!", erro.getMessage());
+        }
+
+        @Test
+        @DisplayName("serviço inexistente ao alterar disponibilidade retorna 404")
+        void should_retornarNotFound_quandoServicoNaoExisteNaAlteracaoDisponibilidade() throws Exception {
+            driver.perform(
+                            patch("/empresas/" + empresaPadrao.getId() +
+                                    "/servicos/999999/disponibilidade")
+                                    .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                                    .param("disponivel", "true")
+                    )
+                    .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("serviço de outra empresa ao alterar disponibilidade retorna 404")
+        void should_retornarNotFound_quandoServicoNaoPertenceAEmpresa() throws Exception {
+            driver.perform(
+                            patch("/empresas/" + empresaPadrao.getId() +
+                                    "/servicos/" + servicoBasico.getId() + "/disponibilidade")
+                                    .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                                    .param("disponivel", "true")
+                    )
+                    .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("catálogo exibe disponíveis primeiro e indisponíveis por último")
+        void should_listarServicosDisponivelPrimeiroEIndisponivelPorUltimo_noCatalogo() throws Exception {
+            String response = driver.perform(get(URI_SERVICOS + URI_CATALOGO)
+                            .param("clienteId", clientePremium.getId().toString())
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+
+            List<ServicoResponseDTO> resultados = objectMapper.readValue(
+                    response, new TypeReference<List<ServicoResponseDTO>>() {});
+
+            boolean disponivelVeioAntes = true;
+            boolean encontrouIndisponivel = false;
+            for (ServicoResponseDTO s : resultados) {
+                if (!s.getDisponivel()) {
+                    encontrouIndisponivel = true;
+                }
+                if (encontrouIndisponivel && s.getDisponivel()) {
+                    disponivelVeioAntes = false;
+                    break;
+                }
+            }
+            assertTrue(disponivelVeioAntes);
+        }
+
+        @Test
+        @DisplayName("registrar interesse em serviço retorna 201")
+        void should_retornarCreated_quandoClienteRegistraInteresseEmServico() throws Exception {
+            driver.perform(
+                            post("/servicos/" + servicoPadrao.getId() + "/interesse")
+                                    .param("clienteId", clienteBasico.getId().toString())
+                    )
+                    .andExpect(status().isCreated());
+        }
+
+        @Test
+        @DisplayName("cliente inexistente ao registrar interesse retorna 404")
+        void should_retornarNotFound_quandoClienteNaoExisteAoRegistrarInteresse() throws Exception {
+            driver.perform(
+                            post("/servicos/" + servicoPadrao.getId() + "/interesse")
+                                    .param("clienteId", "999999")
+                    )
+                    .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("serviço inexistente ao registrar interesse retorna 404")
+        void should_retornarNotFound_quandoServicoNaoExisteAoRegistrarInteresse() throws Exception {
+            driver.perform(
+                            post("/servicos/999999/interesse")
+                                    .param("clienteId", clienteBasico.getId().toString())
+                    )
+                    .andExpect(status().isNotFound());
+        }
+    }
 }
