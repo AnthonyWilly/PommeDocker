@@ -3,8 +3,8 @@ package com.ufcg.psoft.commerce.model;
 public class ChamadoEstadoAguardandoPagamento implements ChamadoEstado {
     
     @Override
-    public void confirmarPagamento(Chamado chamado) {
-        chamado.mudaEstado(new ChamadoEstadoEmProcessamento());
+    public void avancarEstado(Chamado chamado) {
+        chamado.mudaEstado(new ChamadoEstadoRecebido());
     }
 
     @Override

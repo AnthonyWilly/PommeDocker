@@ -6,7 +6,7 @@ import java.util.Arrays;
 public enum ChamadoStatus {
     
     AGUARDANDO_PAGAMENTO("AGUARDANDO_PAGAMENTO", ChamadoEstadoAguardandoPagamento::new),
-    EM_PROCESSAMENTO("EM_PROCESSAMENTO", ChamadoEstadoEmProcessamento::new);
+    EM_PROCESSAMENTO("CHAMADO_RECEBIDO", ChamadoEstadoRecebido::new);
 
     private final String nome;
     private final Supplier<ChamadoEstado> factory;

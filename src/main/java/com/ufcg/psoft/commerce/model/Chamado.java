@@ -46,7 +46,7 @@ public class Chamado {
     }
 
     public void confirmarPagamento() {
-        this.estado.confirmarPagamento(this);
+        this.estado.avancarEstado(this);
     }
 
     @PostLoad

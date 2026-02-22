@@ -1,6 +1,6 @@
 package com.ufcg.psoft.commerce.model;
 
 public interface ChamadoEstado {
-    void confirmarPagamento(Chamado chamado);
+    void avancarEstado(Chamado chamado);
     String getNome();
 }

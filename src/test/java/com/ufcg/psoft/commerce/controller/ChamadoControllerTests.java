@@ -177,7 +177,7 @@ public class ChamadoControllerTests {
                 .andDo(print());
 
         Chamado chamadoAtualizado = chamadoRepository.findById(chamado.getId()).orElseThrow();
-        assertEquals("EM_PROCESSAMENTO", chamadoAtualizado.getStatus());
+        assertEquals("CHAMADO_RECEBIDO", chamadoAtualizado.getStatus());
     }
 
     @Test

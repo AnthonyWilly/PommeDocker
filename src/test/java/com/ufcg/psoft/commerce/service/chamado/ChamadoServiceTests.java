@@ -216,13 +216,13 @@ public class ChamadoServiceTests {
         
         when(chamadoRepository.save(any(Chamado.class))).thenAnswer(i -> {
             Chamado c = (Chamado) i.getArgument(0);
-            c.setStatus("EM_PROCESSAMENTO");
+            c.setStatus("CHAMADO_RECEBIDO");
             return c;
         });
 
         ChamadoResponseDTO resultado = chamadoService.confirmarPagamento(1L, clienteBasico.getCodigo(), "PIX");
 
-        assertEquals("EM_PROCESSAMENTO", resultado.getStatus());
+        assertEquals("CHAMADO_RECEBIDO", resultado.getStatus());
     }
 
     @Test
@@ -234,4 +234,101 @@ public class ChamadoServiceTests {
             chamadoService.confirmarPagamento(1L, "000000", "PIX");
         });
     }
+
+    @Test
+    @DisplayName("Deve notificar listener quando chamado entrar em atendimento")
+    void deveNotificarQuandoEntrarEmAtendimento() {
+        ListenerChamado listener = mock(ListenerChamado.class);
+        chamado.adicionarListener(listener);
+        chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
+        chamado.setStatus("AGUARDANDO_PAGAMENTO");
+        chamado.confirmarPagamento();
+        chamado.getEstado().avancarEstado(chamado);
+        chamado.getEstado().avancarEstado(chamado);
+        verify(listener, times(1)).notificarChamado(chamado);
+
+    }
+    @Test
+    @DisplayName("Não deve notificar listener quando entrar em CHAMADO_RECEBIDO")
+    void naoDeveNotificarQuandoChamadoRecebido() {
+
+        ListenerChamado listener = mock(ListenerChamado.class);
+
+        chamado.adicionarListener(listener);
+
+        chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
+        chamado.setStatus("AGUARDANDO_PAGAMENTO");
+        chamado.confirmarPagamento();
+
+        verify(listener, never()).notificarChamado(any());
+    }
+
+    @Test
+    @DisplayName("Não deve notificar listener quando entrar em AGUARDANDO_TECNICO")
+    void naoDeveNotificarQuandoAguardandoTecnico() {
+
+        ListenerChamado listener = mock(ListenerChamado.class);
+
+        chamado.adicionarListener(listener);
+
+        chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
+        chamado.setStatus("AGUARDANDO_PAGAMENTO");
+        chamado.confirmarPagamento();
+        chamado.getEstado().avancarEstado(chamado);
+        verify(listener, never()).notificarChamado(any());
+    }
+
+    @Test
+    @DisplayName("Não deve notificar listener quando chamado for CONCLUIDO")
+    void naoDeveNotificarQuandoFinalizado() {
+
+        ListenerChamado listener = mock(ListenerChamado.class);
+        chamado.adicionarListener(listener);
+        chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
+        chamado.confirmarPagamento();
+        chamado.getEstado().avancarEstado(chamado);
+        chamado.getEstado().avancarEstado(chamado);
+        chamado.getEstado().avancarEstado(chamado);
+        verify(listener, never()).notificarChamado(any());
+
+    }
+    @Test
+    @DisplayName("Não deve notificar listener quando chamado for cancelado")
+    void naoDeveNotificarQuandoCancelado() {
+        // Arrange
+        ListenerChamado listener = mock(ListenerChamado.class);
+        chamado.adicionarListener(listener);
+        chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
+        chamado.setStatus("AGUARDANDO_PAGAMENTO");
+        // Act
+        chamado.cancelarChamado();
+        // verifica que mudou para cancelado
+        assertEquals("CANCELADO", chamado.getStatus());
+        // verifica que NÃO notificou
+        verify(listener, never()).notificarChamado(any());
+    }
+
+    @Test
+    @DisplayName("Deve gerar mensagem correta com dados do técnico e veículo")
+    void deveGerarMensagemExata() {
+
+        Tecnico tecnico = Tecnico.builder()
+                .nome("Carlos Silva")
+                .tipoVeiculo(TipoVeiculo.MOTO)
+                .corVeiculo("Vermelha")
+                .placaVeiculo("ABC-1234")
+                .especialidade("Eletrica")
+                .acesso("123")
+                .build();
+        chamado.setTecnico(tecnico);
+        ListenerCliente listener = new ListenerCliente();
+        String mensagem = listener.construirMensagem(chamado);
+        String esperado =
+                "Notificação de atendimento: o técnico Carlos Silva está a caminho. Veículo: MOTO, cor Vermelha, placa ABC-1234.";
+        assertEquals(esperado, mensagem);
+
+    }
+
+
+
 }
