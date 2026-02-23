@@ -86,14 +86,19 @@ public class ServicoController {
             @PathVariable Long id,
             @RequestHeader("codigoAcesso") String codigoAcesso,
             @RequestParam boolean disponivel) {
-        throw new UnsupportedOperationException("Não implementado");
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(servicoService.alterarDisponibilidade(empresaId, id, codigoAcesso, disponivel));
     }
 
     @PostMapping("/servicos/{id}/interesse")
     public ResponseEntity<?> registrarInteresse(
             @PathVariable Long id,
             @RequestParam Long clienteId) {
-        throw new UnsupportedOperationException("Não implementado");
+        servicoService.registrarInteresse(clienteId, id);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .build();
     }
 
 }

@@ -343,7 +343,7 @@ public class ServicoControllerTests {
     class catalogoDeServicosPorPlano {
     
         @Test
-        @DisplayName("Deve listar apenas serviços do plano básico para cliente com plano básico")
+        @DisplayName("Deve listar serviços do plano básico para cliente com plano básico (disponíveis primeiro)")
         void quandoClienteBasicoAcessaCatalogo() throws Exception {
 
             String responseJsoString = driver.perform(get(URI_SERVICOS + URI_CATALOGO)
@@ -353,17 +353,20 @@ public class ServicoControllerTests {
                     .andDo(print())
                     .andReturn().getResponse().getContentAsString();
 
-            List<Servico> resultados = objectMapper.readValue(responseJsoString, new TypeReference<List<Servico>>() {});
+            List<ServicoResponseDTO> resultados = objectMapper.readValue(responseJsoString, new TypeReference<List<ServicoResponseDTO>>() {});
 
             assertAll(
-                () -> assertEquals(1, resultados.size()),
-                () -> assertEquals("Reparo Hidraulico", resultados.get(0).getNome())
+                () -> assertEquals(2, resultados.size()),
+                () -> assertEquals("Reparo Hidraulico", resultados.get(0).getNome()),
+                () -> assertTrue(resultados.get(0).getDisponivel()),
+                () -> assertEquals("Pintura", resultados.get(1).getNome()),
+                () -> assertFalse(resultados.get(1).getDisponivel())
             );
 
         }                    
 
         @Test
-        @DisplayName("Deve listar apenas serviços do plano premium para cliente com plano premium")
+        @DisplayName("Deve listar serviços do plano premium para cliente com plano premium (disponíveis primeiro)")
         void quandoClientePremiumAcessaCatalogo() throws Exception {
 
             String responseJsoString = driver.perform(get(URI_SERVICOS + URI_CATALOGO)
@@ -373,12 +376,14 @@ public class ServicoControllerTests {
                     .andDo(print())
                     .andReturn().getResponse().getContentAsString();
 
-            List<Servico> resultados = objectMapper.readValue(responseJsoString, new TypeReference<List<Servico>>() {});
+            List<ServicoResponseDTO> resultados = objectMapper.readValue(responseJsoString, new TypeReference<List<ServicoResponseDTO>>() {});
 
             assertAll(
-                () -> assertEquals(2, resultados.size()),
-                () -> assertEquals("Reparo Hidraulico", resultados.get(0).getNome()),
-                () -> assertEquals("Guinchar carro", resultados.get(1).getNome())
+                () -> assertEquals(3, resultados.size()),
+                () -> assertTrue(resultados.get(0).getDisponivel()),
+                () -> assertTrue(resultados.get(1).getDisponivel()),
+                () -> assertEquals("Pintura", resultados.get(2).getNome()),
+                () -> assertFalse(resultados.get(2).getDisponivel())
             );
 
         }                    
@@ -418,8 +423,8 @@ public class ServicoControllerTests {
             List<Servico> resultado = objectMapper.readValue(responseJsonString, new TypeReference<List<Servico>>() {});
 
             assertAll(
-                () -> assertEquals(1, resultado.size()),
-                () -> assertTrue(resultado.get(0).getPreco() <= 200.0)
+                () -> assertEquals(2, resultado.size()),
+                () -> assertTrue(resultado.stream().allMatch(s -> s.getPreco() <= 200.0))
             );
             
         }

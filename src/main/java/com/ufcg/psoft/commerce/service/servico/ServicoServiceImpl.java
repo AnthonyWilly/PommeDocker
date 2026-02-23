@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 public class ServicoServiceImpl implements ServicoService {
 
     private final Set<ServicoObserver> observadores = new LinkedHashSet<>();
+
     @Autowired
     ServicoRepository servicoRepository;
     @Autowired
@@ -96,17 +97,35 @@ public class ServicoServiceImpl implements ServicoService {
 
     @Override
     public ServicoResponseDTO alterarDisponibilidade(Long empresaId, Long servicoId, String codigoAcesso, boolean disponivel) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        validarEmpresa(empresaId, codigoAcesso);
+        Servico servico = buscarServicoPeloId(servicoId);
+        if (!servico.getEmpresa().getId().equals(empresaId)) {
+            throw new ServicoNaoExisteException();
+        }
+        boolean eraIndisponivel = !servico.isDisponivel();
+        servico.setDisponivel(disponivel);
+        servicoRepository.save(servico);
+        if (disponivel && eraIndisponivel) {
+            observadores.forEach(obs -> obs.notificar(servico));
+            servico.getInteressados().forEach(cliente -> cliente.notificar(servico));
+        }
+        return new ServicoResponseDTO(servico);
     }
 
     @Override
     public void registrarInteresse(Long clienteId, Long servicoId) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        Cliente cliente = clienteRepository.findById(clienteId)
+                .orElseThrow(ClienteNaoExisteException::new);
+        Servico servico = buscarServicoPeloId(servicoId);
+        if (!servico.getInteressados().contains(cliente)) {
+            servico.getInteressados().add(cliente);
+            servicoRepository.save(servico);
+        }
     }
 
     @Override
     public void adicionarObservador(ServicoObserver observer) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        observadores.add(observer);
     }
 
     @Override

@@ -2,6 +2,7 @@ package com.ufcg.psoft.commerce.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ufcg.psoft.commerce.service.notificacao.ServicoObserver;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,7 +16,7 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "clientes")
-public class Cliente {
+public class Cliente implements ServicoObserver {
 
     @JsonProperty("id")
     @Id
@@ -56,5 +57,16 @@ public class Cliente {
             throw new IllegalArgumentException("Codigo de acesso invalido!");
         }
         this.proxPlano = plano;
+    }
+
+    @Override
+    public void notificar(Servico servico) {
+        System.out.println(
+                "[NOTIFICAÇÃO] Cliente '" + this.nome +
+                "' (id=" + this.id + "): " +
+                "O serviço '" + servico.getNome() +
+                "' (id=" + servico.getId() + ") que você demonstrou interesse " +
+                "voltou a estar disponível!"
+        );
     }
 }
