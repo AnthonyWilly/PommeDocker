@@ -1,13 +1,21 @@
 package com.ufcg.psoft.commerce.model;
 
+import java.time.LocalDate;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.persistence.*;
+import com.ufcg.psoft.commerce.service.notificacao.ServicoObserver;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import java.time.LocalDate;
 
 @Entity
 @Data
@@ -15,7 +23,7 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "clientes")
-public class Cliente {
+public class Cliente implements ServicoObserver {
 
     @JsonProperty("id")
     @Id
@@ -48,13 +56,27 @@ public class Cliente {
     public void setPlanoPremium(String senha) {
         this.setPlano(Plano.PREMIUM, senha);
     }
+
     public void setPlanoBasico(String senha) {
         this.setPlano(Plano.BASICO, senha);
     }
+
     private void setPlano(Plano plano, String senha){
         if (!this.codigo.equals(senha)) {
             throw new IllegalArgumentException("Codigo de acesso invalido!");
         }
         this.proxPlano = plano;
     }
+
+    @Override
+    public void notificar(Servico servico) {
+        System.out.println(
+                "[NOTIFICAÇÃO] Cliente '" + this.nome +
+                "' (id=" + this.id + "): " +
+                "O serviço '" + servico.getNome() +
+                "' (id=" + servico.getId() + ") que você demonstrou interesse " +
+                "voltou a estar disponível!"
+        );
+    }
+
 }
