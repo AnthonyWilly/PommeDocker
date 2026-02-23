@@ -44,10 +44,15 @@ public class GerenciamentoStatusServiceTests {
                 .nome("Service Corp")
                 .codigoAcesso(CODIGO_ACESSO)
                 .build();
+        
+        Cliente cliente = Cliente.builder().id(100L).build();
+        Servico servico = Servico.builder().id(200L).build();
 
         chamado = Chamado.builder()
                 .id(10L)
                 .empresa(empresa)
+                .cliente(cliente)
+                .servico(servico)
                 .status("Chamado recebido")
                 .build();
     }

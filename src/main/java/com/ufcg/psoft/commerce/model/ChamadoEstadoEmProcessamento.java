@@ -9,6 +9,11 @@ public class ChamadoEstadoEmProcessamento implements ChamadoEstado {
 
     @Override
     public String getNome() {
-        return "EM_PROCESSAMENTO";
+        return ChamadoStatus.EM_PROCESSAMENTO.getNome();
+    }
+
+    @Override
+    public void avancar(Chamado chamado) {
+        chamado.mudaEstado(ChamadoStatus.RECEBIDO.getInstancia());
     }
 }

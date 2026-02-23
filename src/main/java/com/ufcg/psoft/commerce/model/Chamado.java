@@ -40,13 +40,20 @@ public class Chamado {
         this.status = ChamadoStatus.AGUARDANDO_PAGAMENTO.getNome();
     }
 
+    public ChamadoEstado getEstado() {
+        if (this.estado == null) {
+            this.estado = ChamadoStatus.obterEstado(this.status);
+        }
+        return this.estado;
+    }
+
     public void mudaEstado(ChamadoEstado novoEstado) {
         this.estado = novoEstado;
         this.status = novoEstado.getNome();
     }
 
     public void confirmarPagamento() {
-        this.estado.confirmarPagamento(this);
+        this.getEstado().confirmarPagamento(this);
     }
 
     @PostLoad

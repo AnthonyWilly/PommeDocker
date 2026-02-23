@@ -1,5 +1,6 @@
 package com.ufcg.psoft.commerce.controller;
 
+import java.nio.charset.StandardCharsets;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.ufcg.psoft.commerce.dto.ChamadoResponseDTO;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Nested;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -112,7 +114,7 @@ public class GerenciamentoStatusControllerTests {
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
                     .andDo(print())
-                    .andReturn().getResponse().getContentAsString();
+                    .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
 
             ChamadoResponseDTO resultado = objectMapper.readValue(responseJson, ChamadoResponseDTO.class);
 
