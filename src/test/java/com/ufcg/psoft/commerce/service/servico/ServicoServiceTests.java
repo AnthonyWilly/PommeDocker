@@ -65,6 +65,10 @@ public class ServicoServiceTests {
     private ServicoPostPutRequestDTO servicoDTO;
     private Servico servicoBasico;
     private Servico servicoPremium;
+    private Servico servicoDisponivelBasico;
+    private Servico servicoDisponivelPremium;
+    private Servico servicoIndisponivelBasico;
+    private Servico servicoIndisponivelPremium;
 
     @BeforeEach
     void setUp() {
@@ -135,6 +139,58 @@ public class ServicoServiceTests {
                 .tipo(TipoServico.LIMPEZA)
                 .preco(500.0)
                 .plano(Plano.PREMIUM)
+                .empresa(empresa)
+                .build();
+
+        servicoDisponivelBasico = Servico.builder()
+                .id(3L)
+                .nome("Instalacao de Chuveiro")
+                .tipo(TipoServico.ELETRICA)
+                .descricao("instala um chuveiro")
+                .urgencia(Urgencia.NORMAL)
+                .preco(150.0)
+                .disponivel(true)
+                .plano(Plano.BASICO)
+                .duracao(3.0)
+                .empresa(empresa)
+                .build();
+                
+        servicoDisponivelPremium = Servico.builder()
+                .id(4L)
+                .nome("Instalacao de Chuveiro de última geração")
+                .tipo(TipoServico.ELETRICA)
+                .descricao("instala um chuveiro que cobrimos o custo caso a fiação da sua casa queime")
+                .urgencia(Urgencia.ALTA)
+                .preco(350.0)
+                .disponivel(true)
+                .plano(Plano.PREMIUM)
+                .duracao(4.0)
+                .empresa(empresa)
+                .build();
+
+        servicoIndisponivelBasico = Servico.builder()
+                .id(5L)
+                .nome("Pintura de parede")
+                .tipo(TipoServico.PINTURA)
+                .descricao("Pintura de uma parede")
+                .urgencia(Urgencia.BAIXA)
+                .preco(150.0)
+                .disponivel(false)
+                .plano(Plano.BASICO)
+                .duracao(4.0)
+                .empresa(empresa)
+                .build();
+
+        servicoIndisponivelPremium = Servico.builder()
+                .id(6L)
+                .nome("Pintura de parede alto padrão")
+                .tipo(TipoServico.PINTURA)
+                .descricao("Pintura de uma parede no estilo alto padrão")
+                .urgencia(Urgencia.ALTA)
+                .preco(550.0)
+                .disponivel(false)
+                .plano(Plano.PREMIUM)
+                .duracao(8.0)
                 .empresa(empresa)
                 .build();
     }
@@ -396,4 +452,138 @@ public class ServicoServiceTests {
             );
         }
     }
+
+    @Nested
+    @DisplayName("Testes de demonstração de interesse com sucesso")
+    class registrarInteresseSucesso {
+
+        @Test
+        @DisplayName("Deve demonstrar interesse com sucesso quando serviço indisponível e cliente compatível com plano básico")
+        void registrarInteresseComSucessoBasico() {
+            // Arrange
+            when(clienteRepository.findById(1L)).thenReturn(Optional.of(clienteBasico));
+            when(servicoRepository.findById(5L)).thenReturn(Optional.of(servicoIndisponivelBasico));
+            
+            when(servicoRepository.save(any(Servico.class))).thenAnswer(r -> r.getArguments()[0]);
+
+            // Act
+            servicoService.registrarInteresse(1L, 5L);
+
+            // Assert
+            assertAll(
+                    () -> assertTrue(servicoIndisponivelBasico.getInteressados().contains(clienteBasico)),
+                    () -> verify(servicoRepository, times(1)).save(any(Servico.class))
+            );
+        }
+        
+        @Test
+        @DisplayName("Deve demonstrar interesse com sucesso quando serviço indisponível e cliente compatível com plano premium")
+        void registrarInteresseComSucessoPremium() {
+            // Arrange
+            when(clienteRepository.findById(2L)).thenReturn(Optional.of(clientePremium));
+            when(servicoRepository.findById(6L)).thenReturn(Optional.of(servicoIndisponivelPremium));
+            
+            when(servicoRepository.save(any(Servico.class))).thenAnswer(r -> r.getArguments()[0]);
+
+            // Act
+            servicoService.registrarInteresse(2L, 6L);
+
+            // Assert
+            assertAll(
+                    () -> assertTrue(servicoIndisponivelPremium.getInteressados().contains(clientePremium)),
+                    () -> verify(servicoRepository, times(1)).save(any(Servico.class))
+            );
+        }
+
+        @Test
+        @DisplayName("Deve demonstrar interesse com sucesso quando cliente premium se interessa por serviço básico")
+        void registrarServicoPremiumParaBasico() {
+            // Arrange
+            when(clienteRepository.findById(2L)).thenReturn(Optional.of(clientePremium));
+            when(servicoRepository.findById(5L)).thenReturn(Optional.of(servicoIndisponivelBasico));
+            when(servicoRepository.save(any(Servico.class))).thenAnswer(i -> i.getArguments()[0]);
+
+            // Act
+            servicoService.registrarInteresse(2L, 5L);
+
+            // Assert
+            assertAll(
+                    () -> assertTrue(servicoIndisponivelBasico.getInteressados().contains(clientePremium)),
+                    () -> verify(servicoRepository, times(1)).save(any(Servico.class))
+            );
+        }
+    }
+
+    @Nested
+    @DisplayName("Testes de demonstração de interesse que devem lançar erro")
+    class registrarInteresseFalha {
+
+        @Test
+        @DisplayName("Deve lançar erro ao tentar demonstrar interesse em serviço disponível")
+        void registrarInteresseEmServicoDisponivel() {
+            // Arrange
+            when(clienteRepository.findById(1L)).thenReturn(Optional.of(clienteBasico));
+            when(servicoRepository.findById(3L)).thenReturn(Optional.of(servicoDisponivelBasico));
+
+            // Act & Assert
+            RuntimeException exception = assertThrows(DemonstrarInteresseInvalidoException.class, 
+                () -> servicoService.registrarInteresse(1L, 3L)
+            );
+
+            assertAll(
+                    () -> assertEquals("Não é possível demonstrar interesse em serviço disponível.", exception.getMessage()),
+                    () -> verify(servicoRepository, never()).save(any())
+            );
+        }
+
+        @Test
+        @DisplayName("Deve lançar erro quando cliente básico tenta serviço premium")
+        void registrarInteresseClienteBasicoServicoPremium() {
+            // Arrange
+            when(clienteRepository.findById(1L)).thenReturn(Optional.of(clienteBasico));
+            when(servicoRepository.findById(6L)).thenReturn(Optional.of(servicoIndisponivelPremium));
+
+            // Act & Assert
+            RuntimeException exception = assertThrows(DemonstrarInteresseInvalidoException.class, 
+                () -> servicoService.registrarInteresse(1L, 6L));
+
+            assertAll(
+                    () -> assertEquals("Não é possível demonstrar interesse à um serviço premium com seu plano atual.", exception.getMessage()),
+                    () -> verify(servicoRepository, never()).save(any())
+            );
+        }
+
+        @Test
+        @DisplayName("Deve lançar erro se o cliente não existir")
+        void registrarInteresseClienteInexistente() {
+            // Arrange
+            when(clienteRepository.findById(99L)).thenReturn(Optional.empty());
+
+            // Act & Assert
+            RuntimeException exception = assertThrows(ClienteNaoExisteException.class,
+                () -> servicoService.registrarInteresse(99L, 3L));
+            
+            assertAll(
+                () -> assertEquals("O cliente consultado não existe!", exception.getMessage()),
+                () -> verify(servicoRepository, never()).save(any())
+            );
+        }
+
+        @Test
+        @DisplayName("Deve lançar exceção se o serviço não existir")
+        void registrarInteresseServicoInexistente() {
+            // Arrange
+            when(clienteRepository.findById(1L)).thenReturn(Optional.of(clienteBasico));
+            when(servicoRepository.findById(99L)).thenReturn(Optional.empty());
+
+            // Act & Assert
+            RuntimeException exception = assertThrows(ServicoInexistenteException.class, () -> {
+                servicoService.registrarInteresse(1L, 99L);
+            });
+
+            assertEquals("O serviço consultado não existe!", exception.getMessage());
+            verify(servicoRepository, never()).save(any());
+        }
+    }
+
 }
