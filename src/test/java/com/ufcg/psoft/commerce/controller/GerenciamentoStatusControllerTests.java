@@ -28,7 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @DisplayName("Testes do Controlador de Gerenciamento de Status de Chamados ")
-public class US12GerenciamentoStatusControllerTests {
+public class GerenciamentoStatusControllerTests {
 
     final String URI_EMPRESAS = "/empresas";
     final String CODIGO_ACESSO_PADRAO = "123456";
@@ -100,46 +100,51 @@ public class US12GerenciamentoStatusControllerTests {
         empresaRepository.deleteAll();
     }
 
-    @Test
-    @DisplayName("Empresa avança status do chamado com sucesso (Recebido para Em análise)")
-    void avancarStatusComSucesso() throws Exception {
-        String responseJson = driver.perform(put(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/" + chamado.getId() + "/avancar-status")
-                        .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andDo(print())
-                .andReturn().getResponse().getContentAsString();
+    @Nested
+    @DisplayName("Testes de alteração de status (Avançar Status)")
+    class AlteracaoStatusTests {
 
-        ChamadoResponseDTO resultado = objectMapper.readValue(responseJson, ChamadoResponseDTO.class);
+        @Test
+        @DisplayName("Empresa avança status do chamado com sucesso")
+        void avancarStatusComSucesso() throws Exception {
+            String responseJson = driver.perform(put(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/" + chamado.getId() + "/avancar-status")
+                            .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andDo(print())
+                    .andReturn().getResponse().getContentAsString();
 
-        assertEquals("Em análise", resultado.getStatus());
-        
-        Chamado chamadoAtualizado = chamadoRepository.findById(chamado.getId()).orElseThrow();
-        assertEquals("Em análise", chamadoAtualizado.getStatus());
-    }
+            ChamadoResponseDTO resultado = objectMapper.readValue(responseJson, ChamadoResponseDTO.class);
 
-    @Test
-    @DisplayName("Falhar ao tentar avançar status com código de acesso inválido da empresa")
-    void avancarStatusCodigoAcessoInvalido() throws Exception {
-        String responseJson = driver.perform(put(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/" + chamado.getId() + "/avancar-status")
-                        .header("codigoAcesso", "000000")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(result -> assertTrue(result.getResolvedException() instanceof CodigoDeAcessoInvalidoException))
-                .andDo(print())
-                .andReturn().getResponse().getContentAsString();
+            assertEquals("Em análise", resultado.getStatus());
+            
+            Chamado chamadoAtualizado = chamadoRepository.findById(chamado.getId()).orElseThrow();
+            assertEquals("Em análise", chamadoAtualizado.getStatus());
+        }
 
-        CustomErrorType resultado = objectMapper.readValue(responseJson, CustomErrorType.class);
-        assertEquals("Codigo de acesso invalido!", resultado.getMessage());
-    }
+        @Test
+        @DisplayName("Falhar ao tentar avançar status com código de acesso inválido")
+        void avancarStatusCodigoAcessoInvalido() throws Exception {
+            String responseJson = driver.perform(put(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/" + chamado.getId() + "/avancar-status")
+                            .header("codigoAcesso", "000000")
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(result -> assertTrue(result.getResolvedException() instanceof CodigoDeAcessoInvalidoException))
+                    .andDo(print())
+                    .andReturn().getResponse().getContentAsString();
 
-    @Test
-    @DisplayName("Falhar ao tentar avançar status de um chamado inexistente")
-    void avancarStatusChamadoInexistente() throws Exception {
-        driver.perform(put(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/99999/avancar-status")
-                        .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNotFound())
-                .andDo(print());
+            CustomErrorType resultado = objectMapper.readValue(responseJson, CustomErrorType.class);
+            assertEquals("Codigo de acesso invalido!", resultado.getMessage());
+        }
+
+        @Test
+        @DisplayName("Falhar ao tentar avançar status de um chamado inexistente")
+        void avancarStatusChamadoInexistente() throws Exception {
+            driver.perform(put(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/99999/avancar-status")
+                            .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isNotFound())
+                    .andDo(print());
+        }
     }
 }
