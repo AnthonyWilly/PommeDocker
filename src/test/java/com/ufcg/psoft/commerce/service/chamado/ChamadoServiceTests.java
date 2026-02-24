@@ -245,7 +245,7 @@ public class ChamadoServiceTests {
         chamado.confirmarPagamento();
         chamado.getEstado().avancarEstado(chamado);
         chamado.getEstado().avancarEstado(chamado);
-        verify(listener, times(1)).notificarChamado(chamado);
+        verify(listener, times(1)).notificarObserver();
 
     }
     @Test
@@ -260,7 +260,7 @@ public class ChamadoServiceTests {
         chamado.setStatus("AGUARDANDO_PAGAMENTO");
         chamado.confirmarPagamento();
 
-        verify(listener, never()).notificarChamado(any());
+        verify(listener, never()).notificarObserver(any());
     }
     @Test
     @DisplayName("Não deve notificar quando mudar de CHAMADO_RECEBIDO para EM_ANALISE")
@@ -271,7 +271,7 @@ public class ChamadoServiceTests {
         chamado.adicionarObserver(listener);
         chamado.mudaEstado(new ChamadoEstadoEmAnalise());
         verify(listener, never())
-                .notificarChamado(any());
+                .notificarObserver(any());
     }
     @Test
     @DisplayName("Não deve notificar listener quando entrar em AGUARDANDO_TECNICO")
@@ -285,7 +285,7 @@ public class ChamadoServiceTests {
         chamado.setStatus("AGUARDANDO_PAGAMENTO");
         chamado.confirmarPagamento();
         chamado.getEstado().avancarEstado(chamado);
-        verify(listener, never()).notificarChamado(any());
+        verify(listener, never()).notificarObserver(any());
     }
 
     @Test
@@ -299,7 +299,7 @@ public class ChamadoServiceTests {
         chamado.getEstado().avancarEstado(chamado);
         chamado.getEstado().avancarEstado(chamado);
         chamado.getEstado().avancarEstado(chamado);
-        verify(listener, never()).notificarChamado(any());
+        verify(listener, never()).notificarObserver(any());
 
     }
     @Test
@@ -311,7 +311,7 @@ public class ChamadoServiceTests {
         chamado.setStatus("AGUARDANDO_PAGAMENTO");
         chamado.cancelarChamado();
         assertEquals("CANCELADO", chamado.getStatus());
-        verify(listener, never()).notificarChamado(any());
+        verify(listener, never()).notificarObserver(any());
     }
 
     @Test
