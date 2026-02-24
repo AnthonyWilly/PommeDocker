@@ -239,7 +239,7 @@ public class ChamadoServiceTests {
     @DisplayName("Deve notificar listener quando chamado entrar em atendimento")
     void deveNotificarQuandoEntrarEmAtendimento() {
         ListenerChamado listener = mock(ListenerChamado.class);
-        chamado.adicionarListener(listener);
+        chamado.adicionarObserver(listener);
         chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
         chamado.setStatus("AGUARDANDO_PAGAMENTO");
         chamado.confirmarPagamento();
@@ -254,7 +254,7 @@ public class ChamadoServiceTests {
 
         ListenerChamado listener = mock(ListenerChamado.class);
 
-        chamado.adicionarListener(listener);
+        chamado.adicionarObserver(listener);
 
         chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
         chamado.setStatus("AGUARDANDO_PAGAMENTO");
@@ -268,7 +268,7 @@ public class ChamadoServiceTests {
         Chamado chamado = new Chamado();
         chamado.mudaEstado(new ChamadoEstadoChamadoRecebido());
         ListenerChamado listener = mock(ListenerChamado.class);
-        chamado.adicionarListener(listener);
+        chamado.adicionarObserver(listener);
         chamado.mudaEstado(new ChamadoEstadoEmAnalise());
         verify(listener, never())
                 .notificarChamado(any());
@@ -279,7 +279,7 @@ public class ChamadoServiceTests {
 
         ListenerChamado listener = mock(ListenerChamado.class);
 
-        chamado.adicionarListener(listener);
+        chamado.adicionarObserver(listener);
 
         chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
         chamado.setStatus("AGUARDANDO_PAGAMENTO");
@@ -293,7 +293,7 @@ public class ChamadoServiceTests {
     void naoDeveNotificarQuandoFinalizado() {
 
         ListenerChamado listener = mock(ListenerChamado.class);
-        chamado.adicionarListener(listener);
+        chamado.adicionarObserver(listener);
         chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
         chamado.confirmarPagamento();
         chamado.getEstado().avancarEstado(chamado);
@@ -306,7 +306,7 @@ public class ChamadoServiceTests {
     @DisplayName("Não deve notificar listener quando chamado for cancelado")
     void naoDeveNotificarQuandoCancelado() {
         ListenerChamado listener = mock(ListenerChamado.class);
-        chamado.adicionarListener(listener);
+        chamado.adicionarObserver(listener);
         chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
         chamado.setStatus("AGUARDANDO_PAGAMENTO");
         chamado.cancelarChamado();
