@@ -202,7 +202,6 @@ public class EmpresaServiceImpl implements EmpresaService {
         if (!chamado.getEmpresa().getId().equals(empresa.getId())) {
             throw new RuntimeException("O chamado não pertence à empresa informada.");
         }
-        chamado.adicionarObserver(chamado.getCliente());
         chamado.getEstado().avancar(chamado);
         Chamado chamadoSalvo = chamadoRepository.save(chamado);
 
@@ -221,21 +220,16 @@ public class EmpresaServiceImpl implements EmpresaService {
     public ChamadoResponseDTO atribuirTecnico(Long empresaId, String codigoAcesso, Long chamadoId, Long tecnicoId) {
         Empresa empresa = buscarEmpresaPeloId(empresaId);
         validarCodigoAcesso(empresa, codigoAcesso);
-
         Chamado chamado = chamadoRepository.findById(chamadoId)
                 .orElseThrow(() -> new ResourceNotFoundException("Chamado não encontrado."));
         validarChamado(empresa, chamado);
-
         Tecnico tecnico = tecnicoRepository.findById(tecnicoId)
                 .orElseThrow(TecnicoNaoExisteException::new);
-
         if (!tecnico.getEmpresasAprovadoras().contains(empresa)) {
             throw new RuntimeException("O técnico não está aprovado por esta empresa.");
         }
-
         chamado.atribuirTecnico(tecnico);
         Chamado chamadoSalvo = chamadoRepository.save(chamado);
-
         return ChamadoResponseDTO.builder()
                 .id(chamadoSalvo.getId())
                 .status(chamadoSalvo.getStatus())

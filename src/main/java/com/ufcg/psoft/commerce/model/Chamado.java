@@ -38,9 +38,6 @@ public class Chamado {
     @Transient
     private ChamadoEstado estado;
 
-    @Transient
-    private ListenerChamado listenerChamado;
-
     public Chamado() {
         this.estado = ChamadoStatus.AGUARDANDO_PAGAMENTO.getInstancia();
         this.status = ChamadoStatus.AGUARDANDO_PAGAMENTO.getNome();
@@ -54,7 +51,7 @@ public class Chamado {
     }
 
     public void mudaEstado(ChamadoEstado novoEstado) {
-        if ("AGUARDANDO_TECNICO".equals(this.status) && listenerChamado != null) {
+        if ("AGUARDANDO_TECNICO".equals(this.status) && this.cliente != null) {
             notificarObservers();
         }
         this.estado = novoEstado;
@@ -69,11 +66,9 @@ public class Chamado {
     private void carregarEstado() {
         this.estado = ChamadoStatus.obterEstado(this.status);
     }
-    public void adicionarObserver(ListenerChamado observer){
-        this.listenerChamado = observer;
-    }
-    private void notificarObservers(){
-        listenerChamado.notificar(this.tecnico);
+
+    public void notificarObservers(){
+        this.cliente.notificar(this.tecnico);
     }
     
     public void atribuirTecnico(Tecnico tecnico) {

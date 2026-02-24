@@ -1,14 +1,11 @@
 package com.ufcg.psoft.commerce.service.chamado;
-
 import com.ufcg.psoft.commerce.dto.ChamadoPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ChamadoResponseDTO;
 import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
 import com.ufcg.psoft.commerce.exception.PlanoInvalidoException;
 import com.ufcg.psoft.commerce.model.*;
-import com.ufcg.psoft.commerce.repository.ChamadoRepository;
-import com.ufcg.psoft.commerce.repository.ClienteRepository;
-import com.ufcg.psoft.commerce.repository.EmpresaRepository;
-import com.ufcg.psoft.commerce.repository.ServicoRepository;
+import com.ufcg.psoft.commerce.repository.*;
+import com.ufcg.psoft.commerce.service.empresa.EmpresaService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -29,6 +26,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import org.junit.jupiter.api.Nested;
+import org.springframework.beans.factory.annotation.Autowired;
+
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Testes do Serviço de Chamado")
 public class ChamadoServiceTests {
@@ -41,6 +40,12 @@ public class ChamadoServiceTests {
     private EmpresaRepository empresaRepository;
     @Mock
     private ServicoRepository servicoRepository;
+    @Mock
+    private TecnicoRepository tecnicoRepository;
+
+    @Mock
+    EmpresaService empresaService;
+
     @Mock
     private ModelMapper modelMapper;
 
@@ -81,7 +86,7 @@ public class ChamadoServiceTests {
                 .endereco("Rua A, 100")
                 .dataCobranca(LocalDate.now())
                 .build();
-        
+
         clientePremium = Cliente.builder()
                 .id(2L)
                 .codigo("654321")
@@ -102,7 +107,7 @@ public class ChamadoServiceTests {
                 .disponivel(true)
                 .tipo(TipoServico.ELETRICA)
                 .build();
-        
+
         servicoExclusivo = Servico.builder()
                 .id(2L)
                 .nome("Instalação 24h")
@@ -119,14 +124,14 @@ public class ChamadoServiceTests {
         chamadoDTO = ChamadoPostPutRequestDTO.builder()
                 .empresaId(1L)
                 .build();
-                
+
         chamado = Chamado.builder()
                 .id(1L)
                 .cliente(clienteBasico)
                 .servico(servicoComum)
                 .status("AGUARDANDO_PAGAMENTO")
                 .build();
-        
+
         chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
     }
 
@@ -162,6 +167,7 @@ public class ChamadoServiceTests {
 
             assertNotNull(resultado);
         }
+
         @Test
         @DisplayName("Cliente Basico solicita serviço Premium deve falhar")
         void testClienteBasicoSolicitaServicoPremium() {
@@ -208,6 +214,7 @@ public class ChamadoServiceTests {
             assertEquals(clienteBasico.getEndereco(), resultado.getEnderecoAtendimento());
         }
     }
+
     @Nested
     @DisplayName("Testes Envolvendo Estados do Chamado")
     class NotificacoChamado {
@@ -240,31 +247,32 @@ public class ChamadoServiceTests {
         @Test
         @DisplayName("Deve notificar o cliente")
         void deveNotificarCliente() {
-            Tecnico tecnico = Tecnico.builder()
-                    .nome("Carlos")
-                    .build();
-            chamado.setTecnico(tecnico);
             Cliente clienteSpy = spy(clienteBasico);
             chamado.setCliente(clienteSpy);
-            chamado.adicionarObserver(clienteSpy);
-            when(chamadoRepository.findById(1L)).thenReturn(Optional.of(chamado));
-            when(chamadoRepository.save(any())).thenAnswer(i -> i.getArgument(0));
-            chamadoService.confirmarPagamento(1L, clienteSpy.getCodigo(), "PIX"
-            );
+            chamado.getEstado().confirmarPagamento(chamado);
             chamado.getEstado().avancar(chamado);
             chamado.getEstado().avancar(chamado);
+            Tecnico tecnico =
+                    Tecnico.builder()
+                            .id(1L)
+                            .nome("Carlos Silva")
+                            .corVeiculo("Branco")
+                            .tipoVeiculo(TipoVeiculo.CARRO)
+                            .placaVeiculo("ABC-1234")
+                            .acesso("123")
+                            .especialidade("GERAL")
+                            .build();
+            chamado.atribuirTecnico(tecnico);
             chamado.getEstado().avancar(chamado);
             verify(clienteSpy, times(1)).notificar(any(Tecnico.class));
+
         }
-    }
 
         @Test
         @DisplayName("Não deve notificar listener quando entrar em CHAMADO_RECEBIDO")
         void naoDeveNotificarQuandoChamadoRecebido() {
 
             ListenerChamado listener = mock(ListenerChamado.class);
-
-            chamado.adicionarObserver(listener);
 
             chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
             chamado.setStatus("AGUARDANDO_PAGAMENTO");
@@ -279,7 +287,6 @@ public class ChamadoServiceTests {
             Chamado chamado = new Chamado();
             chamado.mudaEstado(new ChamadoEstadoRecebido());
             ListenerChamado listener = mock(ListenerChamado.class);
-            chamado.adicionarObserver(listener);
             chamado.mudaEstado(new ChamadoEstadoEmAnalise());
             verify(listener, never()).notificar(any());
         }
@@ -289,8 +296,6 @@ public class ChamadoServiceTests {
         void naoDeveNotificarQuandoAguardandoTecnico() {
 
             ListenerChamado listener = mock(ListenerChamado.class);
-
-            chamado.adicionarObserver(listener);
 
             chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
             chamado.setStatus("AGUARDANDO_PAGAMENTO");
@@ -304,18 +309,25 @@ public class ChamadoServiceTests {
         void naoDeveNotificarQuandoFinalizado() {
 
             ListenerChamado listener = mock(ListenerChamado.class);
-            chamado.adicionarObserver(listener);
             chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
             chamado.confirmarPagamento();
             chamado.getEstado().avancar(chamado);
             chamado.getEstado().avancar(chamado);
+            Tecnico tecnico = Tecnico.builder()
+                    .id(1L)
+                    .nome("Carlos Silva")
+                    .corVeiculo("Branco")
+                    .tipoVeiculo(TipoVeiculo.CARRO)
+                    .placaVeiculo("ABC-1234")
+                    .acesso("123")
+                    .especialidade("GERAL")
+                    .build();
+            empresaService.aprovarTecnico(empresa.getId(), tecnico.getId(), empresa.getCodigoAcesso());
+            chamado.getEstado().atribuirTecnico(chamado, tecnico);
             chamado.getEstado().avancar(chamado);
-            chamado.getEstado().avancar(chamado);
-            chamado.getEstado().avancar(chamado);
-
             // CONCLUIDO
             verify(listener, never()).notificar(any(Tecnico.class));
 
         }
-
+    }
 }

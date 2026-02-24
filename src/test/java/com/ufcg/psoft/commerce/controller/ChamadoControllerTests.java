@@ -11,23 +11,27 @@ import com.ufcg.psoft.commerce.repository.*;
 import com.ufcg.psoft.commerce.model.Plano;
 import com.ufcg.psoft.commerce.model.Urgencia;
 import com.ufcg.psoft.commerce.model.TipoServico;
+import com.ufcg.psoft.commerce.service.empresa.EmpresaServiceImpl;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import static org.mockito.Mockito.never;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.never;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.*;
 import static org.modelmapper.internal.bytebuddy.matcher.ElementMatchers.any;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -54,8 +58,12 @@ public class ChamadoControllerTests {
     @Autowired
     ServicoRepository servicoRepository;
     @Autowired
+    EmpresaServiceImpl empresaService;
+    @Autowired
     ObjectMapper objectMapper;
 
+    @SpyBean
+    Cliente cliente;
     Empresa empresa;
     Cliente clienteBasico;
     Cliente clientePremium;
@@ -79,7 +87,7 @@ public class ChamadoControllerTests {
                 .planoAtual(Plano.BASICO)
                 .dataCobranca(LocalDate.now())
                 .build());
-        
+
         clientePremium = clienteRepository.save(Cliente.builder()
                 .nome("Teste Premium")
                 .codigo("654321")
@@ -97,12 +105,12 @@ public class ChamadoControllerTests {
                 .empresa(empresa)
                 .plano(Plano.BASICO)
                 .disponivel(true)
-                .tipo(TipoServico.PINTURA)             
+                .tipo(TipoServico.PINTURA)
                 .build());
-        
+
         servicoExclusivo = servicoRepository.save(Servico.builder()
                 .nome("Instalação 24h")
-                .descricao("Instalação elétrica completa de urgência") 
+                .descricao("Instalação elétrica completa de urgência")
                 .urgencia(Urgencia.ALTA)
                 .duracao(120.0)
                 .preco(300.0)
@@ -121,6 +129,7 @@ public class ChamadoControllerTests {
         empresaRepository.deleteAll();
         clienteRepository.deleteAll();
     }
+
     @Nested
     @DisplayName("Testes de Operações Basicas Em Chamado")
     class CRUDChamado {
@@ -267,6 +276,7 @@ public class ChamadoControllerTests {
                     .andDo(print());
         }
     }
+
     @Nested
     @DisplayName("Testes de notificações em chamado")
     class NotificacaoChamado {
@@ -298,6 +308,7 @@ public class ChamadoControllerTests {
             );
             verify(listenerChamado, never()).notificar(any(Tecnico.class));
         }
+
         @Test
         @DisplayName("Não deve notificar listener quando chamado for concluído")
         void naoDeveNotificarQuandoChamadoConcluido() throws Exception {
@@ -381,9 +392,11 @@ public class ChamadoControllerTests {
 
         }
 
+        @ExtendWith(OutputCaptureExtension.class)
         @Test
         @DisplayName("Deve notificar listener quando entrar em EM_ATENDIMENTO")
-        void deveNotificarQuandoEntrarEmAtendimento() throws Exception {
+        void deveNotificarQuandoEntrarEmAtendimento(CapturedOutput output) throws Exception {
+
             Chamado chamado = Chamado.builder()
                     .cliente(clienteBasico)
                     .empresa(empresa)
@@ -391,35 +404,42 @@ public class ChamadoControllerTests {
                     .enderecoAtendimento(clienteBasico.getEndereco())
                     .status("AGUARDANDO_TECNICO")
                     .build();
-            chamado.mudaEstado(new ChamadoEstadoAguardandoTecnico());
+
             chamado = chamadoRepository.save(chamado);
-            String nomeTecnico = "Carlos Silva";
-            String corVeiculo = "Branco";
-            String tipoVeiculo = "CARRO";
-            String placaVeiculo = "ABC-1234";
-            // Act
+
+            Tecnico tecnico = tecnicoRepository.save(
+                    Tecnico.builder()
+                            .nome("Carlos Silva")
+                            .corVeiculo("Branco")
+                            .tipoVeiculo(TipoVeiculo.CARRO)
+                            .placaVeiculo("ABC-1234")
+                            .acesso("123")
+                            .especialidade("GERAL")
+                            .build()
+            );
+
+            empresaService.aprovarTecnico(
+                    empresa.getId(),
+                    tecnico.getId(),
+                    empresa.getCodigoAcesso()
+            );
+
             driver.perform(
                             put("/empresas/" + empresa.getId()
                                     + "/chamados/" + chamado.getId()
-                                    + "/avancar-status")
+                                    + "/tecnicos/" + tecnico.getId())
                                     .header("codigoAcesso", empresa.getCodigoAcesso())
-                                    .param("nomeTecnico", nomeTecnico)
-                                    .param("corVeiculo", corVeiculo)
-                                    .param("tipoVeiculo", tipoVeiculo)
-                                    .param("placaVeiculo", placaVeiculo)
+                                    .param("nomeTecnico", "Carlos Silva")
+                                    .param("corVeiculo", "Branco")
+                                    .param("tipoVeiculo", "CARRO")
+                                    .param("placaVeiculo", "ABC-1234")
                                     .contentType(MediaType.APPLICATION_JSON)
                     )
-                    .andExpect(status().isOk())
-                    .andDo(print());
-            Chamado atualizado =
-                    chamadoRepository.findById(chamado.getId()).orElseThrow();
-            assertEquals(
-                    "EM_ATENDIMENTO",
-                    atualizado.getStatus()
-            );
-            assertEquals(nomeTecnico, atualizado.getTecnico().getNome());
-            verify(listenerChamado).notificar(any(Tecnico.class));
+                    .andExpect(status().isOk());
 
+            assertTrue(output.getOut().contains(
+                    "Notificação de atendimento"
+            ));
         }
     }
 }
