@@ -327,7 +327,7 @@ public class ChamadoServiceTests {
                 .acesso("123")
                 .build();
         chamado.setTecnico(tecnico);
-        ListenerCliente listener = new ListenerCliente();
+        ListenerChamado listener = new ListenerChamado();
         String mensagem = listener.construirMensagem(chamado);
         String esperado =
                 "Notificação de atendimento: o técnico Carlos Silva está a caminho. Veículo: MOTO, cor Vermelha, placa ABC-1234.";
