@@ -46,6 +46,8 @@ public class GerenciamentoStatusControllerTests {
     @Autowired
     ServicoRepository servicoRepository;
     @Autowired
+    TecnicoRepository tecnicoRepository;
+    @Autowired
     ObjectMapper objectMapper;
 
     Empresa empresaPadrao;
@@ -89,7 +91,7 @@ public class GerenciamentoStatusControllerTests {
                 .servico(servicoPadrao)
                 .enderecoAtendimento("Rua Base, 100")
                 .dataCriacao(LocalDateTime.now())
-                .status("Chamado recebido") 
+                .status("CHAMADO_RECEBIDO")
                 .build();
         chamado = chamadoRepository.save(chamado);
     }
@@ -98,6 +100,7 @@ public class GerenciamentoStatusControllerTests {
     void tearDown() {
         chamadoRepository.deleteAll();
         servicoRepository.deleteAll();
+        tecnicoRepository.deleteAll();
         clienteRepository.deleteAll();
         empresaRepository.deleteAll();
     }
@@ -118,10 +121,39 @@ public class GerenciamentoStatusControllerTests {
 
             ChamadoResponseDTO resultado = objectMapper.readValue(responseJson, ChamadoResponseDTO.class);
 
-            assertEquals("Chamado recebido", resultado.getStatus());
+            assertEquals("EM_ANALISE", resultado.getStatus());
             
             Chamado chamadoAtualizado = chamadoRepository.findById(chamado.getId()).orElseThrow();
-            assertEquals("Chamado recebido", chamadoAtualizado.getStatus());
+            assertEquals("EM_ANALISE", chamadoAtualizado.getStatus());
+        }
+
+        @Test
+        @DisplayName("Endpoint atribui técnico e avança status para Em Atendimento")
+        void endpointAtribuirTecnico() throws Exception {
+            chamado.setStatus("AGUARDANDO_TECNICO");
+            chamadoRepository.save(chamado);
+
+            Tecnico tecnico = Tecnico.builder()
+            .nome("Carlos")
+            .acesso("654321")
+            .tipoVeiculo(TipoVeiculo.CARRO)
+            .placaVeiculo("ABC-9999")
+            .corVeiculo("Preto")
+            .especialidade("Geral")
+            .build();
+            tecnico.getEmpresasAprovadoras().add(empresaPadrao);
+            tecnicoRepository.save(tecnico);
+
+            String responseJson = driver.perform(put(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/" + chamado.getId() + "/tecnicos/" + tecnico.getId())
+                            .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+
+            ChamadoResponseDTO resultado = objectMapper.readValue(responseJson, ChamadoResponseDTO.class);
+
+            assertEquals("EM_ATENDIMENTO", resultado.getStatus());
+            assertEquals("EM_ATENDIMENTO", chamadoRepository.findById(chamado.getId()).get().getStatus());
         }
 
         @Test

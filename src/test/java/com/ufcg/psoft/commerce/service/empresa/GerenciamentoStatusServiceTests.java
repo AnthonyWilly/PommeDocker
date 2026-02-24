@@ -3,8 +3,7 @@ package com.ufcg.psoft.commerce.service.empresa;
 import com.ufcg.psoft.commerce.dto.ChamadoResponseDTO;
 import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
 import com.ufcg.psoft.commerce.model.*;
-import com.ufcg.psoft.commerce.repository.ChamadoRepository;
-import com.ufcg.psoft.commerce.repository.EmpresaRepository;
+import com.ufcg.psoft.commerce.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -29,6 +28,9 @@ public class GerenciamentoStatusServiceTests {
 
     @Mock
     private ChamadoRepository chamadoRepository;
+
+    @Mock
+    private TecnicoRepository tecnicoRepository;
 
     @InjectMocks
     private EmpresaServiceImpl empresaService;
@@ -98,6 +100,27 @@ public class GerenciamentoStatusServiceTests {
             assertEquals("AGUARDANDO_TECNICO", resultado.getStatus());
             verify(chamadoRepository, times(1)).save(any(Chamado.class));
         }
+
+        @Test
+        @DisplayName("Atribui técnico com sucesso quando chamado está Aguardando Técnico")
+        void atribuirTecnicoComSucesso() {
+            chamado.setStatus("AGUARDANDO_TECNICO");
+            Tecnico tecnico = Tecnico.builder().id(300L).build();
+            tecnico.getEmpresasAprovadoras().add(empresa);
+
+            when(empresaRepository.findById(empresa.getId())).thenReturn(Optional.of(empresa));
+            when(chamadoRepository.findById(chamado.getId())).thenReturn(Optional.of(chamado));
+            when(tecnicoRepository.findById(tecnico.getId())).thenReturn(Optional.of(tecnico));
+            
+            when(chamadoRepository.save(any(Chamado.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            ChamadoResponseDTO resultado = empresaService.atribuirTecnico(empresa.getId(), CODIGO_ACESSO, chamado.getId(), tecnico.getId());
+
+            assertNotNull(resultado);
+            assertEquals("EM_ATENDIMENTO", resultado.getStatus());
+            verify(chamadoRepository, times(1)).save(any(Chamado.class));
+        }
+
     }
 
     @Nested
