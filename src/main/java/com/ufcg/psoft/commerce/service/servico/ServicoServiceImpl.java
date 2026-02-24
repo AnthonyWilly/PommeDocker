@@ -1,27 +1,39 @@
 package com.ufcg.psoft.commerce.service.servico;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import com.ufcg.psoft.commerce.dto.ServicoFiltroDTO;
 import com.ufcg.psoft.commerce.dto.ServicoPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ServicoResponseDTO;
 import com.ufcg.psoft.commerce.exception.ClienteNaoExisteException;
 import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
+import com.ufcg.psoft.commerce.exception.DemonstrarInteresseInvalidoException;
+import com.ufcg.psoft.commerce.exception.DemonstrarInteressePlanoInvalidoException;
 import com.ufcg.psoft.commerce.exception.EmpresaNaoExisteException;
 import com.ufcg.psoft.commerce.exception.ServicoNaoExisteException;
-import com.ufcg.psoft.commerce.model.*;
+import com.ufcg.psoft.commerce.model.Cliente;
+import com.ufcg.psoft.commerce.model.Empresa;
+import com.ufcg.psoft.commerce.model.Plano;
+import com.ufcg.psoft.commerce.model.Servico;
 import com.ufcg.psoft.commerce.repository.ClienteRepository;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
 import com.ufcg.psoft.commerce.repository.ServicoRepository;
-import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
+import com.ufcg.psoft.commerce.service.notificacao.ServicoObserver;
 
 
 
 @Service
 public class ServicoServiceImpl implements ServicoService {
+
+    private final Set<ServicoObserver> observadores = new LinkedHashSet();
+
     @Autowired
     ServicoRepository servicoRepository;
     @Autowired
@@ -113,6 +125,46 @@ public class ServicoServiceImpl implements ServicoService {
         return servicos.stream()
                 .map(ServicoResponseDTO::new)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public ServicoResponseDTO alterarDisponibilidade(Long empresaId, Long servicoId, String codigoAcesso, boolean disponivel) {
+        validarEmpresa(empresaId, codigoAcesso);
+        Servico servico = buscarServicoPeloId(servicoId);
+        if (!servico.getEmpresa().getId().equals(empresaId)) {
+            throw new ServicoNaoExisteException();
+        }
+        boolean eraIndisponivel = !servico.isDisponivel();
+        servico.setDisponivel(disponivel);
+        servicoRepository.save(servico);
+        if (disponivel && eraIndisponivel) {
+            observadores.forEach(obs -> obs.notificar(servico));
+            servico.getInteressados().forEach(cliente -> cliente.notificar(servico));
+        }
+        return new ServicoResponseDTO(servico);
+    }
+
+    @Override
+    public void registrarInteresse(Long clienteId, Long servicoId) {
+        Cliente cliente = clienteRepository.findById(clienteId)
+                .orElseThrow(ClienteNaoExisteException::new);
+        Servico servico = buscarServicoPeloId(servicoId);
+    
+        if (servico.isDisponivel())
+            throw new DemonstrarInteresseInvalidoException();
+
+        if (Plano.BASICO.equals(cliente.getPlanoAtual()) && Plano.PREMIUM.equals(servico.getPlano()))
+            throw new DemonstrarInteressePlanoInvalidoException();
+
+        if (!servico.getInteressados().contains(cliente)) {
+            servico.getInteressados().add(cliente);
+            servicoRepository.save(servico);
+        }
+    }
+
+    @Override
+    public void adicionarObservador(ServicoObserver observer) {
+        observadores.add(observer);
     }
 
 }
