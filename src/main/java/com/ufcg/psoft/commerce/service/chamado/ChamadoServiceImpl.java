@@ -5,6 +5,7 @@ import com.ufcg.psoft.commerce.dto.ChamadoResponseDTO;
 import com.ufcg.psoft.commerce.exception.*;
 import com.ufcg.psoft.commerce.model.*;
 import com.ufcg.psoft.commerce.repository.*;
+import jakarta.persistence.Transient;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,7 @@ public class ChamadoServiceImpl implements ChamadoService {
     private ServicoRepository servicoRepository;
     @Autowired
     private ModelMapper modelMapper;
+
 
     @Override
     public ChamadoResponseDTO criarChamado(Long clienteId, String codigoAcesso, ChamadoPostPutRequestDTO dto) {
