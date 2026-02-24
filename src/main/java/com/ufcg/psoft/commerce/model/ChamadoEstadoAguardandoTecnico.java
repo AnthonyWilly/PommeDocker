@@ -4,7 +4,7 @@ public class ChamadoEstadoAguardandoTecnico implements ChamadoEstado {
 
     @Override
     public void confirmarPagamento(Chamado chamado) {
-        System.out.println("Pagamento já confirmado.");
+        throw new RuntimeException("Pagamento já confirmado.");
     }
 
     @Override
@@ -14,6 +14,13 @@ public class ChamadoEstadoAguardandoTecnico implements ChamadoEstado {
 
     @Override
     public void avancar(Chamado chamado) {
-        chamado.mudaEstado(ChamadoStatus.EM_ATENDIMENTO.getInstancia());
+        throw new RuntimeException("Aguardando alocação do técnico.");
     }
+
+    @Override
+    public void atribuirTecnico(Chamado chamado, Tecnico tecnico) {
+        chamado.setTecnico(tecnico);
+        chamado.mudaEstado(ChamadoStatus.EM_ATENDIMENTO.getInstancia()); 
+    }
+
 }

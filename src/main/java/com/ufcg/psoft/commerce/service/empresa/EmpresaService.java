@@ -19,4 +19,5 @@ public interface EmpresaService {
 
     PagamentoResponseDTO confirmarPagamento(Long empresaId, Long chamadoId, String codigoAcesso, PagamentoRequestDTO pagamentoRequestDTO);
     ChamadoResponseDTO avancarStatus(Long empresaId, String codigoAcesso, Long chamadoId);
+    ChamadoResponseDTO atribuirTecnico(Long empresaId, String codigoAcesso, Long chamadoId, Long tecnicoId);
 }

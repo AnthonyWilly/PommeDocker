@@ -81,4 +81,16 @@ public class EmpresaController {
         ChamadoResponseDTO response = empresaService.avancarStatus(empresaId, codigoAcesso, chamadoId);
         return ResponseEntity.ok(response);
     }
+
+    @PutMapping("/{empresaId}/chamados/{chamadoId}/tecnicos/{tecnicoId}")
+    public ResponseEntity<ChamadoResponseDTO> atribuirTecnicoChamado(
+            @PathVariable Long empresaId,
+            @PathVariable Long chamadoId,
+            @PathVariable Long tecnicoId,
+            @RequestHeader("codigoAcesso") String codigoAcesso) {
+            
+        ChamadoResponseDTO response = empresaService.atribuirTecnico(empresaId, codigoAcesso, chamadoId, tecnicoId);
+        return ResponseEntity.ok(response);
+    }
+
 }

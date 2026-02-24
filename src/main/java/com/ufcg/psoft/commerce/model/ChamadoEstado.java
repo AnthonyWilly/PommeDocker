@@ -4,5 +4,7 @@ public interface ChamadoEstado {
     void confirmarPagamento(Chamado chamado);
 
     String getNome();
-    void avancar(Chamado chamado);          
+    void avancar(Chamado chamado);    
+    
+    void atribuirTecnico(Chamado chamado, Tecnico tecnico);
 }

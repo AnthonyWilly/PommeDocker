@@ -75,4 +75,9 @@ public class Chamado {
     private void notificarObservers(){
         listenerChamado.notificar(this.tecnico);
     }
+    
+    public void atribuirTecnico(Tecnico tecnico) {
+        this.getEstado().atribuirTecnico(this, tecnico);
+    }
+
 }

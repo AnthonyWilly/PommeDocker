@@ -14,6 +14,10 @@ public class ChamadoEstadoAguardandoPagamento implements ChamadoEstado {
 
     @Override
     public void avancar(Chamado chamado) {
-        System.out.println("Não é possível avançar. Aguardando confirmação de pagamento.");
+        throw new RuntimeException("Não é possível avançar. Aguardando confirmação de pagamento.");
+    }
+
+    public void atribuirTecnico(Chamado chamado, Tecnico tecnico) {
+        throw new RuntimeException("Não é possível atribuir um técnico neste status do chamado.");
     }
 }

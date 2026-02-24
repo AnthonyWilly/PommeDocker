@@ -4,7 +4,7 @@ public class ChamadoEstadoEmAnalise implements ChamadoEstado {
 
     @Override
     public void confirmarPagamento(Chamado chamado) {
-        System.out.println("Pagamento já confirmado.");
+        throw new RuntimeException("Pagamento já confirmado.");
     }
 
     @Override
@@ -15,5 +15,10 @@ public class ChamadoEstadoEmAnalise implements ChamadoEstado {
     @Override
     public void avancar(Chamado chamado) {
         chamado.mudaEstado(ChamadoStatus.AGUARDANDO_TECNICO.getInstancia());
+    }
+
+    @Override
+    public void atribuirTecnico(Chamado chamado, Tecnico tecnico) {
+        throw new RuntimeException("Não é possível atribuir um técnico neste status do chamado.");
     }
 }

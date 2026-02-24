@@ -4,7 +4,7 @@ public class ChamadoEstadoConcluido implements ChamadoEstado {
 
     @Override
     public void confirmarPagamento(Chamado chamado) {
-        System.out.println("O chamado já foi concluído.");
+        throw new RuntimeException("O chamado já foi concluído.");
     }
 
     @Override
@@ -14,6 +14,11 @@ public class ChamadoEstadoConcluido implements ChamadoEstado {
 
     @Override
     public void avancar(Chamado chamado) {
-        System.out.println("O chamado já está concluído e não pode avançar.");
+        throw new RuntimeException("O chamado já está concluído e não pode avançar.");
+    }
+
+    @Override
+    public void atribuirTecnico(Chamado chamado, Tecnico tecnico) {
+        throw new RuntimeException("Não é possível atribuir um técnico neste status do chamado.");
     }
 }

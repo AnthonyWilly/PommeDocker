@@ -215,4 +215,35 @@ public class EmpresaServiceImpl implements EmpresaService {
                 .enderecoAtendimento(chamadoSalvo.getEnderecoAtendimento())
                 .build();
     }
+
+    @Override
+    @Transactional
+    public ChamadoResponseDTO atribuirTecnico(Long empresaId, String codigoAcesso, Long chamadoId, Long tecnicoId) {
+        Empresa empresa = buscarEmpresaPeloId(empresaId);
+        validarCodigoAcesso(empresa, codigoAcesso);
+
+        Chamado chamado = chamadoRepository.findById(chamadoId)
+                .orElseThrow(() -> new ResourceNotFoundException("Chamado não encontrado."));
+        validarChamado(empresa, chamado);
+
+        Tecnico tecnico = tecnicoRepository.findById(tecnicoId)
+                .orElseThrow(TecnicoNaoExisteException::new);
+
+        if (!tecnico.getEmpresasAprovadoras().contains(empresa)) {
+            throw new RuntimeException("O técnico não está aprovado por esta empresa.");
+        }
+
+        chamado.atribuirTecnico(tecnico);
+        Chamado chamadoSalvo = chamadoRepository.save(chamado);
+
+        return ChamadoResponseDTO.builder()
+                .id(chamadoSalvo.getId())
+                .status(chamadoSalvo.getStatus())
+                .clienteId(chamadoSalvo.getCliente() != null ? chamadoSalvo.getCliente().getId() : null)
+                .empresaId(chamadoSalvo.getEmpresa() != null ? chamadoSalvo.getEmpresa().getId() : null)
+                .servicoId(chamadoSalvo.getServico() != null ? chamadoSalvo.getServico().getId() : null)
+                .enderecoAtendimento(chamadoSalvo.getEnderecoAtendimento())
+                .build();
+    }
+
 }

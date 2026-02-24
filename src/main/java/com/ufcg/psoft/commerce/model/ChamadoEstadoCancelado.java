@@ -4,7 +4,7 @@ public class ChamadoEstadoCancelado implements ChamadoEstado {
 
     @Override
     public void confirmarPagamento(Chamado chamado) {
-        System.out.println("O chamado foi cancelado.");
+        throw new RuntimeException("O chamado foi cancelado.");
     }
 
     @Override
@@ -14,6 +14,11 @@ public class ChamadoEstadoCancelado implements ChamadoEstado {
 
     @Override
     public void avancar(Chamado chamado) {
-        System.out.println("Um chamado cancelado não pode avançar de estado.");
+        throw new RuntimeException("Um chamado cancelado não pode avançar de estado.");
+    }
+
+    @Override
+    public void atribuirTecnico(Chamado chamado, Tecnico tecnico) {
+        throw new RuntimeException("Não é possível atribuir um técnico neste status do chamado.");
     }
 }
