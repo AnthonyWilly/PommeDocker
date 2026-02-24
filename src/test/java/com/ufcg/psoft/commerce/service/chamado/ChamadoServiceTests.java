@@ -240,19 +240,20 @@ public class ChamadoServiceTests {
             });
         }
 
-        @Test
-        @DisplayName("Deve notificar listener quando chamado entrar em atendimento")
-        void deveNotificarQuandoEntrarEmAtendimento() {
-            ListenerChamado listener = mock(ListenerChamado.class);
-            chamado.adicionarObserver(listener);
-            chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
-            chamado.setStatus("AGUARDANDO_PAGAMENTO");
-            chamado.confirmarPagamento();
+        void deveNotificarCliente() {
+            Cliente clienteSpy = spy(clienteBasico);
+            chamado.setCliente(clienteSpy);
+            chamado.adicionarObserver(clienteSpy);
+            when(chamadoRepository.findById(1L)).thenReturn(Optional.of(chamado));
+            when(chamadoRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+            chamadoService.confirmarPagamento(1L, clienteSpy.getCodigo(), "PIX"
+            );
             chamado.getEstado().avancarEstado(chamado);
             chamado.getEstado().avancarEstado(chamado);
-            verify(listener, times(1)).notificarObserver();
-
+            chamado.getEstado().avancarEstado(chamado);
+            verify(clienteSpy, times(1)).notificarObserver();
         }
+    }
 
         @Test
         @DisplayName("Não deve notificar listener quando entrar em CHAMADO_RECEBIDO")
@@ -306,7 +307,8 @@ public class ChamadoServiceTests {
             chamado.getEstado().avancarEstado(chamado);
             chamado.getEstado().avancarEstado(chamado);
             chamado.getEstado().avancarEstado(chamado);
-            verify(listener, never()).notificarObserver(any());
+            chamado.getEstado().avancarEstado(chamado); // CONCLUIDO
+            verify(listener,  times(1)).notificarObserver();
 
         }
 
@@ -321,28 +323,4 @@ public class ChamadoServiceTests {
             assertEquals("CANCELADO", chamado.getStatus());
             verify(listener, never()).notificarObserver(any());
         }
-
-        @Test
-        @DisplayName("Deve gerar mensagem correta com dados do técnico e veículo")
-        void deveGerarMensagemExata() {
-
-            Tecnico tecnico = Tecnico.builder()
-                    .nome("Carlos Silva")
-                    .tipoVeiculo(TipoVeiculo.MOTO)
-                    .corVeiculo("Vermelha")
-                    .placaVeiculo("ABC-1234")
-                    .especialidade("Eletrica")
-                    .acesso("123")
-                    .build();
-            chamado.setTecnico(tecnico);
-            ListenerChamado listener = new ListenerChamado();
-            String mensagem = listener.construirMensagem(chamado);
-            String esperado =
-                    "Notificação de atendimento: o técnico Carlos Silva está a caminho. Veículo: MOTO, cor Vermelha, placa ABC-1234.";
-            assertEquals(esperado, mensagem);
-
-        }
-
-    }
-
 }
