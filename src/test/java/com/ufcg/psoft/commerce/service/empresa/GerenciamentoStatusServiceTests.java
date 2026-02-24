@@ -53,7 +53,7 @@ public class GerenciamentoStatusServiceTests {
                 .empresa(empresa)
                 .cliente(cliente)
                 .servico(servico)
-                .status("Chamado recebido")
+                .status("CHAMADO_RECEBIDO")
                 .build();
     }
 
@@ -68,34 +68,34 @@ public class GerenciamentoStatusServiceTests {
             when(chamadoRepository.findById(chamado.getId())).thenReturn(Optional.of(chamado));
             when(chamadoRepository.save(any(Chamado.class))).thenAnswer(invocation -> {
                 Chamado c = invocation.getArgument(0);
-                c.setStatus("Em análise");
+                c.setStatus("EM_ANALISE");
                 return c;
             });
 
             ChamadoResponseDTO resultado = empresaService.avancarStatus(empresa.getId(), CODIGO_ACESSO, chamado.getId());
 
             assertNotNull(resultado);
-            assertEquals("Em análise", resultado.getStatus());
+            assertEquals("EM_ANALISE", resultado.getStatus());
             verify(chamadoRepository, times(1)).save(chamado);
         }
 
         @Test
         @DisplayName("Avança estado de 'Em análise' para 'Aguardando técnico' com sucesso")
         void avancarEstadoAnaliseParaAguardandoTecnico() {
-            chamado.setStatus("Em análise");
+            chamado.setStatus("EM_ANALISE");
 
             when(empresaRepository.findById(empresa.getId())).thenReturn(Optional.of(empresa));
             when(chamadoRepository.findById(chamado.getId())).thenReturn(Optional.of(chamado));
 
             when(chamadoRepository.save(any(Chamado.class))).thenAnswer(invocation -> {
                 Chamado c = invocation.getArgument(0);
-                c.setStatus("Aguardando técnico");
+                c.setStatus("AGUARDANDO_TECNICO");
                 return c;
             });
 
             ChamadoResponseDTO resultado = empresaService.avancarStatus(empresa.getId(), CODIGO_ACESSO, chamado.getId());
 
-            assertEquals("Aguardando técnico", resultado.getStatus());
+            assertEquals("AGUARDANDO_TECNICO", resultado.getStatus());
             verify(chamadoRepository, times(1)).save(any(Chamado.class));
         }
     }

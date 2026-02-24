@@ -162,16 +162,13 @@ public class ChamadoServiceTests {
 
             assertNotNull(resultado);
         }
-
         @Test
         @DisplayName("Cliente Basico solicita serviço Premium deve falhar")
         void testClienteBasicoSolicitaServicoPremium() {
             chamadoDTO.setServicoId(servicoExclusivo.getId());
-
             when(clienteRepository.findById(anyLong())).thenReturn(Optional.of(clienteBasico));
             when(servicoRepository.findById(servicoExclusivo.getId())).thenReturn(Optional.of(servicoExclusivo));
             when(empresaRepository.findById(anyLong())).thenReturn(Optional.of(empresa));
-
             assertThrows(PlanoInvalidoException.class, () -> {
                 chamadoService.criarChamado(clienteBasico.getId(), clienteBasico.getCodigo(), chamadoDTO);
             });

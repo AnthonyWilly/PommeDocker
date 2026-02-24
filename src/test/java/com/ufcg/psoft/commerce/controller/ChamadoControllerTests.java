@@ -4,16 +4,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.ufcg.psoft.commerce.dto.ChamadoPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ChamadoResponseDTO;
+import com.ufcg.psoft.commerce.dto.PagamentoRequestDTO;
 import com.ufcg.psoft.commerce.exception.PlanoInvalidoException;
 import com.ufcg.psoft.commerce.model.*;
 import com.ufcg.psoft.commerce.repository.*;
 import com.ufcg.psoft.commerce.model.Plano;
 import com.ufcg.psoft.commerce.model.Urgencia;
 import com.ufcg.psoft.commerce.model.TipoServico;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -22,6 +20,8 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import static org.mockito.Mockito.never;
+
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.never;
@@ -116,349 +116,310 @@ public class ChamadoControllerTests {
     @AfterEach
     void tearDown() {
         chamadoRepository.deleteAll();
+        tecnicoRepository.deleteAll();
         servicoRepository.deleteAll();
         empresaRepository.deleteAll();
         clienteRepository.deleteAll();
-        tecnicoRepository.deleteAll();
     }
+    @Nested
+    @DisplayName("Testes de Operações Basicas Em Chamado")
+    class CRUDChamado {
+        @Test
+        @DisplayName("Criar chamado Básico com sucesso")
+        void criarChamadoBasicoSucesso() throws Exception {
+            ChamadoPostPutRequestDTO dto = ChamadoPostPutRequestDTO.builder()
+                    .servicoId(servicoComum.getId())
+                    .empresaId(empresa.getId())
+                    .build();
 
-    @Test
-    @DisplayName("Criar chamado Básico com sucesso")
-    void criarChamadoBasicoSucesso() throws Exception {
-        ChamadoPostPutRequestDTO dto = ChamadoPostPutRequestDTO.builder()
-                .servicoId(servicoComum.getId())
-                .empresaId(empresa.getId())
-                .build();
+            String response = driver.perform(post("/clientes/" + clienteBasico.getId() + "/chamados")
+                            .header("codigoAcesso", clienteBasico.getCodigo())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(dto)))
+                    .andExpect(status().isCreated())
+                    .andDo(print())
+                    .andReturn().getResponse().getContentAsString();
 
-        String response = driver.perform(post("/clientes/" + clienteBasico.getId() + "/chamados")
-                        .header("codigoAcesso", clienteBasico.getCodigo())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isCreated())
-                .andDo(print())
-                .andReturn().getResponse().getContentAsString();
+            ChamadoResponseDTO result = objectMapper.readValue(response, ChamadoResponseDTO.class);
 
-        ChamadoResponseDTO result = objectMapper.readValue(response, ChamadoResponseDTO.class);
-        
-        assertNotNull(result.getId());
-        assertEquals(clienteBasico.getEndereco(), result.getEnderecoAtendimento());
+            assertNotNull(result.getId());
+            assertEquals(clienteBasico.getEndereco(), result.getEnderecoAtendimento());
+        }
+
+        @Test
+        @DisplayName("Criar chamado Premium com sucesso")
+        void criarChamadoPremiumSucesso() throws Exception {
+            ChamadoPostPutRequestDTO dto = ChamadoPostPutRequestDTO.builder()
+                    .servicoId(servicoExclusivo.getId())
+                    .empresaId(empresa.getId())
+                    .enderecoAtendimento("Casa de Praia")
+                    .build();
+
+            String response = driver.perform(post("/clientes/" + clientePremium.getId() + "/chamados")
+                            .header("codigoAcesso", clientePremium.getCodigo())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(dto)))
+                    .andExpect(status().isCreated())
+                    .andDo(print())
+                    .andReturn().getResponse().getContentAsString();
+
+            ChamadoResponseDTO result = objectMapper.readValue(response, ChamadoResponseDTO.class);
+
+            assertNotNull(result.getId());
+            assertEquals("Casa de Praia", result.getEnderecoAtendimento());
+        }
+
+        @Test
+        @DisplayName("Confirmar pagamento com sucesso")
+        void confirmarPagamentoSucesso() throws Exception {
+            Chamado chamado = Chamado.builder()
+                    .cliente(clienteBasico)
+                    .empresa(empresa)
+                    .servico(servicoComum)
+                    .status("AGUARDANDO_PAGAMENTO")
+                    .build();
+            chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
+            chamado = chamadoRepository.save(chamado);
+
+            driver.perform(put(URI_CHAMADOS + "/" + chamado.getId() + "/pagamento")
+                            .header("codigoAcesso", clienteBasico.getCodigo())
+                            .param("metodoPagamento", "PIX")
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andDo(print());
+
+            Chamado chamadoAtualizado = chamadoRepository.findById(chamado.getId()).orElseThrow();
+            assertEquals("CHAMADO_RECEBIDO", chamadoAtualizado.getStatus());
+        }
+
+        @Test
+        @DisplayName("Cliente tenta remover chamado com código errado")
+        void removerChamadoCodigoErrado() throws Exception {
+            Chamado chamado = chamadoRepository.save(Chamado.builder()
+                    .cliente(clienteBasico)
+                    .empresa(empresa)
+                    .servico(servicoComum)
+                    .status("AGUARDANDO_PAGAMENTO")
+                    .build());
+
+            driver.perform(delete(URI_CHAMADOS + "/" + chamado.getId())
+                            .header("codigoAcesso", "000000")
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isBadRequest());
+
+            assertTrue(chamadoRepository.existsById(chamado.getId()));
+        }
+
+        @Test
+        @DisplayName("Remover chamado com sucesso pelo cliente")
+        void removerChamadoSucesso() throws Exception {
+            Chamado chamado = chamadoRepository.save(Chamado.builder()
+                    .cliente(clienteBasico)
+                    .empresa(empresa)
+                    .servico(servicoComum)
+                    .status("AGUARDANDO_PAGAMENTO")
+                    .build());
+
+            driver.perform(delete(URI_CHAMADOS + "/" + chamado.getId())
+                            .header("codigoAcesso", clienteBasico.getCodigo())
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isNoContent())
+                    .andDo(print());
+
+            assertFalse(chamadoRepository.existsById(chamado.getId()));
+        }
+
+        @Test
+        @DisplayName("Remover chamado com sucesso pela empresa")
+        void removerChamadoPorEmpresaSucesso() throws Exception {
+            Chamado chamado = chamadoRepository.save(Chamado.builder()
+                    .cliente(clienteBasico)
+                    .empresa(empresa)
+                    .servico(servicoComum)
+                    .status("AGUARDANDO_PAGAMENTO")
+                    .build());
+
+            driver.perform(delete(URI_CHAMADOS + "/" + chamado.getId())
+                            .header("codigoAcesso", empresa.getCodigoAcesso())
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isNoContent())
+                    .andDo(print());
+
+            assertFalse(chamadoRepository.existsById(chamado.getId()));
+        }
+
+        @Test
+        @DisplayName("Cliente Basico tenta criar chamado Premium")
+        void criarChamadoBasicoParaServicoPremium() throws Exception {
+            ChamadoPostPutRequestDTO dto = ChamadoPostPutRequestDTO.builder()
+                    .servicoId(servicoExclusivo.getId())
+                    .empresaId(empresa.getId())
+
+                    .enderecoAtendimento("Rua Teste, 123")
+                    .build();
+
+            driver.perform(post("/clientes/" + clienteBasico.getId() + "/chamados")
+                            .header("codigoAcesso", clienteBasico.getCodigo())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(dto)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(result -> assertTrue(result.getResolvedException() instanceof PlanoInvalidoException))
+                    .andDo(print());
+        }
     }
+    @Nested
+    @DisplayName("Testes de notificações em chamado")
+    class NotificacaoChamado {
+        @Test
+        @DisplayName("Deve entrar em EM_ANALISE sem técnico e sem notificar listener")
+        void deveEntrarEmAnaliseSemTecnicoESemNotificar() throws Exception {
+            Chamado chamado = Chamado.builder()
+                    .cliente(clienteBasico)
+                    .empresa(empresa)
+                    .servico(servicoComum)
+                    .enderecoAtendimento(clienteBasico.getEndereco())
+                    .status("CHAMADO_RECEBIDO")
+                    .build();
+            chamado.mudaEstado(new ChamadoEstadoRecebido());
+            chamado = chamadoRepository.save(chamado);
+            driver.perform(
+                            put("/empresas/" + empresa.getId()
+                                    + "/chamados/" + chamado.getId()
+                                    + "/avancar-status")
+                                    .header("codigoAcesso", empresa.getCodigoAcesso())
+                                    .contentType(MediaType.APPLICATION_JSON)
+                    )
+                    .andExpect(status().isOk());
+            Chamado atualizado =
+                    chamadoRepository.findById(chamado.getId()).orElseThrow();
+            assertEquals(
+                    "EM_ANALISE",
+                    atualizado.getStatus()
+            );
+            verify(listenerChamado, never()).notificar(any(Tecnico.class));
+        }
+        @Test
+        @DisplayName("Não deve notificar listener quando chamado for concluído")
+        void naoDeveNotificarQuandoChamadoConcluido() throws Exception {
+            Tecnico tecnico = Tecnico.builder()
+                    .nome("Carlos Silva")
+                    .especialidade("Eletricista")
+                    .corVeiculo("Branco")
+                    .tipoVeiculo(TipoVeiculo.CARRO)
+                    .placaVeiculo("ABC-1234")
+                    .acesso("123456")
+                    .build();
+            tecnico.getEmpresasAprovadoras().add(empresa);
+            tecnico = tecnicoRepository.save(tecnico);
+            Chamado chamado = Chamado.builder()
+                    .cliente(clienteBasico)
+                    .empresa(empresa)
+                    .servico(servicoComum)
+                    .enderecoAtendimento(clienteBasico.getEndereco())
+                    .status("EM_ATENDIMENTO")
+                    .tecnico(tecnico)
+                    .build();
+            chamado.mudaEstado(new ChamadoEstadoEmAtendimento());
+            chamado = chamadoRepository.save(chamado);
+            driver.perform(
+                            put("/empresas/" + empresa.getId()
+                                    + "/chamados/" + chamado.getId()
+                                    + "/avancar-status")
+                                    .header("codigoAcesso", empresa.getCodigoAcesso())
+                                    .contentType(MediaType.APPLICATION_JSON)
+                    )
+                    .andExpect(status().isOk());
+            Chamado atualizado =
+                    chamadoRepository.findById(chamado.getId()).orElseThrow();
+            assertEquals(
+                    "CONCLUIDO",
+                    atualizado.getStatus()
+            );
+            verify(listenerChamado, never()).notificar(any(Tecnico.class));
+            ;
+        }
 
-    @Test
-    @DisplayName("Criar chamado Premium com sucesso")
-    void criarChamadoPremiumSucesso() throws Exception {
-        ChamadoPostPutRequestDTO dto = ChamadoPostPutRequestDTO.builder()
-                .servicoId(servicoExclusivo.getId())
-                .empresaId(empresa.getId())
-                .enderecoAtendimento("Casa de Praia")
-                .build();
+        @Test
+        @DisplayName("Não deve notificar listener quando entrar em CHAMADO_RECEBIDO")
+        void naoDeveNotificarQuandoChamadoRecebido() throws Exception {
 
-        String response = driver.perform(post("/clientes/" + clientePremium.getId() + "/chamados")
-                        .header("codigoAcesso", clientePremium.getCodigo())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isCreated())
-                .andDo(print())
-                .andReturn().getResponse().getContentAsString();
+            // Arrange
 
-        ChamadoResponseDTO result = objectMapper.readValue(response, ChamadoResponseDTO.class);
-        
-        assertNotNull(result.getId());
-        assertEquals("Casa de Praia", result.getEnderecoAtendimento());
+            Chamado chamado = Chamado.builder()
+                    .cliente(clienteBasico)
+                    .empresa(empresa)
+                    .servico(servicoComum)
+                    .enderecoAtendimento(clienteBasico.getEndereco())
+                    .status("AGUARDANDO_PAGAMENTO")
+                    .build();
+            chamado.mudaEstado(new ChamadoEstadoAguardandoPagamento());
+            chamado = chamadoRepository.save(chamado);
+            PagamentoRequestDTO pagamentoDTO = PagamentoRequestDTO.builder()
+                    .metodoPagamento("PIX")
+                    .valorTotal(BigDecimal.valueOf(servicoComum.getPreco()))
+                    .build();
+            driver.perform(
+                            post("/empresas/{empresaId}/chamados/{chamadoId}/pagamentos",
+                                    empresa.getId(),
+                                    chamado.getId()
+                            )
+                                    .header("codigoAcesso", empresa.getCodigoAcesso())
+                                    .contentType(MediaType.APPLICATION_JSON)
+                                    .content(objectMapper.writeValueAsString(pagamentoDTO))
+                    )
+                    .andExpect(status().isOk())
+                    .andDo(print());
+
+            // Assert
+            Chamado atualizado =
+                    chamadoRepository.findById(chamado.getId()).orElseThrow();
+            assertEquals(
+                    "CHAMADO_RECEBIDO",
+                    atualizado.getStatus()
+            );
+            verify(listenerChamado, never()).notificar(any(Tecnico.class));
+
+        }
+
+        @Test
+        @DisplayName("Deve notificar listener quando entrar em EM_ATENDIMENTO")
+        void deveNotificarQuandoEntrarEmAtendimento() throws Exception {
+            Chamado chamado = Chamado.builder()
+                    .cliente(clienteBasico)
+                    .empresa(empresa)
+                    .servico(servicoComum)
+                    .enderecoAtendimento(clienteBasico.getEndereco())
+                    .status("AGUARDANDO_TECNICO")
+                    .build();
+            chamado.mudaEstado(new ChamadoEstadoAguardandoTecnico());
+            chamado = chamadoRepository.save(chamado);
+            String nomeTecnico = "Carlos Silva";
+            String corVeiculo = "Branco";
+            String tipoVeiculo = "CARRO";
+            String placaVeiculo = "ABC-1234";
+            // Act
+            driver.perform(
+                            put("/empresas/" + empresa.getId()
+                                    + "/chamados/" + chamado.getId()
+                                    + "/avancar-status")
+                                    .header("codigoAcesso", empresa.getCodigoAcesso())
+                                    .param("nomeTecnico", nomeTecnico)
+                                    .param("corVeiculo", corVeiculo)
+                                    .param("tipoVeiculo", tipoVeiculo)
+                                    .param("placaVeiculo", placaVeiculo)
+                                    .contentType(MediaType.APPLICATION_JSON)
+                    )
+                    .andExpect(status().isOk())
+                    .andDo(print());
+            Chamado atualizado =
+                    chamadoRepository.findById(chamado.getId()).orElseThrow();
+            assertEquals(
+                    "EM_ATENDIMENTO",
+                    atualizado.getStatus()
+            );
+            assertEquals(nomeTecnico, atualizado.getTecnico().getNome());
+            verify(listenerChamado).notificar(any(Tecnico.class));
+
+        }
     }
-
-    @Test
-    @DisplayName("Confirmar pagamento com sucesso")
-    void confirmarPagamentoSucesso() throws Exception {
-        Chamado chamado = Chamado.builder()
-                .cliente(clienteBasico)
-                .empresa(empresa)
-                .servico(servicoComum)
-                .status("AGUARDANDO_PAGAMENTO")
-                .build();
-        chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
-        chamado = chamadoRepository.save(chamado);
-
-        driver.perform(put(URI_CHAMADOS + "/" + chamado.getId() + "/pagamento")
-                        .header("codigoAcesso", clienteBasico.getCodigo())
-                        .param("metodoPagamento", "PIX")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andDo(print());
-
-        Chamado chamadoAtualizado = chamadoRepository.findById(chamado.getId()).orElseThrow();
-        assertEquals("CHAMADO_RECEBIDO", chamadoAtualizado.getStatus());
-    }
-
-    @Test
-    @DisplayName("Cliente tenta remover chamado com código errado")
-    void removerChamadoCodigoErrado() throws Exception {
-        Chamado chamado = chamadoRepository.save(Chamado.builder()
-                .cliente(clienteBasico)
-                .empresa(empresa)
-                .servico(servicoComum)
-                .status("AGUARDANDO_PAGAMENTO")
-                .build());
-
-        driver.perform(delete(URI_CHAMADOS + "/" + chamado.getId())
-                        .header("codigoAcesso", "000000")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-        
-        assertTrue(chamadoRepository.existsById(chamado.getId()));
-    }
-
-    @Test
-    @DisplayName("Remover chamado com sucesso pelo cliente")
-    void removerChamadoSucesso() throws Exception {
-        Chamado chamado = chamadoRepository.save(Chamado.builder()
-                .cliente(clienteBasico)
-                .empresa(empresa)
-                .servico(servicoComum)
-                .status("AGUARDANDO_PAGAMENTO")
-                .build());
-
-        driver.perform(delete(URI_CHAMADOS + "/" + chamado.getId())
-                        .header("codigoAcesso", clienteBasico.getCodigo()) 
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNoContent())
-                .andDo(print());
-        
-        assertFalse(chamadoRepository.existsById(chamado.getId()));
-    }
-    
-    @Test
-    @DisplayName("Remover chamado com sucesso pela empresa")
-    void removerChamadoPorEmpresaSucesso() throws Exception {
-        Chamado chamado = chamadoRepository.save(Chamado.builder()
-                .cliente(clienteBasico)
-                .empresa(empresa)
-                .servico(servicoComum)
-                .status("AGUARDANDO_PAGAMENTO")
-                .build());
-
-        driver.perform(delete(URI_CHAMADOS + "/" + chamado.getId())
-                        .header("codigoAcesso", empresa.getCodigoAcesso())
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNoContent())
-                .andDo(print());
-        
-        assertFalse(chamadoRepository.existsById(chamado.getId()));
-    }
-
-    @Test
-    @DisplayName("Cliente Basico tenta criar chamado Premium")
-    void criarChamadoBasicoParaServicoPremium() throws Exception {
-        ChamadoPostPutRequestDTO dto = ChamadoPostPutRequestDTO.builder()
-                .servicoId(servicoExclusivo.getId())
-                .empresaId(empresa.getId())
-
-                .enderecoAtendimento("Rua Teste, 123")
-                .build();
-
-        driver.perform(post("/clientes/" + clienteBasico.getId() + "/chamados")
-                        .header("codigoAcesso", clienteBasico.getCodigo())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isBadRequest())
-                .andExpect(result -> assertTrue(result.getResolvedException() instanceof PlanoInvalidoException))
-                .andDo(print());
-    }
-    @Test
-    @DisplayName("Deve entrar em EM_ANALISE sem técnico e sem notificar listener")
-    void deveEntrarEmAnaliseSemTecnicoESemNotificar() throws Exception {
-        Chamado chamado = Chamado.builder()
-                .cliente(clienteBasico)
-                .empresa(empresa)
-                .servico(servicoComum)
-                .enderecoAtendimento(clienteBasico.getEndereco())
-                .status("CHAMADO_RECEBIDO")
-                .build();
-        chamado.mudaEstado(new ChamadoEstadoRecebido());
-        chamado = chamadoRepository.save(chamado);
-        driver.perform(
-                        put("/empresas/" + empresa.getId()
-                                + "/chamados/" + chamado.getId()
-                                + "/avancar-status")
-                                .header("codigoAcesso", empresa.getCodigoAcesso())
-                                .contentType(MediaType.APPLICATION_JSON)
-                )
-                .andExpect(status().isOk());
-
-        Chamado atualizado =
-                chamadoRepository.findById(chamado.getId()).orElseThrow();
-
-        assertEquals(
-                "EM_ANALISE",
-                atualizado.getStatus()
-        );
-        verify(listenerChamado, never())
-                .notificar(any(Tecnico.class));
-    }
-    @Test
-    @DisplayName("Não deve notificar listener quando chamado for concluído")
-    void naoDeveNotificarQuandoChamadoConcluido() throws Exception {
-        Tecnico tecnico = Tecnico.builder()
-                .nome("Carlos Silva")
-                .especialidade("Eletricista")
-                .corVeiculo("Branco")
-                .tipoVeiculo(TipoVeiculo.CARRO)
-                .placaVeiculo("ABC-1234")
-                .acesso("123456")
-                .build();
-        tecnico.getEmpresasAprovadoras().add(empresa);
-        tecnico = tecnicoRepository.save(tecnico);
-        Chamado chamado = Chamado.builder()
-                .cliente(clienteBasico)
-                .empresa(empresa)
-                .servico(servicoComum)
-                .enderecoAtendimento(clienteBasico.getEndereco())
-                .status("EM_ATENDIMENTO")
-                .tecnico(tecnico)
-                .build();
-        chamado.mudaEstado(new ChamadoEstadoEmAtendimento());
-        chamado = chamadoRepository.save(chamado);
-
-        driver.perform(
-
-                        put("/empresas/"
-                                + empresa.getId()
-                                + "/chamados/"
-                                + chamado.getId()
-                                + "/concluido")
-
-                                .header("codigoAcesso", empresa.getCodigoAcesso())
-
-                                .contentType(MediaType.APPLICATION_JSON)
-
-                )
-                .andExpect(status().isOk());
-        Chamado atualizado =
-                chamadoRepository.findById(chamado.getId()).orElseThrow();
-        assertEquals(
-                "CHAMADO_CONCLUIDO",
-                atualizado.getStatus()
-        );
-        verify(listenerChamado, never())
-                .notificar(any(Tecnico.class));;
-    }
-
-    @Test
-    @DisplayName("Não deve notificar listener quando entrar em CHAMADO_RECEBIDO")
-    void naoDeveNotificarQuandoChamadoRecebido() throws Exception {
-
-        // Arrange
-
-        Chamado chamado = Chamado.builder()
-                .cliente(clienteBasico)
-                .empresa(empresa)
-                .servico(servicoComum)
-                .enderecoAtendimento(clienteBasico.getEndereco())
-                .status("AGUARDANDO_PAGAMENTO")
-                .build();
-        chamado.mudaEstado(new ChamadoEstadoAguardandoPagamento());
-        chamado = chamadoRepository.save(chamado);
-        driver.perform(
-                        post("/empresas/{empresaId}/chamados/{chamadoId}/pagamentos",
-                                empresa.getId(),
-                                chamado.getId()
-                        )
-                                .header("codigoAcesso", clienteBasico.getCodigo())
-                                .contentType(MediaType.APPLICATION_JSON)
-                )
-                .andExpect(status().isOk())
-                .andDo(print());
-        // Assert
-        Chamado atualizado =
-                chamadoRepository.findById(chamado.getId()).orElseThrow();
-        assertEquals(
-                "CHAMADO_RECEBIDO",
-                atualizado.getStatus()
-        );
-        verify(listenerChamado, never())
-                .notificar(any(Tecnico.class));
-
-    }
-
-    @Test
-    @DisplayName("Deve notificar listener quando entrar em EM_ATENDIMENTO")
-    void deveNotificarQuandoEntrarEmAtendimento() throws Exception {
-        Chamado chamado = Chamado.builder()
-                .cliente(clienteBasico)
-                .empresa(empresa)
-                .servico(servicoComum)
-                .enderecoAtendimento(clienteBasico.getEndereco())
-                .status("AGUARDANDO_TECNICO")
-                .build();
-        chamado.mudaEstado(new ChamadoEstadoAguardandoTecnico());
-        chamado = chamadoRepository.save(chamado);
-        String nomeTecnico = "Carlos Silva";
-        String corVeiculo = "Branco";
-        String tipoVeiculo = "CARRO";
-        String placaVeiculo = "ABC-1234";
-        // Act
-        driver.perform(
-                        put("/empresas/" + empresa.getId()
-                                + "/chamados/" + chamado.getId()
-                                + "/avancar-status")
-                                .header("codigoAcesso", empresa.getCodigoAcesso())
-                                .param("nomeTecnico", nomeTecnico)
-                                .param("corVeiculo", corVeiculo)
-                                .param("tipoVeiculo", tipoVeiculo)
-                                .param("placaVeiculo", placaVeiculo)
-                                .contentType(MediaType.APPLICATION_JSON)
-                )
-                .andExpect(status().isOk())
-                .andDo(print());
-        Chamado atualizado =
-                chamadoRepository.findById(chamado.getId()).orElseThrow();
-        assertEquals(
-                "EM_ATENDIMENTO",
-                atualizado.getStatus()
-        );
-        assertEquals(nomeTecnico, atualizado.getTecnico().getNome());
-        verify(listenerChamado).notificar(any(Tecnico.class));
-
-    }
-
-    @Test
-    @DisplayName("Não deve notificar listener quando entrar em CANCELADO")
-    void naoDeveNotificarQuandoChamadoCancelado() throws Exception {
-        Chamado chamado = Chamado.builder()
-                .cliente(clienteBasico)
-                .empresa(empresa)
-                .servico(servicoComum)
-                .enderecoAtendimento(clienteBasico.getEndereco())
-                .status("CHAMADO_RECEBIDO")
-                .build();
-
-        chamado.mudaEstado(new ChamadoEstadoRecebido());
-
-        chamado = chamadoRepository.save(chamado);
-
-        driver.perform(
-                        put("/clientes/"
-                                + clienteBasico.getId()
-                                + "/chamados/"
-                                + chamado.getId()
-                                + "/cancelado")
-                                .header("codigoAcesso", clienteBasico.getCodigo())
-                                .contentType(MediaType.APPLICATION_JSON)
-                )
-                .andExpect(status().isOk())
-                .andDo(print());
-
-        Chamado atualizado =
-                chamadoRepository.findById(chamado.getId()).orElseThrow();
-
-        assertEquals(
-                "CANCELADO",
-                atualizado.getStatus()
-        );
-        verify(listenerChamado, never())
-                .notificar(any(Tecnico.class));
-
-    }
-
-
 }
