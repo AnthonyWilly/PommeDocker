@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
-
+import org.junit.jupiter.api.Nested;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Testes do Serviço de Chamado")
 public class ChamadoServiceTests {
@@ -130,211 +130,219 @@ public class ChamadoServiceTests {
         chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
     }
 
-    @Test
-    @DisplayName("Cliente Premium solicita serviço Premium com sucesso")
-    void testClientePremiumSolicitaServicoPremium() {
-        chamadoDTO.setServicoId(servicoExclusivo.getId());
 
-        when(clienteRepository.findById(anyLong())).thenReturn(Optional.of(clientePremium));
-        when(servicoRepository.findById(servicoExclusivo.getId())).thenReturn(Optional.of(servicoExclusivo));
-        when(empresaRepository.findById(anyLong())).thenReturn(Optional.of(empresa));
-        when(chamadoRepository.save(any(Chamado.class))).thenReturn(chamado);
+    @Nested
+    @DisplayName("Testes de Operações Basicas Em Chamado")
+    class CRUDChamado {
+        @Test
+        @DisplayName("Cliente Premium solicita serviço Premium com sucesso")
+        void testClientePremiumSolicitaServicoPremium() {
+            chamadoDTO.setServicoId(servicoExclusivo.getId());
 
-        ChamadoResponseDTO resultado = chamadoService.criarChamado(clientePremium.getId(), clientePremium.getCodigo(), chamadoDTO);
+            when(clienteRepository.findById(anyLong())).thenReturn(Optional.of(clientePremium));
+            when(servicoRepository.findById(servicoExclusivo.getId())).thenReturn(Optional.of(servicoExclusivo));
+            when(empresaRepository.findById(anyLong())).thenReturn(Optional.of(empresa));
+            when(chamadoRepository.save(any(Chamado.class))).thenReturn(chamado);
+            ChamadoResponseDTO resultado = chamadoService.criarChamado(clientePremium.getId(), clientePremium.getCodigo(), chamadoDTO);
+            assertNotNull(resultado);
+            verify(chamadoRepository, times(1)).save(any(Chamado.class));
+        }
 
-        assertNotNull(resultado);
-        verify(chamadoRepository, times(1)).save(any(Chamado.class));
+        @Test
+        @DisplayName("Cliente Premium solicita serviço Basico com sucesso")
+        void testClientePremiumSolicitaServicoComum() {
+            chamadoDTO.setServicoId(servicoComum.getId());
+
+            when(clienteRepository.findById(anyLong())).thenReturn(Optional.of(clientePremium));
+            when(servicoRepository.findById(servicoComum.getId())).thenReturn(Optional.of(servicoComum));
+            when(empresaRepository.findById(anyLong())).thenReturn(Optional.of(empresa));
+            when(chamadoRepository.save(any(Chamado.class))).thenReturn(chamado);
+
+            ChamadoResponseDTO resultado = chamadoService.criarChamado(clientePremium.getId(), clientePremium.getCodigo(), chamadoDTO);
+
+            assertNotNull(resultado);
+        }
+
+        @Test
+        @DisplayName("Cliente Basico solicita serviço Premium deve falhar")
+        void testClienteBasicoSolicitaServicoPremium() {
+            chamadoDTO.setServicoId(servicoExclusivo.getId());
+
+            when(clienteRepository.findById(anyLong())).thenReturn(Optional.of(clienteBasico));
+            when(servicoRepository.findById(servicoExclusivo.getId())).thenReturn(Optional.of(servicoExclusivo));
+            when(empresaRepository.findById(anyLong())).thenReturn(Optional.of(empresa));
+
+            assertThrows(PlanoInvalidoException.class, () -> {
+                chamadoService.criarChamado(clienteBasico.getId(), clienteBasico.getCodigo(), chamadoDTO);
+            });
+
+            verify(chamadoRepository, never()).save(any(Chamado.class));
+        }
+
+        @Test
+        @DisplayName("Cliente Basico solicita serviço Basico com sucesso")
+        void testClienteBasicoSolicitaServicoComum() {
+            chamadoDTO.setServicoId(servicoComum.getId());
+
+            when(clienteRepository.findById(anyLong())).thenReturn(Optional.of(clienteBasico));
+            when(servicoRepository.findById(servicoComum.getId())).thenReturn(Optional.of(servicoComum));
+            when(empresaRepository.findById(anyLong())).thenReturn(Optional.of(empresa));
+            when(chamadoRepository.save(any(Chamado.class))).thenReturn(chamado);
+
+            ChamadoResponseDTO resultado = chamadoService.criarChamado(clienteBasico.getId(), clienteBasico.getCodigo(), chamadoDTO);
+
+            assertNotNull(resultado);
+        }
+
+        @Test
+        @DisplayName("Criar chamado sem endereço deve usar endereço principal do cliente")
+        void testCriarChamadoUsaEnderecoCliente() {
+            chamadoDTO.setServicoId(servicoComum.getId());
+            chamadoDTO.setEnderecoAtendimento(null);
+
+            when(clienteRepository.findById(anyLong())).thenReturn(Optional.of(clienteBasico));
+            when(servicoRepository.findById(servicoComum.getId())).thenReturn(Optional.of(servicoComum));
+            when(empresaRepository.findById(anyLong())).thenReturn(Optional.of(empresa));
+
+            when(chamadoRepository.save(any(Chamado.class))).thenAnswer(i -> i.getArgument(0));
+
+            ChamadoResponseDTO resultado = chamadoService.criarChamado(clienteBasico.getId(), clienteBasico.getCodigo(), chamadoDTO);
+
+            assertEquals(clienteBasico.getEndereco(), resultado.getEnderecoAtendimento());
+        }
     }
+    @Nested
+    @DisplayName("Testes Envolvendo Estados do Chamado")
+    class NotificacoChamado {
+        @Test
+        @DisplayName("Confirmar pagamento deve alterar status do chamado")
+        void testConfirmarPagamentoMudaStatus() {
+            when(chamadoRepository.findById(1L)).thenReturn(Optional.of(chamado));
 
-    @Test
-    @DisplayName("Cliente Premium solicita serviço Basico com sucesso")
-    void testClientePremiumSolicitaServicoComum() {
-        chamadoDTO.setServicoId(servicoComum.getId());
+            when(chamadoRepository.save(any(Chamado.class))).thenAnswer(i -> {
+                Chamado c = (Chamado) i.getArgument(0);
+                c.setStatus("CHAMADO_RECEBIDO");
+                return c;
+            });
 
-        when(clienteRepository.findById(anyLong())).thenReturn(Optional.of(clientePremium));
-        when(servicoRepository.findById(servicoComum.getId())).thenReturn(Optional.of(servicoComum));
-        when(empresaRepository.findById(anyLong())).thenReturn(Optional.of(empresa));
-        when(chamadoRepository.save(any(Chamado.class))).thenReturn(chamado);
+            ChamadoResponseDTO resultado = chamadoService.confirmarPagamento(1L, clienteBasico.getCodigo(), "PIX");
 
-        ChamadoResponseDTO resultado = chamadoService.criarChamado(clientePremium.getId(), clientePremium.getCodigo(), chamadoDTO);
+            assertEquals("CHAMADO_RECEBIDO", resultado.getStatus());
+        }
 
-        assertNotNull(resultado);
-    }
+        @Test
+        @DisplayName("Falhar ao confirmar pagamento com código de acesso incorreto")
+        void testConfirmarPagamentoCodigoInvalido() {
+            when(chamadoRepository.findById(1L)).thenReturn(Optional.of(chamado));
 
-    @Test
-    @DisplayName("Cliente Basico solicita serviço Premium deve falhar")
-    void testClienteBasicoSolicitaServicoPremium() {
-        chamadoDTO.setServicoId(servicoExclusivo.getId());
+            assertThrows(CodigoDeAcessoInvalidoException.class, () -> {
+                chamadoService.confirmarPagamento(1L, "000000", "PIX");
+            });
+        }
 
-        when(clienteRepository.findById(anyLong())).thenReturn(Optional.of(clienteBasico));
-        when(servicoRepository.findById(servicoExclusivo.getId())).thenReturn(Optional.of(servicoExclusivo));
-        when(empresaRepository.findById(anyLong())).thenReturn(Optional.of(empresa));
+        @Test
+        @DisplayName("Deve notificar listener quando chamado entrar em atendimento")
+        void deveNotificarQuandoEntrarEmAtendimento() {
+            ListenerChamado listener = mock(ListenerChamado.class);
+            chamado.adicionarObserver(listener);
+            chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
+            chamado.setStatus("AGUARDANDO_PAGAMENTO");
+            chamado.confirmarPagamento();
+            chamado.getEstado().avancarEstado(chamado);
+            chamado.getEstado().avancarEstado(chamado);
+            verify(listener, times(1)).notificarObserver();
 
-        assertThrows(PlanoInvalidoException.class, () -> {
-            chamadoService.criarChamado(clienteBasico.getId(), clienteBasico.getCodigo(), chamadoDTO);
-        });
-        
-        verify(chamadoRepository, never()).save(any(Chamado.class));
-    }
+        }
 
-    @Test
-    @DisplayName("Cliente Basico solicita serviço Basico com sucesso")
-    void testClienteBasicoSolicitaServicoComum() {
-        chamadoDTO.setServicoId(servicoComum.getId());
-        
-        when(clienteRepository.findById(anyLong())).thenReturn(Optional.of(clienteBasico));
-        when(servicoRepository.findById(servicoComum.getId())).thenReturn(Optional.of(servicoComum));
-        when(empresaRepository.findById(anyLong())).thenReturn(Optional.of(empresa));
-        when(chamadoRepository.save(any(Chamado.class))).thenReturn(chamado);
+        @Test
+        @DisplayName("Não deve notificar listener quando entrar em CHAMADO_RECEBIDO")
+        void naoDeveNotificarQuandoChamadoRecebido() {
 
-        ChamadoResponseDTO resultado = chamadoService.criarChamado(clienteBasico.getId(), clienteBasico.getCodigo(), chamadoDTO);
+            ListenerChamado listener = mock(ListenerChamado.class);
 
-        assertNotNull(resultado);
-    }
+            chamado.adicionarObserver(listener);
 
-    @Test
-    @DisplayName("Criar chamado sem endereço deve usar endereço principal do cliente")
-    void testCriarChamadoUsaEnderecoCliente() {
-        chamadoDTO.setServicoId(servicoComum.getId());
-        chamadoDTO.setEnderecoAtendimento(null);
+            chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
+            chamado.setStatus("AGUARDANDO_PAGAMENTO");
+            chamado.confirmarPagamento();
 
-        when(clienteRepository.findById(anyLong())).thenReturn(Optional.of(clienteBasico));
-        when(servicoRepository.findById(servicoComum.getId())).thenReturn(Optional.of(servicoComum));
-        when(empresaRepository.findById(anyLong())).thenReturn(Optional.of(empresa));
-        
-        when(chamadoRepository.save(any(Chamado.class))).thenAnswer(i -> i.getArgument(0));
+            verify(listener, never()).notificarObserver(any());
+        }
 
-        ChamadoResponseDTO resultado = chamadoService.criarChamado(clienteBasico.getId(), clienteBasico.getCodigo(), chamadoDTO);
+        @Test
+        @DisplayName("Não deve notificar quando mudar de CHAMADO_RECEBIDO para EM_ANALISE")
+        void naoDeveNotificarQuandoMudarDeRecebidoParaEmAnalise() {
+            Chamado chamado = new Chamado();
+            chamado.mudaEstado(new ChamadoEstadoChamadoRecebido());
+            ListenerChamado listener = mock(ListenerChamado.class);
+            chamado.adicionarObserver(listener);
+            chamado.mudaEstado(new ChamadoEstadoEmAnalise());
+            verify(listener, never()).notificarObserver(any());
+        }
 
-        assertEquals(clienteBasico.getEndereco(), resultado.getEnderecoAtendimento());
-    }
+        @Test
+        @DisplayName("Não deve notificar listener quando entrar em AGUARDANDO_TECNICO")
+        void naoDeveNotificarQuandoAguardandoTecnico() {
 
-    @Test
-    @DisplayName("Confirmar pagamento deve alterar status do chamado")
-    void testConfirmarPagamentoMudaStatus() {
-        when(chamadoRepository.findById(1L)).thenReturn(Optional.of(chamado));
-        
-        when(chamadoRepository.save(any(Chamado.class))).thenAnswer(i -> {
-            Chamado c = (Chamado) i.getArgument(0);
-            c.setStatus("CHAMADO_RECEBIDO");
-            return c;
-        });
+            ListenerChamado listener = mock(ListenerChamado.class);
 
-        ChamadoResponseDTO resultado = chamadoService.confirmarPagamento(1L, clienteBasico.getCodigo(), "PIX");
+            chamado.adicionarObserver(listener);
 
-        assertEquals("CHAMADO_RECEBIDO", resultado.getStatus());
-    }
+            chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
+            chamado.setStatus("AGUARDANDO_PAGAMENTO");
+            chamado.confirmarPagamento();
+            chamado.getEstado().avancarEstado(chamado);
+            verify(listener, never()).notificarObserver(any());
+        }
 
-    @Test
-    @DisplayName("Falhar ao confirmar pagamento com código de acesso incorreto")
-    void testConfirmarPagamentoCodigoInvalido() {
-        when(chamadoRepository.findById(1L)).thenReturn(Optional.of(chamado));
-        
-        assertThrows(CodigoDeAcessoInvalidoException.class, () -> {
-            chamadoService.confirmarPagamento(1L, "000000", "PIX");
-        });
-    }
+        @Test
+        @DisplayName("Não deve notificar listener quando chamado for CONCLUIDO")
+        void naoDeveNotificarQuandoFinalizado() {
 
-    @Test
-    @DisplayName("Deve notificar listener quando chamado entrar em atendimento")
-    void deveNotificarQuandoEntrarEmAtendimento() {
-        ListenerChamado listener = mock(ListenerChamado.class);
-        chamado.adicionarObserver(listener);
-        chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
-        chamado.setStatus("AGUARDANDO_PAGAMENTO");
-        chamado.confirmarPagamento();
-        chamado.getEstado().avancarEstado(chamado);
-        chamado.getEstado().avancarEstado(chamado);
-        verify(listener, times(1)).notificarObserver();
+            ListenerChamado listener = mock(ListenerChamado.class);
+            chamado.adicionarObserver(listener);
+            chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
+            chamado.confirmarPagamento();
+            chamado.getEstado().avancarEstado(chamado);
+            chamado.getEstado().avancarEstado(chamado);
+            chamado.getEstado().avancarEstado(chamado);
+            verify(listener, never()).notificarObserver(any());
 
-    }
-    @Test
-    @DisplayName("Não deve notificar listener quando entrar em CHAMADO_RECEBIDO")
-    void naoDeveNotificarQuandoChamadoRecebido() {
+        }
 
-        ListenerChamado listener = mock(ListenerChamado.class);
+        @Test
+        @DisplayName("Não deve notificar listener quando chamado for cancelado")
+        void naoDeveNotificarQuandoCancelado() {
+            ListenerChamado listener = mock(ListenerChamado.class);
+            chamado.adicionarObserver(listener);
+            chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
+            chamado.setStatus("AGUARDANDO_PAGAMENTO");
+            chamado.cancelarChamado();
+            assertEquals("CANCELADO", chamado.getStatus());
+            verify(listener, never()).notificarObserver(any());
+        }
 
-        chamado.adicionarObserver(listener);
+        @Test
+        @DisplayName("Deve gerar mensagem correta com dados do técnico e veículo")
+        void deveGerarMensagemExata() {
 
-        chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
-        chamado.setStatus("AGUARDANDO_PAGAMENTO");
-        chamado.confirmarPagamento();
+            Tecnico tecnico = Tecnico.builder()
+                    .nome("Carlos Silva")
+                    .tipoVeiculo(TipoVeiculo.MOTO)
+                    .corVeiculo("Vermelha")
+                    .placaVeiculo("ABC-1234")
+                    .especialidade("Eletrica")
+                    .acesso("123")
+                    .build();
+            chamado.setTecnico(tecnico);
+            ListenerChamado listener = new ListenerChamado();
+            String mensagem = listener.construirMensagem(chamado);
+            String esperado =
+                    "Notificação de atendimento: o técnico Carlos Silva está a caminho. Veículo: MOTO, cor Vermelha, placa ABC-1234.";
+            assertEquals(esperado, mensagem);
 
-        verify(listener, never()).notificarObserver(any());
-    }
-    @Test
-    @DisplayName("Não deve notificar quando mudar de CHAMADO_RECEBIDO para EM_ANALISE")
-    void naoDeveNotificarQuandoMudarDeRecebidoParaEmAnalise() {
-        Chamado chamado = new Chamado();
-        chamado.mudaEstado(new ChamadoEstadoChamadoRecebido());
-        ListenerChamado listener = mock(ListenerChamado.class);
-        chamado.adicionarObserver(listener);
-        chamado.mudaEstado(new ChamadoEstadoEmAnalise());
-        verify(listener, never())
-                .notificarObserver(any());
-    }
-    @Test
-    @DisplayName("Não deve notificar listener quando entrar em AGUARDANDO_TECNICO")
-    void naoDeveNotificarQuandoAguardandoTecnico() {
-
-        ListenerChamado listener = mock(ListenerChamado.class);
-
-        chamado.adicionarObserver(listener);
-
-        chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
-        chamado.setStatus("AGUARDANDO_PAGAMENTO");
-        chamado.confirmarPagamento();
-        chamado.getEstado().avancarEstado(chamado);
-        verify(listener, never()).notificarObserver(any());
-    }
-
-    @Test
-    @DisplayName("Não deve notificar listener quando chamado for CONCLUIDO")
-    void naoDeveNotificarQuandoFinalizado() {
-
-        ListenerChamado listener = mock(ListenerChamado.class);
-        chamado.adicionarObserver(listener);
-        chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
-        chamado.confirmarPagamento();
-        chamado.getEstado().avancarEstado(chamado);
-        chamado.getEstado().avancarEstado(chamado);
-        chamado.getEstado().avancarEstado(chamado);
-        verify(listener, never()).notificarObserver(any());
+        }
 
     }
-    @Test
-    @DisplayName("Não deve notificar listener quando chamado for cancelado")
-    void naoDeveNotificarQuandoCancelado() {
-        ListenerChamado listener = mock(ListenerChamado.class);
-        chamado.adicionarObserver(listener);
-        chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
-        chamado.setStatus("AGUARDANDO_PAGAMENTO");
-        chamado.cancelarChamado();
-        assertEquals("CANCELADO", chamado.getStatus());
-        verify(listener, never()).notificarObserver(any());
-    }
-
-    @Test
-    @DisplayName("Deve gerar mensagem correta com dados do técnico e veículo")
-    void deveGerarMensagemExata() {
-
-        Tecnico tecnico = Tecnico.builder()
-                .nome("Carlos Silva")
-                .tipoVeiculo(TipoVeiculo.MOTO)
-                .corVeiculo("Vermelha")
-                .placaVeiculo("ABC-1234")
-                .especialidade("Eletrica")
-                .acesso("123")
-                .build();
-        chamado.setTecnico(tecnico);
-        ListenerChamado listener = new ListenerChamado();
-        String mensagem = listener.construirMensagem(chamado);
-        String esperado =
-                "Notificação de atendimento: o técnico Carlos Silva está a caminho. Veículo: MOTO, cor Vermelha, placa ABC-1234.";
-        assertEquals(esperado, mensagem);
-
-    }
-
-
 
 }
