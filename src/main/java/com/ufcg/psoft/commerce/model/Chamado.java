@@ -30,27 +30,49 @@ public class Chamado {
     
     private LocalDateTime dataCriacao;
 
+    @ManyToOne
+    @JoinColumn(name = "tecnico_id")
+    private Tecnico tecnico;
     private String status; 
 
     @Transient
     private ChamadoEstado estado;
+
+    @Transient
+    private ListenerChamado listenerChamado;
 
     public Chamado() {
         this.estado = ChamadoStatus.AGUARDANDO_PAGAMENTO.getInstancia();
         this.status = ChamadoStatus.AGUARDANDO_PAGAMENTO.getNome();
     }
 
+    public ChamadoEstado getEstado() {
+        if (this.estado == null) {
+            this.estado = ChamadoStatus.obterEstado(this.status);
+        }
+        return this.estado;
+    }
+
     public void mudaEstado(ChamadoEstado novoEstado) {
+        if ("AGUARDANDO_TECNICO".equals(this.status) && listenerChamado != null) {
+            notificarObservers();
+        }
         this.estado = novoEstado;
         this.status = novoEstado.getNome();
     }
 
     public void confirmarPagamento() {
-        this.estado.avancarEstado(this);
+        this.getEstado().confirmarPagamento(this);
     }
 
     @PostLoad
     private void carregarEstado() {
         this.estado = ChamadoStatus.obterEstado(this.status);
+    }
+    public void adicionarObserver(ListenerChamado observer){
+        this.listenerChamado = observer;
+    }
+    private void notificarObservers(){
+        listenerChamado.notificar(this.tecnico);
     }
 }

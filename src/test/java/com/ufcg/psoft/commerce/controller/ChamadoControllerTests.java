@@ -14,19 +14,21 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-
+import static org.mockito.Mockito.never;
 import java.time.LocalDate;
-
-import static jdk.internal.org.objectweb.asm.util.CheckClassAdapter.verify;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
+import static org.mockito.ArgumentMatchers.any;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.modelmapper.internal.bytebuddy.matcher.ElementMatchers.any;
-import static org.springframework.test.web.client.ExpectedCount.never;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -37,7 +39,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class ChamadoControllerTests {
 
     final String URI_CHAMADOS = "/chamados";
-
+    @MockBean
+    private ListenerChamado listenerChamado;
     @Autowired
     MockMvc driver;
     @Autowired
@@ -46,6 +49,8 @@ public class ChamadoControllerTests {
     ClienteRepository clienteRepository;
     @Autowired
     EmpresaRepository empresaRepository;
+    @Autowired
+    TecnicoRepository tecnicoRepository;
     @Autowired
     ServicoRepository servicoRepository;
     @Autowired
@@ -114,6 +119,7 @@ public class ChamadoControllerTests {
         servicoRepository.deleteAll();
         empresaRepository.deleteAll();
         clienteRepository.deleteAll();
+        tecnicoRepository.deleteAll();
     }
 
     @Test
@@ -272,7 +278,8 @@ public class ChamadoControllerTests {
         chamado = chamadoRepository.save(chamado);
         driver.perform(
                         put("/empresas/" + empresa.getId()
-                                + "/chamados/" + chamado.getId())
+                                + "/chamados/" + chamado.getId()
+                                + "/avancar-status")
                                 .header("codigoAcesso", empresa.getCodigoAcesso())
                                 .contentType(MediaType.APPLICATION_JSON)
                 )
@@ -286,8 +293,7 @@ public class ChamadoControllerTests {
                 atualizado.getStatus()
         );
         verify(listenerChamado, never())
-                .notificarChamado(any());
-
+                .notificar(any(Tecnico.class));
     }
     @Test
     @DisplayName("Não deve notificar listener quando chamado for concluído")
@@ -334,7 +340,7 @@ public class ChamadoControllerTests {
                 atualizado.getStatus()
         );
         verify(listenerChamado, never())
-                .notificarChamado(any());
+                .notificar(any(Tecnico.class));;
     }
 
     @Test
@@ -353,7 +359,10 @@ public class ChamadoControllerTests {
         chamado.mudaEstado(new ChamadoEstadoAguardandoPagamento());
         chamado = chamadoRepository.save(chamado);
         driver.perform(
-                        put("clientes/" + clienteBasico.getId() + "/chamados/" + chamado.getId())
+                        post("/empresas/{empresaId}/chamados/{chamadoId}/pagamentos",
+                                empresa.getId(),
+                                chamado.getId()
+                        )
                                 .header("codigoAcesso", clienteBasico.getCodigo())
                                 .contentType(MediaType.APPLICATION_JSON)
                 )
@@ -367,7 +376,7 @@ public class ChamadoControllerTests {
                 atualizado.getStatus()
         );
         verify(listenerChamado, never())
-                .notificarChamado(any());
+                .notificar(any(Tecnico.class));
 
     }
 
@@ -391,7 +400,7 @@ public class ChamadoControllerTests {
         driver.perform(
                         put("/empresas/" + empresa.getId()
                                 + "/chamados/" + chamado.getId()
-                                + "/atendimento")
+                                + "/avancar-status")
                                 .header("codigoAcesso", empresa.getCodigoAcesso())
                                 .param("nomeTecnico", nomeTecnico)
                                 .param("corVeiculo", corVeiculo)
@@ -407,9 +416,8 @@ public class ChamadoControllerTests {
                 "EM_ATENDIMENTO",
                 atualizado.getStatus()
         );
-        assertEquals(nomeTecnico, atualizado.getTecnico());
-        verify(listenerChamado)
-                .notificarChamado(any());
+        assertEquals(nomeTecnico, atualizado.getTecnico().getNome());
+        verify(listenerChamado).notificar(any(Tecnico.class));
 
     }
 
@@ -448,7 +456,7 @@ public class ChamadoControllerTests {
                 atualizado.getStatus()
         );
         verify(listenerChamado, never())
-                .notificarChamado(any());
+                .notificar(any(Tecnico.class));
 
     }
 

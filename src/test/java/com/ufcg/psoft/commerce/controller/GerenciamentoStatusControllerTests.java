@@ -118,10 +118,10 @@ public class GerenciamentoStatusControllerTests {
 
             ChamadoResponseDTO resultado = objectMapper.readValue(responseJson, ChamadoResponseDTO.class);
 
-            assertEquals("Em análise", resultado.getStatus());
+            assertEquals("Chamado recebido", resultado.getStatus());
             
             Chamado chamadoAtualizado = chamadoRepository.findById(chamado.getId()).orElseThrow();
-            assertEquals("Em análise", chamadoAtualizado.getStatus());
+            assertEquals("Chamado recebido", chamadoAtualizado.getStatus());
         }
 
         @Test

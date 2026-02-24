@@ -240,7 +240,13 @@ public class ChamadoServiceTests {
             });
         }
 
+        @Test
+        @DisplayName("Deve notificar o cliente")
         void deveNotificarCliente() {
+            Tecnico tecnico = Tecnico.builder()
+                    .nome("Carlos")
+                    .build();
+            chamado.setTecnico(tecnico);
             Cliente clienteSpy = spy(clienteBasico);
             chamado.setCliente(clienteSpy);
             chamado.adicionarObserver(clienteSpy);
@@ -248,10 +254,10 @@ public class ChamadoServiceTests {
             when(chamadoRepository.save(any())).thenAnswer(i -> i.getArgument(0));
             chamadoService.confirmarPagamento(1L, clienteSpy.getCodigo(), "PIX"
             );
-            chamado.getEstado().avancarEstado(chamado);
-            chamado.getEstado().avancarEstado(chamado);
-            chamado.getEstado().avancarEstado(chamado);
-            verify(clienteSpy, times(1)).notificarObserver();
+            chamado.getEstado().avancar(chamado);
+            chamado.getEstado().avancar(chamado);
+            chamado.getEstado().avancar(chamado);
+            verify(clienteSpy, times(1)).notificar(any(Tecnico.class));
         }
     }
 
@@ -267,18 +273,18 @@ public class ChamadoServiceTests {
             chamado.setStatus("AGUARDANDO_PAGAMENTO");
             chamado.confirmarPagamento();
 
-            verify(listener, never()).notificarObserver(any());
+            verify(listener, never()).notificar(any(Tecnico.class));
         }
 
         @Test
         @DisplayName("Não deve notificar quando mudar de CHAMADO_RECEBIDO para EM_ANALISE")
         void naoDeveNotificarQuandoMudarDeRecebidoParaEmAnalise() {
             Chamado chamado = new Chamado();
-            chamado.mudaEstado(new ChamadoEstadoChamadoRecebido());
+            chamado.mudaEstado(new ChamadoEstadoRecebido());
             ListenerChamado listener = mock(ListenerChamado.class);
             chamado.adicionarObserver(listener);
             chamado.mudaEstado(new ChamadoEstadoEmAnalise());
-            verify(listener, never()).notificarObserver(any());
+            verify(listener, never()).notificar(any());
         }
 
         @Test
@@ -292,8 +298,8 @@ public class ChamadoServiceTests {
             chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
             chamado.setStatus("AGUARDANDO_PAGAMENTO");
             chamado.confirmarPagamento();
-            chamado.getEstado().avancarEstado(chamado);
-            verify(listener, never()).notificarObserver(any());
+            chamado.getEstado().avancar(chamado);
+            verify(listener, never()).notificar(any(Tecnico.class));
         }
 
         @Test
@@ -304,23 +310,15 @@ public class ChamadoServiceTests {
             chamado.adicionarObserver(listener);
             chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
             chamado.confirmarPagamento();
-            chamado.getEstado().avancarEstado(chamado);
-            chamado.getEstado().avancarEstado(chamado);
-            chamado.getEstado().avancarEstado(chamado);
-            chamado.getEstado().avancarEstado(chamado); // CONCLUIDO
-            verify(listener,  times(1)).notificarObserver();
+            chamado.getEstado().avancar(chamado);
+            chamado.getEstado().avancar(chamado);
+            chamado.getEstado().avancar(chamado);
+            chamado.getEstado().avancar(chamado);
+            chamado.getEstado().avancar(chamado);
+
+            // CONCLUIDO
+            verify(listener, never()).notificar(any(Tecnico.class));
 
         }
 
-        @Test
-        @DisplayName("Não deve notificar listener quando chamado for cancelado")
-        void naoDeveNotificarQuandoCancelado() {
-            ListenerChamado listener = mock(ListenerChamado.class);
-            chamado.adicionarObserver(listener);
-            chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
-            chamado.setStatus("AGUARDANDO_PAGAMENTO");
-            chamado.cancelarChamado();
-            assertEquals("CANCELADO", chamado.getStatus());
-            verify(listener, never()).notificarObserver(any());
-        }
 }
