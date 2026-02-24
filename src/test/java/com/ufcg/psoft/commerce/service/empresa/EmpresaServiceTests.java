@@ -16,11 +16,12 @@ import com.ufcg.psoft.commerce.model.PagamentoPix;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
 import com.ufcg.psoft.commerce.repository.ChamadoRepository;
 import com.ufcg.psoft.commerce.repository.ServicoRepository;
-// import com.ufcg.psoft.commerce.service.empresa.EmpresaServiceImpl;
+import com.ufcg.psoft.commerce.service.empresa.EmpresaServiceImpl;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;

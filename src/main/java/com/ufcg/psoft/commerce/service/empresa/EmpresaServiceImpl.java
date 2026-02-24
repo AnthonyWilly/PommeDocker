@@ -4,12 +4,14 @@ import com.ufcg.psoft.commerce.dto.EmpresaPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.EmpresaResponseDTO;
 import com.ufcg.psoft.commerce.dto.PagamentoRequestDTO;
 import com.ufcg.psoft.commerce.dto.PagamentoResponseDTO;
+import com.ufcg.psoft.commerce.dto.ChamadoResponseDTO;
 import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
 import com.ufcg.psoft.commerce.exception.CommerceException;
 import com.ufcg.psoft.commerce.exception.EmpresaJaCadastradaException;
 import com.ufcg.psoft.commerce.exception.EmpresaNaoExisteException;
 import com.ufcg.psoft.commerce.exception.SenhaInvalidaException;
 import com.ufcg.psoft.commerce.exception.TecnicoNaoExisteException;
+import com.ufcg.psoft.commerce.exception.ResourceNotFoundException;
 import com.ufcg.psoft.commerce.model.Chamado;
 import com.ufcg.psoft.commerce.model.Empresa;
 import com.ufcg.psoft.commerce.model.Pagamento;
@@ -144,6 +146,7 @@ public class EmpresaServiceImpl implements EmpresaService {
     }
 
     @Override
+    @Transactional
     public PagamentoResponseDTO confirmarPagamento(Long empresaId, Long chamadoId, String codigoAcesso, PagamentoRequestDTO pagamentoRequestDTO) {
         Empresa empresa = buscarEmpresaPeloId(empresaId);
         Chamado chamado = buscarChamadoPeloId(chamadoId);
@@ -184,5 +187,35 @@ public class EmpresaServiceImpl implements EmpresaService {
         if (!chamado.getEmpresa().getId().equals(empresa.getId())) {
             throw new CommerceException("Chamado nao pertence a empresa");
         }
+    }
+    @Override
+    @Transactional
+    public ChamadoResponseDTO avancarStatus(Long empresaId, String codigoAcesso, Long chamadoId) {
+        Empresa empresa = empresaRepository.findById(empresaId)
+                .orElseThrow(() -> new ResourceNotFoundException("Empresa não encontrada."));
+
+        if (!empresa.getCodigoAcesso().equals(codigoAcesso)) {
+            throw new CodigoDeAcessoInvalidoException();
+        }
+
+        Chamado chamado = chamadoRepository.findById(chamadoId)
+                .orElseThrow(() -> new ResourceNotFoundException("Chamado não encontrado."));
+
+        if (!chamado.getEmpresa().getId().equals(empresa.getId())) {
+            throw new RuntimeException("O chamado não pertence à empresa informada.");
+        }
+
+        chamado.getEstado().avancar(chamado);
+
+        Chamado chamadoSalvo = chamadoRepository.save(chamado);
+
+        return ChamadoResponseDTO.builder()
+                .id(chamadoSalvo.getId())
+                .status(chamadoSalvo.getStatus())
+                .clienteId(chamadoSalvo.getCliente() != null ? chamadoSalvo.getCliente().getId() : null)
+                .empresaId(chamadoSalvo.getEmpresa() != null ? chamadoSalvo.getEmpresa().getId() : null)
+                .servicoId(chamadoSalvo.getServico() != null ? chamadoSalvo.getServico().getId() : null)
+                .enderecoAtendimento(chamadoSalvo.getEnderecoAtendimento())
+                .build();
     }
 }
