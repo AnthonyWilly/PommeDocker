@@ -1,7 +1,5 @@
 package com.ufcg.psoft.commerce.model;
 
-import java.time.LocalDate;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ufcg.psoft.commerce.service.notificacao.ServicoObserver;
@@ -10,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import java.time.LocalDate;
 import java.util.List;
 
@@ -19,8 +18,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "clientes")
-public class Cliente implements ListenerChamado {
-public class Cliente implements ServicoObserver {
+public class Cliente implements ServicoObserver, ListenerChamado {
 
     @JsonProperty("id")
     @Id
@@ -58,14 +56,18 @@ public class Cliente implements ServicoObserver {
         this.setPlano(Plano.BASICO, senha);
     }
 
-    private void setPlano(Plano plano, String senha){
+    private void setPlano(Plano plano, String senha) {
         if (!this.codigo.equals(senha)) {
             throw new IllegalArgumentException("Codigo de acesso invalido!");
         }
         this.proxPlano = plano;
     }
-    public void notificar(Tecnico tecnico){
-        System.out.println(String.format("Notificação de atendimento: o técnico %s está a caminho. Veículo: %s, cor %s, placa %s.", tecnico.getNome(),tecnico.getTipoVeiculo(),tecnico.getCorVeiculo(), tecnico.getPlacaVeiculo()));
+
+    @Override
+    public void notificar(Tecnico tecnico) {
+        System.out.println(String.format("Notificação de atendimento: o técnico %s está a caminho. Veículo: %s, cor %s, placa %s.", 
+                tecnico.getNome(), tecnico.getTipoVeiculo(), tecnico.getCorVeiculo(), tecnico.getPlacaVeiculo()));
+    }
 
     @Override
     public void notificar(Servico servico) {
