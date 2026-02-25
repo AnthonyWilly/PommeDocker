@@ -10,6 +10,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.time.LocalDate;
+import java.util.List;
 
 @Entity
 @Data
@@ -17,6 +19,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "clientes")
+public class Cliente implements ListenerChamado {
 public class Cliente implements ServicoObserver {
 
     @JsonProperty("id")
@@ -61,6 +64,8 @@ public class Cliente implements ServicoObserver {
         }
         this.proxPlano = plano;
     }
+    public void notificar(Tecnico tecnico){
+        System.out.println(String.format("Notificação de atendimento: o técnico %s está a caminho. Veículo: %s, cor %s, placa %s.", tecnico.getNome(),tecnico.getTipoVeiculo(),tecnico.getCorVeiculo(), tecnico.getPlacaVeiculo()));
 
     @Override
     public void notificar(Servico servico) {

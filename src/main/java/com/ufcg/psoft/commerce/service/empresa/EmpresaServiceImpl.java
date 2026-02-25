@@ -4,20 +4,20 @@ import com.ufcg.psoft.commerce.dto.EmpresaPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.EmpresaResponseDTO;
 import com.ufcg.psoft.commerce.dto.PagamentoRequestDTO;
 import com.ufcg.psoft.commerce.dto.PagamentoResponseDTO;
+import com.ufcg.psoft.commerce.dto.ChamadoResponseDTO;
 import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
 import com.ufcg.psoft.commerce.exception.CommerceException;
 import com.ufcg.psoft.commerce.exception.EmpresaJaCadastradaException;
 import com.ufcg.psoft.commerce.exception.EmpresaNaoExisteException;
 import com.ufcg.psoft.commerce.exception.SenhaInvalidaException;
 import com.ufcg.psoft.commerce.exception.TecnicoNaoExisteException;
-import com.ufcg.psoft.commerce.model.Chamado;
-import com.ufcg.psoft.commerce.model.Empresa;
-import com.ufcg.psoft.commerce.model.Pagamento;
-import com.ufcg.psoft.commerce.model.Tecnico;
+import com.ufcg.psoft.commerce.exception.ResourceNotFoundException;
+import com.ufcg.psoft.commerce.model.*;
 import com.ufcg.psoft.commerce.repository.ChamadoRepository;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
 import com.ufcg.psoft.commerce.repository.ServicoRepository;
 import com.ufcg.psoft.commerce.repository.TecnicoRepository;
+import jakarta.persistence.Transient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -144,6 +144,7 @@ public class EmpresaServiceImpl implements EmpresaService {
     }
 
     @Override
+    @Transactional
     public PagamentoResponseDTO confirmarPagamento(Long empresaId, Long chamadoId, String codigoAcesso, PagamentoRequestDTO pagamentoRequestDTO) {
         Empresa empresa = buscarEmpresaPeloId(empresaId);
         Chamado chamado = buscarChamadoPeloId(chamadoId);
@@ -185,4 +186,58 @@ public class EmpresaServiceImpl implements EmpresaService {
             throw new CommerceException("Chamado nao pertence a empresa");
         }
     }
+    @Override
+    @Transactional
+    public ChamadoResponseDTO avancarStatus(Long empresaId, String codigoAcesso, Long chamadoId) {
+        Empresa empresa = empresaRepository.findById(empresaId)
+                .orElseThrow(() -> new ResourceNotFoundException("Empresa não encontrada."));
+
+        if (!empresa.getCodigoAcesso().equals(codigoAcesso)) {
+            throw new CodigoDeAcessoInvalidoException();
+        }
+
+        Chamado chamado = chamadoRepository.findById(chamadoId)
+                .orElseThrow(() -> new ResourceNotFoundException("Chamado não encontrado."));
+
+        if (!chamado.getEmpresa().getId().equals(empresa.getId())) {
+            throw new RuntimeException("O chamado não pertence à empresa informada.");
+        }
+        chamado.getEstado().avancar(chamado);
+        Chamado chamadoSalvo = chamadoRepository.save(chamado);
+
+        return ChamadoResponseDTO.builder()
+                .id(chamadoSalvo.getId())
+                .status(chamadoSalvo.getStatus())
+                .clienteId(chamadoSalvo.getCliente() != null ? chamadoSalvo.getCliente().getId() : null)
+                .empresaId(chamadoSalvo.getEmpresa() != null ? chamadoSalvo.getEmpresa().getId() : null)
+                .servicoId(chamadoSalvo.getServico() != null ? chamadoSalvo.getServico().getId() : null)
+                .enderecoAtendimento(chamadoSalvo.getEnderecoAtendimento())
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public ChamadoResponseDTO atribuirTecnico(Long empresaId, String codigoAcesso, Long chamadoId, Long tecnicoId) {
+        Empresa empresa = buscarEmpresaPeloId(empresaId);
+        validarCodigoAcesso(empresa, codigoAcesso);
+        Chamado chamado = chamadoRepository.findById(chamadoId)
+                .orElseThrow(() -> new ResourceNotFoundException("Chamado não encontrado."));
+        validarChamado(empresa, chamado);
+        Tecnico tecnico = tecnicoRepository.findById(tecnicoId)
+                .orElseThrow(TecnicoNaoExisteException::new);
+        if (!tecnico.getEmpresasAprovadoras().contains(empresa)) {
+            throw new RuntimeException("O técnico não está aprovado por esta empresa.");
+        }
+        chamado.atribuirTecnico(tecnico);
+        Chamado chamadoSalvo = chamadoRepository.save(chamado);
+        return ChamadoResponseDTO.builder()
+                .id(chamadoSalvo.getId())
+                .status(chamadoSalvo.getStatus())
+                .clienteId(chamadoSalvo.getCliente() != null ? chamadoSalvo.getCliente().getId() : null)
+                .empresaId(chamadoSalvo.getEmpresa() != null ? chamadoSalvo.getEmpresa().getId() : null)
+                .servicoId(chamadoSalvo.getServico() != null ? chamadoSalvo.getServico().getId() : null)
+                .enderecoAtendimento(chamadoSalvo.getEnderecoAtendimento())
+                .build();
+    }
+
 }

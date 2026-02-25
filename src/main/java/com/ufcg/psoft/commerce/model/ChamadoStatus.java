@@ -4,9 +4,15 @@ import java.util.function.Supplier;
 import java.util.Arrays;
 
 public enum ChamadoStatus {
-    
+
     AGUARDANDO_PAGAMENTO("AGUARDANDO_PAGAMENTO", ChamadoEstadoAguardandoPagamento::new),
-    EM_PROCESSAMENTO("EM_PROCESSAMENTO", ChamadoEstadoEmProcessamento::new);
+    EM_PROCESSAMENTO("EM_PROCESSAMENTO", ChamadoEstadoRecebido::new),
+    RECEBIDO("CHAMADO_RECEBIDO", ChamadoEstadoRecebido::new),
+    EM_ANALISE("EM_ANALISE", ChamadoEstadoEmAnalise::new),
+    AGUARDANDO_TECNICO("AGUARDANDO_TECNICO", ChamadoEstadoAguardandoTecnico::new),
+    EM_ATENDIMENTO("EM_ATENDIMENTO", ChamadoEstadoEmAtendimento::new),
+    CONCLUIDO("CONCLUIDO", ChamadoEstadoConcluido::new),
+    CANCELADO("CANCELADO", ChamadoEstadoCancelado::new);
 
     private final String nome;
     private final Supplier<ChamadoEstado> factory;

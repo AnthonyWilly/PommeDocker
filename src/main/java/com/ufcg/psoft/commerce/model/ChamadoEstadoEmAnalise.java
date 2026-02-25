@@ -1,22 +1,23 @@
-package com.ufcg.psoft.commerce.model;
+    package com.ufcg.psoft.commerce.model;
 
-public class ChamadoEstadoAguardandoPagamento implements ChamadoEstado {
+public class ChamadoEstadoEmAnalise implements ChamadoEstado {
 
     @Override
     public void confirmarPagamento(Chamado chamado) {
-        chamado.mudaEstado(ChamadoStatus.EM_PROCESSAMENTO.getInstancia());
+        throw new RuntimeException("Pagamento já confirmado.");
     }
 
     @Override
     public String getNome() {
-        return ChamadoStatus.AGUARDANDO_PAGAMENTO.getNome();
+        return ChamadoStatus.EM_ANALISE.getNome();
     }
 
     @Override
     public void avancar(Chamado chamado) {
-        throw new RuntimeException("Não é possível avançar. Aguardando confirmação de pagamento.");
+        chamado.mudaEstado(ChamadoStatus.AGUARDANDO_TECNICO.getInstancia());
     }
 
+    @Override
     public void atribuirTecnico(Chamado chamado, Tecnico tecnico) {
         throw new RuntimeException("Não é possível atribuir um técnico neste status do chamado.");
     }
