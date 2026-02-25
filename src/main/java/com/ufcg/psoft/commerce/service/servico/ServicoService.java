@@ -27,12 +27,6 @@ public interface ServicoService {
 
     void adicionarObservador(ServicoObserver observer);
 
-    ServicoResponseDTO alterarDisponibilidade(Long empresaId, Long servicoId, String codigoAcesso, boolean disponivel);
-
-    void registrarInteresse(Long clienteId, Long servicoId);
-
-    void adicionarObservador(ServicoObserver observer);
-
 }
 
 

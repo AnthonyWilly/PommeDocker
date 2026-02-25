@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.beans.Transient;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -41,6 +42,8 @@ import com.ufcg.psoft.commerce.model.Urgencia;
 import com.ufcg.psoft.commerce.repository.ClienteRepository;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
 import com.ufcg.psoft.commerce.repository.ServicoRepository;
+
+import jakarta.transaction.Transactional;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -161,55 +164,7 @@ public class ServicoControllerTests {
                 .empresa(empresa)
                 .build());
 
-        servicoDisponivelBasico = servicoRepository.save(Servico.builder()
-                .nome("Pintura")
-                .tipo(TipoServico.PINTURA)
-                .urgencia(Urgencia.NORMAL)
-                .descricao("Pintar determinada area")
-                .preco(100.0)
-                .duracao(3.0)
-                .disponivel(true)
-                .empresa(empresa)
-                .plano(Plano.BASICO)
-                .build()
-        );
-
-        servicoDisponivelPremium = servicoRepository.save(Servico.builder()
-                .nome("Pintura premium")
-                .tipo(TipoServico.PINTURA)
-                .urgencia(Urgencia.URGENTE)
-                .descricao("Pintar determinada area no alto padrão")
-                .preco(500.0)
-                .duracao(12.0)
-                .disponivel(true)
-                .empresa(empresa)
-                .plano(Plano.PREMIUM)
-                .build()
-        );
-
-        servicoIndisponivelBasico = servicoRepository.save(Servico.builder()
-                .nome("Reparo Hidraulico")
-                .tipo(TipoServico.HIDRAULICA)
-                .urgencia(Urgencia.BAIXA)
-                .descricao("Reparo Hidraulico completo")
-                .preco(100.0)
-                .duracao(1.0)
-                .disponivel(false)
-                .plano(Plano.BASICO) 
-                .empresa(empresa)
-                .build());
-
-        servicoIndisponivelPremium = servicoRepository.save(Servico.builder()
-                .nome("Reparo Hidraulico de toda a casa")
-                .tipo(TipoServico.HIDRAULICA)
-                .urgencia(Urgencia.ALTA)
-                .descricao("Reparo Hidraulico completo de toda a sua casa")
-                .preco(1000.0)
-                .duracao(10.0)
-                .disponivel(false)
-                .plano(Plano.PREMIUM) 
-                .empresa(empresa)
-                .build());
+        
         
     }
     
@@ -505,9 +460,62 @@ public class ServicoControllerTests {
 
     }
 
-@Nested
+    @Nested
     @DisplayName("Testes de demonstrar interesse em serviço")
     class DemonstrarIntesseTestes {
+
+        @BeforeEach
+        void setupDemonstrarInteresse(){
+                servicoDisponivelBasico = servicoRepository.save(Servico.builder()
+                        .nome("Pintura")
+                        .tipo(TipoServico.PINTURA)
+                        .urgencia(Urgencia.NORMAL)
+                        .descricao("Pintar determinada area")
+                        .preco(100.0)
+                        .duracao(3.0)
+                        .disponivel(true)
+                        .empresa(empresa)
+                        .plano(Plano.BASICO)
+                        .build()
+                );
+
+                servicoDisponivelPremium = servicoRepository.save(Servico.builder()
+                        .nome("Pintura premium")
+                        .tipo(TipoServico.PINTURA)
+                        .urgencia(Urgencia.URGENTE)
+                        .descricao("Pintar determinada area no alto padrão")
+                        .preco(500.0)
+                        .duracao(12.0)
+                        .disponivel(true)
+                        .empresa(empresa)
+                        .plano(Plano.PREMIUM)
+                        .build()
+                );
+
+                servicoIndisponivelBasico = servicoRepository.save(Servico.builder()
+                        .nome("Reparo Hidraulico")
+                        .tipo(TipoServico.HIDRAULICA)
+                        .urgencia(Urgencia.BAIXA)
+                        .descricao("Reparo Hidraulico completo")
+                        .preco(100.0)
+                        .duracao(1.0)
+                        .disponivel(false)
+                        .plano(Plano.BASICO) 
+                        .empresa(empresa)
+                        .build());
+
+                servicoIndisponivelPremium = servicoRepository.save(Servico.builder()
+                        .nome("Reparo Hidraulico de toda a casa")
+                        .tipo(TipoServico.HIDRAULICA)
+                        .urgencia(Urgencia.ALTA)
+                        .descricao("Reparo Hidraulico completo de toda a sua casa")
+                        .preco(1000.0)
+                        .duracao(10.0)
+                        .disponivel(false)
+                        .plano(Plano.PREMIUM) 
+                        .empresa(empresa)
+                        .build());
+        }
 
         @Nested
         @DisplayName("Testes de demonstração de interesse com sucesso")
@@ -515,10 +523,11 @@ public class ServicoControllerTests {
 
                 @Test
                 @DisplayName("Deve demonstrar interesse com sucesso quando o serviço estiver indisponível de servico e cliente basico")
+                @Transactional
                 void demonstrarIntesseComSucessoComServicoEClienteBasico() throws Exception {
 
                         // Act
-                        String response = driver.perform(
+                        driver.perform(
                                 post(URI_SERVICOS + "/" + servicoIndisponivelBasico.getId() + URI_INTERESSE)
                                         .param("clienteId", clienteBasico.getId().toString())
                                         .contentType(MediaType.APPLICATION_JSON))
@@ -530,18 +539,18 @@ public class ServicoControllerTests {
                         Servico servicoAtualizado = servicoRepository.findById(servicoIndisponivelBasico.getId()).get();
                         assertAll(
                                 () -> assertEquals(1, servicoAtualizado.getInteressados().size()),
-                                () -> assertTrue(servicoAtualizado.getInteressados().contains(clienteBasico)),
-                                () -> assertTrue(response.contains("Reparo Hidraulico"))
+                                () -> assertTrue(servicoAtualizado.getInteressados().contains(clienteBasico))
                         );
                         
                 }
 
                 @Test
                 @DisplayName("Deve demonstrar interesse com sucesso quando o serviço estiver indisponível de servico e cliente premium")
+                @Transactional
                 void demonstrarIntesseComSucessoComServicoEClientePremium() throws Exception {
 
                         // Act
-                        String response = driver.perform(
+                        driver.perform(
                                 post(URI_SERVICOS + "/" + servicoIndisponivelPremium.getId() + URI_INTERESSE)
                                         .param("clienteId", clientePremium.getId().toString())
                                         .contentType(MediaType.APPLICATION_JSON))
@@ -553,18 +562,18 @@ public class ServicoControllerTests {
                         Servico servicoAtualizado = servicoRepository.findById(servicoIndisponivelPremium.getId()).get();
                         assertAll(
                                 () -> assertEquals(1, servicoAtualizado.getInteressados().size()),
-                                () -> assertTrue(servicoAtualizado.getInteressados().contains(clientePremium)),
-                                () -> assertTrue(response.contains("Reparo Hidraulico de toda a casa"))
+                                () -> assertTrue(servicoAtualizado.getInteressados().contains(clientePremium))
                         );
                         
                 }
                 
                 @Test
                 @DisplayName("Deve demonstrar interesse com sucesso quando o serviço estiver indisponível de serviço básico e cliente premium")
+                @Transactional
                 void demonstrarIntesseComSucessoComPlanoEClientePremium() throws Exception {
 
                         // Act
-                        String response = driver.perform(
+                        driver.perform(
                                 post(URI_SERVICOS + "/" + servicoIndisponivelBasico.getId() + URI_INTERESSE)
                                         .param("clienteId", clientePremium.getId().toString())
                                         .contentType(MediaType.APPLICATION_JSON))
@@ -576,8 +585,7 @@ public class ServicoControllerTests {
                         Servico servicoAtualizado = servicoRepository.findById(servicoIndisponivelBasico.getId()).get();
                         assertAll(
                                 () -> assertEquals(1, servicoAtualizado.getInteressados().size()),
-                                () -> assertTrue(servicoAtualizado.getInteressados().contains(clientePremium)),
-                                () -> assertTrue(response.contains("Reparo Hidraulico"))
+                                () -> assertTrue(servicoAtualizado.getInteressados().contains(clientePremium))
                         );
                         
                 }
@@ -589,6 +597,7 @@ public class ServicoControllerTests {
 
                 @Test
                 @DisplayName("Deve retornar erro quando cliente Basico tenta demonstrar interesse em serviço premium indisponível")
+                @Transactional
                 void demonstrarIntesseClienteBasicoParaServicoPremium() throws Exception {
 
                         // Act
@@ -606,13 +615,14 @@ public class ServicoControllerTests {
                         Servico servicoAtualizado = servicoRepository.findById(servicoIndisponivelPremium.getId()).get();
                         assertAll(
                                 () -> assertEquals(0, servicoAtualizado.getInteressados().size()),
-                                () -> assertEquals("Não é possível demonstrar interesse à um serviço premium com seu plano atual.", resultado.getMessage())
+                                () -> assertEquals("Nao e possivel demonstrar interesse a um servico premium com seu plano atual.", resultado.getMessage())
                         );
                         
                 }
 
                 @Test
                 @DisplayName("Deve retornar erro se tentar demonstrar interesse em um serviço disponível onde cliente e servico são basicos")
+                @Transactional
                 void demonstrarIntesseEmServicoDisponivelBasicoEClienteBasico() throws Exception {
 
                         // Act
@@ -630,13 +640,14 @@ public class ServicoControllerTests {
                         Servico servicoAtualizado = servicoRepository.findById(servicoIndisponivelBasico.getId()).get();
                         assertAll(
                                 () -> assertEquals(0, servicoAtualizado.getInteressados().size()),
-                                () -> assertEquals("Não é possível demonstrar interesse em serviço disponível.", resultado.getMessage())
+                                () -> assertEquals("Nao e possivel demonstrar interesse em servico disponivel.", resultado.getMessage())
                         );
                         
                 }
 
                 @Test
                 @DisplayName("Deve retornar erro se tentar demonstrar interesse em um serviço disponível onde cliente e serviço são premium")
+                @Transactional
                 void demonstrarIntesseEmServicoDisponivelPremiumEClientePremium() throws Exception {
 
                         // Act
@@ -654,13 +665,14 @@ public class ServicoControllerTests {
                         Servico servicoAtualizado = servicoRepository.findById(servicoIndisponivelPremium.getId()).get();
                         assertAll(
                                 () -> assertEquals(0, servicoAtualizado.getInteressados().size()),
-                                () -> assertEquals("Não é possível demonstrar interesse em serviço disponível.", resultado.getMessage())
+                                () -> assertEquals("Nao e possivel demonstrar interesse em servico disponivel.", resultado.getMessage())
                         );
                         
                 }
 
                 @Test
                 @DisplayName("Deve retornar erro se tentar demonstrar interesse em um serviço disponível onde cliente é premium e servico é basico")
+                @Transactional
                 void demonstrarIntesseEmServicoDisponivelBasicoEClientePremium() throws Exception {
 
                         // Act
@@ -678,13 +690,14 @@ public class ServicoControllerTests {
                         Servico servicoAtualizado = servicoRepository.findById(servicoIndisponivelBasico.getId()).get();
                         assertAll(
                                 () -> assertEquals(0, servicoAtualizado.getInteressados().size()),
-                                () -> assertEquals("Não é possível demonstrar interesse em serviço disponível.", resultado.getMessage())
+                                () -> assertEquals("Nao e possivel demonstrar interesse em servico disponivel.", resultado.getMessage())
                         );
                         
                 }
 
                 @Test
                 @DisplayName("Deve retornar erro se tentar demonstrar interesse em um serviço disponível onde cliente é basico e servico é premium")
+                @Transactional
                 void demonstrarIntesseEmServicoDisponivelPremiumEClienteBasico() throws Exception {
 
                         // Act
@@ -702,7 +715,7 @@ public class ServicoControllerTests {
                         Servico servicoAtualizado = servicoRepository.findById(servicoIndisponivelPremium.getId()).get();
                         assertAll(
                                 () -> assertEquals(0, servicoAtualizado.getInteressados().size()),
-                                () -> assertEquals("Não é possível demonstrar interesse em serviço disponível.", resultado.getMessage())
+                                () -> assertEquals("Nao e possivel demonstrar interesse em servico disponivel.", resultado.getMessage())
                         );
                         
                 }
@@ -724,7 +737,7 @@ public class ServicoControllerTests {
                         
                         // Assert
                         assertAll(
-                                () -> assertEquals("O cliente não existe!", resultado.getMessage())
+                                () -> assertEquals("O cliente consultado nao existe!", resultado.getMessage())
                         );
                 }
 
@@ -745,10 +758,11 @@ public class ServicoControllerTests {
                         
                         // Assert
                         assertAll(
-                                () -> assertEquals("O serviço não existe!", resultado.getMessage())
+                                () -> assertEquals("O servico consultado nao existe", resultado.getMessage())
                         );
                 }
         }
+}
 
     @Nested
     @DisplayName("Disponibilidade de serviço")

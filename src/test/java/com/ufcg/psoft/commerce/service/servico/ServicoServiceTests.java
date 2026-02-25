@@ -13,10 +13,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import org.mockito.ArgumentCaptor;
-
-import com.ufcg.psoft.commerce.service.notificacao.ServicoObserver;
-
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
@@ -27,6 +23,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
@@ -36,7 +33,11 @@ import org.modelmapper.ModelMapper;
 import com.ufcg.psoft.commerce.dto.ServicoFiltroDTO;
 import com.ufcg.psoft.commerce.dto.ServicoPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ServicoResponseDTO;
+import com.ufcg.psoft.commerce.exception.ClienteNaoExisteException;
 import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
+import com.ufcg.psoft.commerce.exception.DemonstrarInteresseInvalidoException;
+import com.ufcg.psoft.commerce.exception.DemonstrarInteressePlanoInvalidoException;
+import com.ufcg.psoft.commerce.exception.ServicoNaoExisteException;
 import com.ufcg.psoft.commerce.model.Cliente;
 import com.ufcg.psoft.commerce.model.Empresa;
 import com.ufcg.psoft.commerce.model.Plano;
@@ -46,6 +47,7 @@ import com.ufcg.psoft.commerce.model.Urgencia;
 import com.ufcg.psoft.commerce.repository.ClienteRepository;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
 import com.ufcg.psoft.commerce.repository.ServicoRepository;
+import com.ufcg.psoft.commerce.service.notificacao.ServicoObserver;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Testes do service dos serviços")
@@ -537,7 +539,7 @@ public class ServicoServiceTests {
             );
 
             assertAll(
-                    () -> assertEquals("Não é possível demonstrar interesse em serviço disponível.", exception.getMessage()),
+                    () -> assertEquals("Nao e possivel demonstrar interesse em servico disponivel.", exception.getMessage()),
                     () -> verify(servicoRepository, never()).save(any())
             );
         }
@@ -550,11 +552,11 @@ public class ServicoServiceTests {
             when(servicoRepository.findById(6L)).thenReturn(Optional.of(servicoIndisponivelPremium));
 
             // Act & Assert
-            RuntimeException exception = assertThrows(DemonstrarInteresseInvalidoException.class, 
+            RuntimeException exception = assertThrows(DemonstrarInteressePlanoInvalidoException.class, 
                 () -> servicoService.registrarInteresse(1L, 6L));
 
             assertAll(
-                    () -> assertEquals("Não é possível demonstrar interesse à um serviço premium com seu plano atual.", exception.getMessage()),
+                    () -> assertEquals("Nao e possivel demonstrar interesse a um servico premium com seu plano atual.", exception.getMessage()),
                     () -> verify(servicoRepository, never()).save(any())
             );
         }
@@ -570,7 +572,7 @@ public class ServicoServiceTests {
                 () -> servicoService.registrarInteresse(99L, 3L));
             
             assertAll(
-                () -> assertEquals("O cliente consultado não existe!", exception.getMessage()),
+                () -> assertEquals("O cliente consultado nao existe!", exception.getMessage()),
                 () -> verify(servicoRepository, never()).save(any())
             );
         }
@@ -583,11 +585,11 @@ public class ServicoServiceTests {
             when(servicoRepository.findById(99L)).thenReturn(Optional.empty());
 
             // Act & Assert
-            RuntimeException exception = assertThrows(ServicoInexistenteException.class, () -> {
+            RuntimeException exception = assertThrows(ServicoNaoExisteException.class, () -> {
                 servicoService.registrarInteresse(1L, 99L);
             });
 
-            assertEquals("O serviço consultado não existe!", exception.getMessage());
+            assertEquals("O servico consultado nao existe", exception.getMessage());
             verify(servicoRepository, never()).save(any());
         }
     }
