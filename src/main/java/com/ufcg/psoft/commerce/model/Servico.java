@@ -8,6 +8,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Data
 @Builder
@@ -56,4 +59,14 @@ public class Servico {
     @JsonProperty("preco")
     @Column(nullable = false)
     private double preco;
+
+    @JsonIgnore
+    @ManyToMany
+    @JoinTable(
+            name = "servico_interessados",
+            joinColumns = @JoinColumn(name = "servico_id"),
+            inverseJoinColumns = @JoinColumn(name = "cliente_id")
+    )
+    @Builder.Default
+    private List<Cliente> interessados = new ArrayList<>();
 }

@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -342,7 +343,7 @@ public class ServicoControllerTests {
     class catalogoDeServicosPorPlano {
     
         @Test
-        @DisplayName("Deve listar apenas serviços do plano básico para cliente com plano básico")
+        @DisplayName("Deve listar serviços do plano básico para cliente com plano básico (disponíveis primeiro)")
         void quandoClienteBasicoAcessaCatalogo() throws Exception {
 
             String responseJsoString = driver.perform(get(URI_SERVICOS + URI_CATALOGO)
@@ -352,17 +353,20 @@ public class ServicoControllerTests {
                     .andDo(print())
                     .andReturn().getResponse().getContentAsString();
 
-            List<Servico> resultados = objectMapper.readValue(responseJsoString, new TypeReference<List<Servico>>() {});
+            List<ServicoResponseDTO> resultados = objectMapper.readValue(responseJsoString, new TypeReference<List<ServicoResponseDTO>>() {});
 
             assertAll(
-                () -> assertEquals(1, resultados.size()),
-                () -> assertEquals("Reparo Hidraulico", resultados.get(0).getNome())
+                () -> assertEquals(2, resultados.size()),
+                () -> assertEquals("Reparo Hidraulico", resultados.get(0).getNome()),
+                () -> assertTrue(resultados.get(0).getDisponivel()),
+                () -> assertEquals("Pintura", resultados.get(1).getNome()),
+                () -> assertFalse(resultados.get(1).getDisponivel())
             );
 
         }                    
 
         @Test
-        @DisplayName("Deve listar apenas serviços do plano premium para cliente com plano premium")
+        @DisplayName("Deve listar serviços do plano premium para cliente com plano premium (disponíveis primeiro)")
         void quandoClientePremiumAcessaCatalogo() throws Exception {
 
             String responseJsoString = driver.perform(get(URI_SERVICOS + URI_CATALOGO)
@@ -372,12 +376,14 @@ public class ServicoControllerTests {
                     .andDo(print())
                     .andReturn().getResponse().getContentAsString();
 
-            List<Servico> resultados = objectMapper.readValue(responseJsoString, new TypeReference<List<Servico>>() {});
+            List<ServicoResponseDTO> resultados = objectMapper.readValue(responseJsoString, new TypeReference<List<ServicoResponseDTO>>() {});
 
             assertAll(
-                () -> assertEquals(2, resultados.size()),
-                () -> assertEquals("Reparo Hidraulico", resultados.get(0).getNome()),
-                () -> assertEquals("Guinchar carro", resultados.get(1).getNome())
+                () -> assertEquals(3, resultados.size()),
+                () -> assertTrue(resultados.get(0).getDisponivel()),
+                () -> assertTrue(resultados.get(1).getDisponivel()),
+                () -> assertEquals("Pintura", resultados.get(2).getNome()),
+                () -> assertFalse(resultados.get(2).getDisponivel())
             );
 
         }                    
@@ -417,8 +423,8 @@ public class ServicoControllerTests {
             List<Servico> resultado = objectMapper.readValue(responseJsonString, new TypeReference<List<Servico>>() {});
 
             assertAll(
-                () -> assertEquals(1, resultado.size()),
-                () -> assertTrue(resultado.get(0).getPreco() <= 200.0)
+                () -> assertEquals(2, resultado.size()),
+                () -> assertTrue(resultado.stream().allMatch(s -> s.getPreco() <= 200.0))
             );
             
         }
@@ -443,4 +449,130 @@ public class ServicoControllerTests {
         }
 
         }
+
+    @Nested
+    @DisplayName("Disponibilidade de serviço")
+    class DisponibilidadeDeServicoController {
+
+        @Test
+        @DisplayName("alterar disponibilidade para false com código válido retorna 200")
+        void alterarDisponibilidadeParaFalsoComCodigoValido() throws Exception {
+            driver.perform(
+                            patch("/empresas/" + empresaPadrao.getId() +
+                                    "/servicos/" + servicoPadrao.getId() + "/disponibilidade")
+                                    .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                                    .param("disponivel", "false")
+                    )
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("alterar disponibilidade para true com código válido retorna 200")
+        void alterarDisponibilidadeParaVerdadeiroComCodigoValido() throws Exception {
+            driver.perform(
+                            patch("/empresas/" + empresaPadrao.getId() +
+                                    "/servicos/" + servicoPadrao.getId() + "/disponibilidade")
+                                    .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                                    .param("disponivel", "true")
+                    )
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+        }
+
+        @Test
+        @DisplayName("código de acesso inválido ao alterar disponibilidade retorna 400")
+        void codigoAcessoInvalidoNaAlteracaoDisponibilidade() throws Exception {
+            String response = driver.perform(
+                            patch("/empresas/" + empresaPadrao.getId() +
+                                    "/servicos/" + servicoPadrao.getId() + "/disponibilidade")
+                                    .header("codigoAcesso", "000000")
+                                    .param("disponivel", "true")
+                    )
+                    .andExpect(status().isBadRequest())
+                    .andReturn().getResponse().getContentAsString();
+
+            CustomErrorType erro = objectMapper.readValue(response, CustomErrorType.class);
+            assertEquals("Codigo de acesso invalido!", erro.getMessage());
+        }
+
+        @Test
+        @DisplayName("serviço inexistente ao alterar disponibilidade retorna 404")
+        void servicoNaoExisteNaAlteracaoDisponibilidade() throws Exception {
+            driver.perform(
+                            patch("/empresas/" + empresaPadrao.getId() +
+                                    "/servicos/999999/disponibilidade")
+                                    .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                                    .param("disponivel", "true")
+                    )
+                    .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("serviço de outra empresa ao alterar disponibilidade retorna 404")
+        void servicoNaoPertenceAEmpresaNaAlteracaoDisponibilidade() throws Exception {
+            driver.perform(
+                            patch("/empresas/" + empresaPadrao.getId() +
+                                    "/servicos/" + servicoBasico.getId() + "/disponibilidade")
+                                    .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                                    .param("disponivel", "true")
+                    )
+                    .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("catálogo exibe disponíveis primeiro e indisponíveis por último")
+        void listarServicosDisponivelPrimeiroEIndisponivelPorUltimo() throws Exception {
+            String response = driver.perform(get(URI_SERVICOS + URI_CATALOGO)
+                            .param("clienteId", clientePremium.getId().toString())
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+
+            List<ServicoResponseDTO> resultados = objectMapper.readValue(
+                    response, new TypeReference<List<ServicoResponseDTO>>() {});
+
+            boolean disponivelVeioAntes = true;
+            boolean encontrouIndisponivel = false;
+            for (ServicoResponseDTO s : resultados) {
+                if (!s.getDisponivel()) {
+                    encontrouIndisponivel = true;
+                }
+                if (encontrouIndisponivel && s.getDisponivel()) {
+                    disponivelVeioAntes = false;
+                    break;
+                }
+            }
+            assertTrue(disponivelVeioAntes);
+        }
+
+        @Test
+        @DisplayName("registrar interesse em serviço retorna 201")
+        void clienteRegistraInteresseEmServico() throws Exception {
+            driver.perform(
+                            post("/servicos/" + servicoPadrao.getId() + "/interesse")
+                                    .param("clienteId", clienteBasico.getId().toString())
+                    )
+                    .andExpect(status().isCreated());
+        }
+
+        @Test
+        @DisplayName("cliente inexistente ao registrar interesse retorna 404")
+        void clienteNaoExisteAoRegistrarInteresse() throws Exception {
+            driver.perform(
+                            post("/servicos/" + servicoPadrao.getId() + "/interesse")
+                                    .param("clienteId", "999999")
+                    )
+                    .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("serviço inexistente ao registrar interesse retorna 404")
+        void servicoNaoExisteAoRegistrarInteresse() throws Exception {
+            driver.perform(
+                            post("/servicos/999999/interesse")
+                                    .param("clienteId", clienteBasico.getId().toString())
+                    )
+                    .andExpect(status().isNotFound());
+        }
+    }
 }

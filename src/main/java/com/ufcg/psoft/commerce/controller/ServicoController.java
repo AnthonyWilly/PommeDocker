@@ -75,9 +75,30 @@ public class ServicoController {
     
     @GetMapping("/servicos/catalogo")
     public ResponseEntity<List<ServicoResponseDTO>> listarCatalogoServicoClient(
-        @RequestParam Long clienteId, 
+        @RequestParam Long clienteId,
         ServicoFiltroDTO filtro) {
             return ResponseEntity.ok(servicoService.listarCatalogoServicoCliente(clienteId, filtro));
+    }
+
+    @PatchMapping("/empresas/{empresaId}/servicos/{id}/disponibilidade")
+    public ResponseEntity<?> alterarDisponibilidade(
+            @PathVariable Long empresaId,
+            @PathVariable Long id,
+            @RequestHeader("codigoAcesso") String codigoAcesso,
+            @RequestParam boolean disponivel) {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(servicoService.alterarDisponibilidade(empresaId, id, codigoAcesso, disponivel));
+    }
+
+    @PostMapping("/servicos/{id}/interesse")
+    public ResponseEntity<?> registrarInteresse(
+            @PathVariable Long id,
+            @RequestParam Long clienteId) {
+        servicoService.registrarInteresse(clienteId, id);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .build();
     }
 
 }

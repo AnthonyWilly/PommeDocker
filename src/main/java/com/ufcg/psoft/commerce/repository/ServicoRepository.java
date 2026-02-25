@@ -17,13 +17,13 @@ public interface ServicoRepository extends JpaRepository<Servico, Long> {
     void deleteAllByEmpresa_Id(Long empresaId);
     
     @Query("SELECT s FROM Servico s WHERE " +
-            "s.disponivel AND " +
             "s.plano IN :planosPermitidos AND " + 
             "(:tipo IS NULL OR s.tipo = :tipo) AND " +
             "(:empresaId IS NULL OR s.empresa.id = :empresaId) AND " +
             "(:urgencia IS NULL OR s.urgencia = :urgencia) AND " +
             "(:precoMin IS NULL OR s.preco >= :precoMin) AND " +
-            "(:precoMax IS NULL OR s.preco <= :precoMax)")
+            "(:precoMax IS NULL OR s.preco <= :precoMax) " +
+            "ORDER BY s.disponivel DESC")
     List<Servico> findAllComFiltros(
             @Param("tipo") TipoServico tipo, 
             @Param("empresaId") Long empresaId,
