@@ -1,4 +1,6 @@
 package com.ufcg.psoft.commerce.service.servico;
+import java.util.List;
+
 import com.ufcg.psoft.commerce.dto.ServicoFiltroDTO;
 import com.ufcg.psoft.commerce.dto.ServicoPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ServicoResponseDTO;
@@ -18,6 +20,12 @@ public interface ServicoService {
     void remover(Long idEmpresa, Long id, String codigoAcesso);
 
     List<ServicoResponseDTO> listarCatalogoServicoCliente(Long clienteId, ServicoFiltroDTO filtro);
+
+    ServicoResponseDTO alterarDisponibilidade(Long empresaId, Long servicoId, String codigoAcesso, boolean disponivel);
+
+    void registrarInteresse(Long clienteId, Long servicoId);
+
+    void adicionarObservador(ServicoObserver observer);
 
     ServicoResponseDTO alterarDisponibilidade(Long empresaId, Long servicoId, String codigoAcesso, boolean disponivel);
 

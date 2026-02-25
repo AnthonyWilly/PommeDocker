@@ -1,5 +1,7 @@
 package com.ufcg.psoft.commerce.model;
 
+import java.time.LocalDate;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ufcg.psoft.commerce.service.notificacao.ServicoObserver;
@@ -8,7 +10,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import java.time.LocalDate;
 
 @Entity
 @Data
@@ -49,9 +50,11 @@ public class Cliente implements ServicoObserver {
     public void setPlanoPremium(String senha) {
         this.setPlano(Plano.PREMIUM, senha);
     }
+
     public void setPlanoBasico(String senha) {
         this.setPlano(Plano.BASICO, senha);
     }
+
     private void setPlano(Plano plano, String senha){
         if (!this.codigo.equals(senha)) {
             throw new IllegalArgumentException("Codigo de acesso invalido!");
