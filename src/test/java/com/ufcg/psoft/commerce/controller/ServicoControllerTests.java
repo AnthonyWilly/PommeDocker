@@ -6,11 +6,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.beans.Transient;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -41,6 +43,8 @@ import com.ufcg.psoft.commerce.repository.ClienteRepository;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
 import com.ufcg.psoft.commerce.repository.ServicoRepository;
 
+import jakarta.transaction.Transactional;
+
 @SpringBootTest
 @AutoConfigureMockMvc
 public class ServicoControllerTests {
@@ -63,10 +67,15 @@ public class ServicoControllerTests {
     Servico servicoPadrao;
     Servico servicoBasico;
     Servico servicoPremium;
+    Servico servicoDisponivelBasico;
+    Servico servicoDisponivelPremium;
+    Servico servicoIndisponivelBasico;
+    Servico servicoIndisponivelPremium;
     ServicoPostPutRequestDTO servicoDTO;
     
     final String URI_SERVICOS = "/servicos";
     final String URI_CATALOGO = "/catalogo";
+    final String URI_INTERESSE = "/interesse";
     final String CODIGO_ACESSO_PADRAO = "123456";
     final String CNPJ_PADRAO = "12.345.678/0001-90";
     final String NOME_PADRAO = "Empresa Exemplo";
@@ -154,6 +163,8 @@ public class ServicoControllerTests {
                 .plano(Plano.PREMIUM)
                 .empresa(empresa)
                 .build());
+
+        
         
     }
     
@@ -342,7 +353,7 @@ public class ServicoControllerTests {
     class catalogoDeServicosPorPlano {
     
         @Test
-        @DisplayName("Deve listar apenas serviços do plano básico para cliente com plano básico")
+        @DisplayName("Deve listar serviços do plano básico para cliente com plano básico (disponíveis primeiro)")
         void quandoClienteBasicoAcessaCatalogo() throws Exception {
 
             String responseJsoString = driver.perform(get(URI_SERVICOS + URI_CATALOGO)
@@ -352,17 +363,20 @@ public class ServicoControllerTests {
                     .andDo(print())
                     .andReturn().getResponse().getContentAsString();
 
-            List<Servico> resultados = objectMapper.readValue(responseJsoString, new TypeReference<List<Servico>>() {});
+            List<ServicoResponseDTO> resultados = objectMapper.readValue(responseJsoString, new TypeReference<List<ServicoResponseDTO>>() {});
 
             assertAll(
-                () -> assertEquals(1, resultados.size()),
-                () -> assertEquals("Reparo Hidraulico", resultados.get(0).getNome())
+                () -> assertEquals(2, resultados.size()),
+                () -> assertEquals("Reparo Hidraulico", resultados.get(0).getNome()),
+                () -> assertTrue(resultados.get(0).getDisponivel()),
+                () -> assertEquals("Pintura", resultados.get(1).getNome()),
+                () -> assertFalse(resultados.get(1).getDisponivel())
             );
 
         }                    
 
         @Test
-        @DisplayName("Deve listar apenas serviços do plano premium para cliente com plano premium")
+        @DisplayName("Deve listar serviços do plano premium para cliente com plano premium (disponíveis primeiro)")
         void quandoClientePremiumAcessaCatalogo() throws Exception {
 
             String responseJsoString = driver.perform(get(URI_SERVICOS + URI_CATALOGO)
@@ -372,12 +386,14 @@ public class ServicoControllerTests {
                     .andDo(print())
                     .andReturn().getResponse().getContentAsString();
 
-            List<Servico> resultados = objectMapper.readValue(responseJsoString, new TypeReference<List<Servico>>() {});
+            List<ServicoResponseDTO> resultados = objectMapper.readValue(responseJsoString, new TypeReference<List<ServicoResponseDTO>>() {});
 
             assertAll(
-                () -> assertEquals(2, resultados.size()),
-                () -> assertEquals("Reparo Hidraulico", resultados.get(0).getNome()),
-                () -> assertEquals("Guinchar carro", resultados.get(1).getNome())
+                () -> assertEquals(3, resultados.size()),
+                () -> assertTrue(resultados.get(0).getDisponivel()),
+                () -> assertTrue(resultados.get(1).getDisponivel()),
+                () -> assertEquals("Pintura", resultados.get(2).getNome()),
+                () -> assertFalse(resultados.get(2).getDisponivel())
             );
 
         }                    
@@ -417,8 +433,8 @@ public class ServicoControllerTests {
             List<Servico> resultado = objectMapper.readValue(responseJsonString, new TypeReference<List<Servico>>() {});
 
             assertAll(
-                () -> assertEquals(1, resultado.size()),
-                () -> assertTrue(resultado.get(0).getPreco() <= 200.0)
+                () -> assertEquals(2, resultado.size()),
+                () -> assertTrue(resultado.stream().allMatch(s -> s.getPreco() <= 200.0))
             );
             
         }
@@ -442,5 +458,435 @@ public class ServicoControllerTests {
 
         }
 
+    }
+
+    @Nested
+    @DisplayName("Testes de demonstrar interesse em serviço")
+    class DemonstrarIntesseTestes {
+
+        @BeforeEach
+        void setupDemonstrarInteresse(){
+                servicoDisponivelBasico = servicoRepository.save(Servico.builder()
+                        .nome("Pintura")
+                        .tipo(TipoServico.PINTURA)
+                        .urgencia(Urgencia.NORMAL)
+                        .descricao("Pintar determinada area")
+                        .preco(100.0)
+                        .duracao(3.0)
+                        .disponivel(true)
+                        .empresa(empresa)
+                        .plano(Plano.BASICO)
+                        .build()
+                );
+
+                servicoDisponivelPremium = servicoRepository.save(Servico.builder()
+                        .nome("Pintura premium")
+                        .tipo(TipoServico.PINTURA)
+                        .urgencia(Urgencia.URGENTE)
+                        .descricao("Pintar determinada area no alto padrão")
+                        .preco(500.0)
+                        .duracao(12.0)
+                        .disponivel(true)
+                        .empresa(empresa)
+                        .plano(Plano.PREMIUM)
+                        .build()
+                );
+
+                servicoIndisponivelBasico = servicoRepository.save(Servico.builder()
+                        .nome("Reparo Hidraulico")
+                        .tipo(TipoServico.HIDRAULICA)
+                        .urgencia(Urgencia.BAIXA)
+                        .descricao("Reparo Hidraulico completo")
+                        .preco(100.0)
+                        .duracao(1.0)
+                        .disponivel(false)
+                        .plano(Plano.BASICO) 
+                        .empresa(empresa)
+                        .build());
+
+                servicoIndisponivelPremium = servicoRepository.save(Servico.builder()
+                        .nome("Reparo Hidraulico de toda a casa")
+                        .tipo(TipoServico.HIDRAULICA)
+                        .urgencia(Urgencia.ALTA)
+                        .descricao("Reparo Hidraulico completo de toda a sua casa")
+                        .preco(1000.0)
+                        .duracao(10.0)
+                        .disponivel(false)
+                        .plano(Plano.PREMIUM) 
+                        .empresa(empresa)
+                        .build());
         }
+
+        @Nested
+        @DisplayName("Testes de demonstração de interesse com sucesso")
+        class demonstrarInteresseSucesso {
+
+                @Test
+                @DisplayName("Deve demonstrar interesse com sucesso quando o serviço estiver indisponível de servico e cliente basico")
+                @Transactional
+                void demonstrarIntesseComSucessoComServicoEClienteBasico() throws Exception {
+
+                        // Act
+                        driver.perform(
+                                post(URI_SERVICOS + "/" + servicoIndisponivelBasico.getId() + URI_INTERESSE)
+                                        .param("clienteId", clienteBasico.getId().toString())
+                                        .contentType(MediaType.APPLICATION_JSON))
+                                .andExpect(status().isCreated()) 
+                                .andDo(print())
+                                .andReturn().getResponse().getContentAsString();
+
+                        // Assert
+                        Servico servicoAtualizado = servicoRepository.findById(servicoIndisponivelBasico.getId()).get();
+                        assertAll(
+                                () -> assertEquals(1, servicoAtualizado.getInteressados().size()),
+                                () -> assertTrue(servicoAtualizado.getInteressados().contains(clienteBasico))
+                        );
+                        
+                }
+
+                @Test
+                @DisplayName("Deve demonstrar interesse com sucesso quando o serviço estiver indisponível de servico e cliente premium")
+                @Transactional
+                void demonstrarIntesseComSucessoComServicoEClientePremium() throws Exception {
+
+                        // Act
+                        driver.perform(
+                                post(URI_SERVICOS + "/" + servicoIndisponivelPremium.getId() + URI_INTERESSE)
+                                        .param("clienteId", clientePremium.getId().toString())
+                                        .contentType(MediaType.APPLICATION_JSON))
+                                .andExpect(status().isCreated()) 
+                                .andDo(print())
+                                .andReturn().getResponse().getContentAsString();
+
+                        // Assert
+                        Servico servicoAtualizado = servicoRepository.findById(servicoIndisponivelPremium.getId()).get();
+                        assertAll(
+                                () -> assertEquals(1, servicoAtualizado.getInteressados().size()),
+                                () -> assertTrue(servicoAtualizado.getInteressados().contains(clientePremium))
+                        );
+                        
+                }
+                
+                @Test
+                @DisplayName("Deve demonstrar interesse com sucesso quando o serviço estiver indisponível de serviço básico e cliente premium")
+                @Transactional
+                void demonstrarIntesseComSucessoComPlanoEClientePremium() throws Exception {
+
+                        // Act
+                        driver.perform(
+                                post(URI_SERVICOS + "/" + servicoIndisponivelBasico.getId() + URI_INTERESSE)
+                                        .param("clienteId", clientePremium.getId().toString())
+                                        .contentType(MediaType.APPLICATION_JSON))
+                                .andExpect(status().isCreated()) 
+                                .andDo(print())
+                                .andReturn().getResponse().getContentAsString();
+
+                        // Assert
+                        Servico servicoAtualizado = servicoRepository.findById(servicoIndisponivelBasico.getId()).get();
+                        assertAll(
+                                () -> assertEquals(1, servicoAtualizado.getInteressados().size()),
+                                () -> assertTrue(servicoAtualizado.getInteressados().contains(clientePremium))
+                        );
+                        
+                }
+        }
+        
+        @Nested
+        @DisplayName("Testes de demonstração de interesse que devem lançar erro")
+        class demonstrarInteresseFalha{
+
+                @Test
+                @DisplayName("Deve retornar erro quando cliente Basico tenta demonstrar interesse em serviço premium indisponível")
+                @Transactional
+                void demonstrarIntesseClienteBasicoParaServicoPremium() throws Exception {
+
+                        // Act
+                        String response = driver.perform(
+                                post(URI_SERVICOS + "/" + servicoIndisponivelPremium.getId() + URI_INTERESSE)
+                                        .param("clienteId", clienteBasico.getId().toString())
+                                        .contentType(MediaType.APPLICATION_JSON))
+                                .andExpect(status().isBadRequest()) 
+                                .andDo(print())
+                                .andReturn().getResponse().getContentAsString();
+
+                        CustomErrorType resultado = objectMapper.readValue(response, CustomErrorType.class);
+
+                        // Assert
+                        Servico servicoAtualizado = servicoRepository.findById(servicoIndisponivelPremium.getId()).get();
+                        assertAll(
+                                () -> assertEquals(0, servicoAtualizado.getInteressados().size()),
+                                () -> assertEquals("Nao e possivel demonstrar interesse a um servico premium com seu plano atual.", resultado.getMessage())
+                        );
+                        
+                }
+
+                @Test
+                @DisplayName("Deve retornar erro se tentar demonstrar interesse em um serviço disponível onde cliente e servico são basicos")
+                @Transactional
+                void demonstrarIntesseEmServicoDisponivelBasicoEClienteBasico() throws Exception {
+
+                        // Act
+                        String response = driver.perform(
+                                post(URI_SERVICOS + "/" + servicoDisponivelBasico.getId() + URI_INTERESSE)
+                                        .param("clienteId", clienteBasico.getId().toString())
+                                        .contentType(MediaType.APPLICATION_JSON))
+                                .andExpect(status().isBadRequest()) 
+                                .andDo(print())
+                                .andReturn().getResponse().getContentAsString();
+
+                        CustomErrorType resultado = objectMapper.readValue(response, CustomErrorType.class);
+
+                        // Assert
+                        Servico servicoAtualizado = servicoRepository.findById(servicoIndisponivelBasico.getId()).get();
+                        assertAll(
+                                () -> assertEquals(0, servicoAtualizado.getInteressados().size()),
+                                () -> assertEquals("Nao e possivel demonstrar interesse em servico disponivel.", resultado.getMessage())
+                        );
+                        
+                }
+
+                @Test
+                @DisplayName("Deve retornar erro se tentar demonstrar interesse em um serviço disponível onde cliente e serviço são premium")
+                @Transactional
+                void demonstrarIntesseEmServicoDisponivelPremiumEClientePremium() throws Exception {
+
+                        // Act
+                        String response = driver.perform(
+                                post(URI_SERVICOS + "/" + servicoDisponivelPremium.getId() + URI_INTERESSE)
+                                        .param("clienteId", clientePremium.getId().toString())
+                                        .contentType(MediaType.APPLICATION_JSON))
+                                .andExpect(status().isBadRequest()) 
+                                .andDo(print())
+                                .andReturn().getResponse().getContentAsString();
+
+                        CustomErrorType resultado = objectMapper.readValue(response, CustomErrorType.class);
+
+                        // Assert
+                        Servico servicoAtualizado = servicoRepository.findById(servicoIndisponivelPremium.getId()).get();
+                        assertAll(
+                                () -> assertEquals(0, servicoAtualizado.getInteressados().size()),
+                                () -> assertEquals("Nao e possivel demonstrar interesse em servico disponivel.", resultado.getMessage())
+                        );
+                        
+                }
+
+                @Test
+                @DisplayName("Deve retornar erro se tentar demonstrar interesse em um serviço disponível onde cliente é premium e servico é basico")
+                @Transactional
+                void demonstrarIntesseEmServicoDisponivelBasicoEClientePremium() throws Exception {
+
+                        // Act
+                        String response = driver.perform(
+                                post(URI_SERVICOS + "/" + servicoDisponivelBasico.getId() + URI_INTERESSE)
+                                        .param("clienteId", clientePremium.getId().toString())
+                                        .contentType(MediaType.APPLICATION_JSON))
+                                .andExpect(status().isBadRequest()) 
+                                .andDo(print())
+                                .andReturn().getResponse().getContentAsString();
+
+                        CustomErrorType resultado = objectMapper.readValue(response, CustomErrorType.class);
+
+                        // Assert
+                        Servico servicoAtualizado = servicoRepository.findById(servicoIndisponivelBasico.getId()).get();
+                        assertAll(
+                                () -> assertEquals(0, servicoAtualizado.getInteressados().size()),
+                                () -> assertEquals("Nao e possivel demonstrar interesse em servico disponivel.", resultado.getMessage())
+                        );
+                        
+                }
+
+                @Test
+                @DisplayName("Deve retornar erro se tentar demonstrar interesse em um serviço disponível onde cliente é basico e servico é premium")
+                @Transactional
+                void demonstrarIntesseEmServicoDisponivelPremiumEClienteBasico() throws Exception {
+
+                        // Act
+                        String response = driver.perform(
+                                post(URI_SERVICOS + "/" + servicoDisponivelPremium.getId() + URI_INTERESSE)
+                                        .param("clienteId", clienteBasico.getId().toString())
+                                        .contentType(MediaType.APPLICATION_JSON))
+                                .andExpect(status().isBadRequest()) 
+                                .andDo(print())
+                                .andReturn().getResponse().getContentAsString();
+
+                        CustomErrorType resultado = objectMapper.readValue(response, CustomErrorType.class);
+
+                        // Assert
+                        Servico servicoAtualizado = servicoRepository.findById(servicoIndisponivelPremium.getId()).get();
+                        assertAll(
+                                () -> assertEquals(0, servicoAtualizado.getInteressados().size()),
+                                () -> assertEquals("Nao e possivel demonstrar interesse em servico disponivel.", resultado.getMessage())
+                        );
+                        
+                }
+
+                @Test
+                @DisplayName("Deve retornar erro se o cliente não existir")
+                void demonstrarInteresseClienteInexistente() throws Exception {
+
+                        // Act
+                        String response = driver.perform(
+                                post(URI_SERVICOS + "/" + servicoIndisponivelBasico.getId() + URI_INTERESSE)
+                                        .param("clienteId", "9999")
+                                        .contentType(MediaType.APPLICATION_JSON))
+                                .andExpect(status().isNotFound())
+                                .andDo(print())
+                                .andReturn().getResponse().getContentAsString();
+
+                        CustomErrorType resultado = objectMapper.readValue(response, CustomErrorType.class);
+                        
+                        // Assert
+                        assertAll(
+                                () -> assertEquals("O cliente consultado nao existe!", resultado.getMessage())
+                        );
+                }
+
+                @Test
+                @DisplayName("Deve retornar erro se o serviço não existir")
+                void demonstrarInteresseServicoInexistente() throws Exception {
+
+                        // Act
+                        String response = driver.perform(
+                                post(URI_SERVICOS + "/9999" + URI_INTERESSE)
+                                        .param("clienteId", clienteBasico.getId().toString())
+                                        .contentType(MediaType.APPLICATION_JSON))
+                                .andExpect(status().isNotFound())
+                                .andDo(print())
+                                .andReturn().getResponse().getContentAsString();
+
+                        CustomErrorType resultado = objectMapper.readValue(response, CustomErrorType.class);
+                        
+                        // Assert
+                        assertAll(
+                                () -> assertEquals("O servico consultado nao existe", resultado.getMessage())
+                        );
+                }
+        }
+}
+
+    @Nested
+    @DisplayName("Disponibilidade de serviço")
+    class DisponibilidadeDeServicoController {
+
+        @Test
+        @DisplayName("alterar disponibilidade para false com código válido retorna 200")
+        void alterarDisponibilidadeParaFalsoComCodigoValido() throws Exception {
+            driver.perform(
+                            patch("/empresas/" + empresaPadrao.getId() +
+                                    "/servicos/" + servicoPadrao.getId() + "/disponibilidade")
+                                    .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                                    .param("disponivel", "false")
+                    )
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("alterar disponibilidade para true com código válido retorna 200")
+        void alterarDisponibilidadeParaVerdadeiroComCodigoValido() throws Exception {
+            driver.perform(
+                            patch("/empresas/" + empresaPadrao.getId() +
+                                    "/servicos/" + servicoPadrao.getId() + "/disponibilidade")
+                                    .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                                    .param("disponivel", "true")
+                    )
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+        }
+
+        @Test
+        @DisplayName("código de acesso inválido ao alterar disponibilidade retorna 400")
+        void codigoAcessoInvalidoNaAlteracaoDisponibilidade() throws Exception {
+            String response = driver.perform(
+                            patch("/empresas/" + empresaPadrao.getId() +
+                                    "/servicos/" + servicoPadrao.getId() + "/disponibilidade")
+                                    .header("codigoAcesso", "000000")
+                                    .param("disponivel", "true")
+                    )
+                    .andExpect(status().isBadRequest())
+                    .andReturn().getResponse().getContentAsString();
+
+            CustomErrorType erro = objectMapper.readValue(response, CustomErrorType.class);
+            assertEquals("Codigo de acesso invalido!", erro.getMessage());
+        }
+
+        @Test
+        @DisplayName("serviço inexistente ao alterar disponibilidade retorna 404")
+        void servicoNaoExisteNaAlteracaoDisponibilidade() throws Exception {
+            driver.perform(
+                            patch("/empresas/" + empresaPadrao.getId() +
+                                    "/servicos/999999/disponibilidade")
+                                    .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                                    .param("disponivel", "true")
+                    )
+                    .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("serviço de outra empresa ao alterar disponibilidade retorna 404")
+        void servicoNaoPertenceAEmpresaNaAlteracaoDisponibilidade() throws Exception {
+            driver.perform(
+                            patch("/empresas/" + empresaPadrao.getId() +
+                                    "/servicos/" + servicoBasico.getId() + "/disponibilidade")
+                                    .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                                    .param("disponivel", "true")
+                    )
+                    .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("catálogo exibe disponíveis primeiro e indisponíveis por último")
+        void listarServicosDisponivelPrimeiroEIndisponivelPorUltimo() throws Exception {
+            String response = driver.perform(get(URI_SERVICOS + URI_CATALOGO)
+                            .param("clienteId", clientePremium.getId().toString())
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+
+            List<ServicoResponseDTO> resultados = objectMapper.readValue(
+                    response, new TypeReference<List<ServicoResponseDTO>>() {});
+
+            boolean disponivelVeioAntes = true;
+            boolean encontrouIndisponivel = false;
+            for (ServicoResponseDTO s : resultados) {
+                if (!s.getDisponivel()) {
+                    encontrouIndisponivel = true;
+                }
+                if (encontrouIndisponivel && s.getDisponivel()) {
+                    disponivelVeioAntes = false;
+                    break;
+                }
+            }
+            assertTrue(disponivelVeioAntes);
+        }
+
+        @Test
+        @DisplayName("registrar interesse em serviço retorna 201")
+        void clienteRegistraInteresseEmServico() throws Exception {
+            driver.perform(
+                            post("/servicos/" + servicoPadrao.getId() + "/interesse")
+                                    .param("clienteId", clienteBasico.getId().toString())
+                    )
+                    .andExpect(status().isCreated());
+        }
+
+        @Test
+        @DisplayName("cliente inexistente ao registrar interesse retorna 404")
+        void clienteNaoExisteAoRegistrarInteresse() throws Exception {
+            driver.perform(
+                            post("/servicos/" + servicoPadrao.getId() + "/interesse")
+                                    .param("clienteId", "999999")
+                    )
+                    .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("serviço inexistente ao registrar interesse retorna 404")
+        void servicoNaoExisteAoRegistrarInteresse() throws Exception {
+            driver.perform(
+                            post("/servicos/999999/interesse")
+                                    .param("clienteId", clienteBasico.getId().toString())
+                    )
+                    .andExpect(status().isNotFound());
+        }
+    }
 }

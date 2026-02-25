@@ -1,7 +1,10 @@
 package com.ufcg.psoft.commerce.model;
 
+import java.time.LocalDate;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ufcg.psoft.commerce.service.notificacao.ServicoObserver;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,6 +20,7 @@ import java.util.List;
 @AllArgsConstructor
 @Table(name = "clientes")
 public class Cliente implements ListenerChamado {
+public class Cliente implements ServicoObserver {
 
     @JsonProperty("id")
     @Id
@@ -49,9 +53,11 @@ public class Cliente implements ListenerChamado {
     public void setPlanoPremium(String senha) {
         this.setPlano(Plano.PREMIUM, senha);
     }
+
     public void setPlanoBasico(String senha) {
         this.setPlano(Plano.BASICO, senha);
     }
+
     private void setPlano(Plano plano, String senha){
         if (!this.codigo.equals(senha)) {
             throw new IllegalArgumentException("Codigo de acesso invalido!");
@@ -60,5 +66,15 @@ public class Cliente implements ListenerChamado {
     }
     public void notificar(Tecnico tecnico){
         System.out.println(String.format("Notificação de atendimento: o técnico %s está a caminho. Veículo: %s, cor %s, placa %s.", tecnico.getNome(),tecnico.getTipoVeiculo(),tecnico.getCorVeiculo(), tecnico.getPlacaVeiculo()));
+
+    @Override
+    public void notificar(Servico servico) {
+        System.out.println(
+                "[NOTIFICAÇÃO] Cliente '" + this.nome +
+                "' (id=" + this.id + "): " +
+                "O serviço '" + servico.getNome() +
+                "' (id=" + servico.getId() + ") que você demonstrou interesse " +
+                "voltou a estar disponível!"
+        );
     }
 }

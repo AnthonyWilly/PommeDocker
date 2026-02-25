@@ -384,7 +384,7 @@ public class ClienteControllerTests {
         void quandoBuscamosPorUmClienteInexistente() throws Exception {
             String responseJsonString = driver.perform(get(URI_CLIENTES + "/" + 999999999)
                             .contentType(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isBadRequest())
+                    .andExpect(status().isNotFound())
                     .andDo(print())
                     .andReturn().getResponse().getContentAsString();
 
@@ -443,7 +443,7 @@ public class ClienteControllerTests {
                             .contentType(MediaType.APPLICATION_JSON)
                             .param("codigo", cliente.getCodigo())
                             .content(objectMapper.writeValueAsString(clientePostPutRequestDTO)))
-                    .andExpect(status().isBadRequest())
+                    .andExpect(status().isNotFound())
                     .andDo(print())
                     .andReturn().getResponse().getContentAsString();
 
@@ -493,7 +493,7 @@ public class ClienteControllerTests {
             String responseJsonString = driver.perform(delete(URI_CLIENTES + "/" + 999999)
                             .contentType(MediaType.APPLICATION_JSON)
                             .param("codigo", cliente.getCodigo()))
-                    .andExpect(status().isBadRequest())
+                    .andExpect(status().isNotFound())
                     .andDo(print())
                     .andReturn().getResponse().getContentAsString();
 
@@ -572,7 +572,7 @@ public class ClienteControllerTests {
                             .contentType(MediaType.APPLICATION_JSON)
                             .param("codigo", "123456")
                             .param("tipoPlano", "Premium"))
-                    .andExpect(status().isBadRequest()) 
+                    .andExpect(status().isNotFound())
                     .andDo(print())
                     .andReturn().getResponse().getContentAsString();
             CustomErrorType resultado = objectMapper.readValue(responseJsonString, CustomErrorType.class);
@@ -636,7 +636,7 @@ public class ClienteControllerTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .param("codigo", "123456")
                         .param("tipoPlano", "Basico"))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isNotFound())
                 .andDo(print())
                 .andReturn().getResponse().getContentAsString();
 
