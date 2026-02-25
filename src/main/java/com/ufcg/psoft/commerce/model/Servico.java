@@ -22,6 +22,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Data
 @Builder
@@ -78,7 +81,7 @@ public class Servico {
             joinColumns = @JoinColumn(name = "servico_id"),
             inverseJoinColumns = @JoinColumn(name = "cliente_id")
     )
-    @OrderBy("planoAtual DESCA")
+    @OrderBy("planoAtual DESC")
     @Builder.Default
     private List<Cliente> interessados = new ArrayList<>();
 }

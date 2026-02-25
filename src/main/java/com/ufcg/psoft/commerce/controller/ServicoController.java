@@ -87,7 +87,7 @@ public class ServicoController {
     
     @GetMapping("/servicos/catalogo")
     public ResponseEntity<List<ServicoResponseDTO>> listarCatalogoServicoClient(
-        @RequestParam Long clienteId, 
+        @RequestParam Long clienteId,
         ServicoFiltroDTO filtro) {
             return ResponseEntity.ok(servicoService.listarCatalogoServicoCliente(clienteId, filtro));
     }

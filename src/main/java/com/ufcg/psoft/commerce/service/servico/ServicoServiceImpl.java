@@ -26,13 +26,22 @@ import com.ufcg.psoft.commerce.repository.ClienteRepository;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
 import com.ufcg.psoft.commerce.repository.ServicoRepository;
 import com.ufcg.psoft.commerce.service.notificacao.ServicoObserver;
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 
 
 @Service
 public class ServicoServiceImpl implements ServicoService {
 
-    private final Set<ServicoObserver> observadores = new LinkedHashSet();
+    private final Set<ServicoObserver> observadores = new LinkedHashSet<>();
 
     @Autowired
     ServicoRepository servicoRepository;
@@ -99,6 +108,39 @@ public class ServicoServiceImpl implements ServicoService {
         }
 
         return empresa;
+    }
+
+    @Override
+    public ServicoResponseDTO alterarDisponibilidade(Long empresaId, Long servicoId, String codigoAcesso, boolean disponivel) {
+        validarEmpresa(empresaId, codigoAcesso);
+        Servico servico = buscarServicoPeloId(servicoId);
+        if (!servico.getEmpresa().getId().equals(empresaId)) {
+            throw new ServicoNaoExisteException();
+        }
+        boolean eraIndisponivel = !servico.isDisponivel();
+        servico.setDisponivel(disponivel);
+        servicoRepository.save(servico);
+        if (disponivel && eraIndisponivel) {
+            observadores.forEach(obs -> obs.notificar(servico));
+            servico.getInteressados().forEach(cliente -> cliente.notificar(servico));
+        }
+        return new ServicoResponseDTO(servico);
+    }
+
+    @Override
+    public void registrarInteresse(Long clienteId, Long servicoId) {
+        Cliente cliente = clienteRepository.findById(clienteId)
+                .orElseThrow(ClienteNaoExisteException::new);
+        Servico servico = buscarServicoPeloId(servicoId);
+        if (!servico.getInteressados().contains(cliente)) {
+            servico.getInteressados().add(cliente);
+            servicoRepository.save(servico);
+        }
+    }
+
+    @Override
+    public void adicionarObservador(ServicoObserver observer) {
+        observadores.add(observer);
     }
 
     @Override

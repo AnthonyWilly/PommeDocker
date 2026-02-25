@@ -64,6 +64,20 @@ public class ErrorHandlingControllerAdvice {
         return defaultCustomErrorTypeConstruct(e.getMessage());
     }
 
+    @ExceptionHandler(ServicoNaoExisteException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ResponseBody
+    public CustomErrorType onServicoNaoExisteException(ServicoNaoExisteException e) {
+        return defaultCustomErrorTypeConstruct(e.getMessage());
+    }
+
+    @ExceptionHandler(ClienteNaoExisteException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ResponseBody
+    public CustomErrorType onClienteNaoExisteException(ClienteNaoExisteException e) {
+        return defaultCustomErrorTypeConstruct(e.getMessage());
+    }
+
     @ExceptionHandler(SenhaInvalidaException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     @ResponseBody

@@ -1,15 +1,21 @@
 package com.ufcg.psoft.commerce.service.servico;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import org.mockito.ArgumentCaptor;
+
+import com.ufcg.psoft.commerce.service.notificacao.ServicoObserver;
 
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -583,6 +589,161 @@ public class ServicoServiceTests {
 
             assertEquals("O serviço consultado não existe!", exception.getMessage());
             verify(servicoRepository, never()).save(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("Disponibilidade de serviço")
+    class DisponibilidadeDeServico {
+
+        ServicoObserver observer;
+        Servico servicoIndisponivel;
+        Servico servicoJaDisponivel;
+
+        @BeforeEach
+        void setupDisponibilidade() {
+            observer = mock(ServicoObserver.class);
+            servicoService.adicionarObservador(observer);
+
+            servicoIndisponivel = Servico.builder()
+                    .id(10L)
+                    .nome("Instalacao de Chuveiro")
+                    .tipo(TipoServico.ELETRICA)
+                    .urgencia(Urgencia.NORMAL)
+                    .descricao("instala um chuveiro")
+                    .preco(150.0)
+                    .duracao(3.0)
+                    .disponivel(false)
+                    .plano(Plano.BASICO)
+                    .empresa(empresa)
+                    .build();
+
+            servicoJaDisponivel = Servico.builder()
+                    .id(11L)
+                    .nome("Reparo Hidraulico")
+                    .tipo(TipoServico.HIDRAULICA)
+                    .urgencia(Urgencia.BAIXA)
+                    .descricao("reparo completo")
+                    .preco(100.0)
+                    .duracao(1.0)
+                    .disponivel(true)
+                    .plano(Plano.BASICO)
+                    .empresa(empresa)
+                    .build();
+        }
+
+        @Test
+        @DisplayName("marcar serviço como disponível com código válido")
+        void marcarServicoComoDisponivelComCodigoValido() {
+            when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
+            when(servicoRepository.findById(10L)).thenReturn(Optional.of(servicoIndisponivel));
+            when(servicoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            ServicoResponseDTO resultado = servicoService.alterarDisponibilidade(1L, 10L, "123456", true);
+
+            assertTrue(resultado.getDisponivel());
+        }
+
+        @Test
+        @DisplayName("marcar serviço como indisponível com código válido")
+        void marcarServicoComoIndisponivelComCodigoValido() {
+            when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
+            when(servicoRepository.findById(11L)).thenReturn(Optional.of(servicoJaDisponivel));
+            when(servicoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            ServicoResponseDTO resultado = servicoService.alterarDisponibilidade(1L, 11L, "123456", false);
+
+            assertFalse(resultado.getDisponivel());
+        }
+
+        @Test
+        @DisplayName("lança exceção ao alterar disponibilidade com código inválido")
+        void lancaExcecaoComCodigoAcessoInvalidoNaAlteracaoDisponibilidade() {
+            when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
+
+            assertThrows(CodigoDeAcessoInvalidoException.class,
+                    () -> servicoService.alterarDisponibilidade(1L, 10L, "000000", true));
+
+            verify(servicoRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("notifica observador ao mudar de indisponível para disponível")
+        void notificarObservadorQuandoServicoFicaDisponivel() {
+            when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
+            when(servicoRepository.findById(10L)).thenReturn(Optional.of(servicoIndisponivel));
+            when(servicoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            servicoService.alterarDisponibilidade(1L, 10L, "123456", true);
+
+            verify(observer, times(1)).notificar(any(Servico.class));
+        }
+
+        @Test
+        @DisplayName("não notifica observador ao mudar para indisponível")
+        void naoNotificarObservadorQuandoServicoFicaIndisponivel() {
+            when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
+            when(servicoRepository.findById(11L)).thenReturn(Optional.of(servicoJaDisponivel));
+            when(servicoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            servicoService.alterarDisponibilidade(1L, 11L, "123456", false);
+
+            verify(observer, never()).notificar(any(Servico.class));
+        }
+
+        @Test
+        @DisplayName("não notifica observador quando disponibilidade não muda")
+        void naoNotificarObservadorQuandoDisponibilidadeNaoMuda() {
+            when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
+            when(servicoRepository.findById(11L)).thenReturn(Optional.of(servicoJaDisponivel));
+            when(servicoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            servicoService.alterarDisponibilidade(1L, 11L, "123456", true);
+
+            verify(observer, never()).notificar(any(Servico.class));
+        }
+
+        @Test
+        @DisplayName("notifica apenas uma vez por mudança de estado para disponível")
+        void notificarObservadorUmaVezQuandoServicoFicaDisponivel() {
+            servicoService.adicionarObservador(observer);
+
+            when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
+            when(servicoRepository.findById(10L)).thenReturn(Optional.of(servicoIndisponivel));
+            when(servicoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            servicoService.alterarDisponibilidade(1L, 10L, "123456", true);
+
+            verify(observer, times(1)).notificar(any(Servico.class));
+        }
+
+        @Test
+        @DisplayName("registrar interesse adiciona cliente como interessado no serviço")
+        void adicionarClienteComoInteressado() {
+            when(clienteRepository.findById(1L)).thenReturn(Optional.of(clienteBasico));
+            when(servicoRepository.findById(10L)).thenReturn(Optional.of(servicoIndisponivel));
+
+            servicoService.registrarInteresse(1L, 10L);
+
+            verify(clienteRepository, times(1)).findById(1L);
+            verify(servicoRepository, times(1)).findById(10L);
+        }
+
+        @Test
+        @DisplayName("notifica cliente interessado quando serviço fica disponível")
+        void notificarClienteInteressadoQuandoServicoFicaDisponivel() {
+            when(clienteRepository.findById(1L)).thenReturn(Optional.of(clienteBasico));
+            when(servicoRepository.findById(10L)).thenReturn(Optional.of(servicoIndisponivel));
+            servicoService.registrarInteresse(1L, 10L);
+
+            when(empresaRepository.findById(1L)).thenReturn(Optional.of(empresa));
+            when(servicoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            ArgumentCaptor<Servico> captor = ArgumentCaptor.forClass(Servico.class);
+            servicoService.alterarDisponibilidade(1L, 10L, "123456", true);
+
+            verify(observer, times(1)).notificar(captor.capture());
+            assertEquals(10L, captor.getValue().getId());
         }
     }
 
