@@ -45,4 +45,17 @@ public class ChamadoController {
                 .noContent()
                 .build();
     }
+    @DeleteMapping("/clientes/{clienteId}/chamados/{chamadoId}")
+    public ResponseEntity<Void> cancelarChamado(
+            @PathVariable Long clienteId,
+            @PathVariable Long chamadoId,
+            @RequestHeader("codigoAcesso") String codigoAcesso) {
+
+        // Passamos os três elementos para validação de posse e segurança
+        chamadoService.cancelar(chamadoId, clienteId, codigoAcesso);
+
+        return ResponseEntity
+                .noContent()
+                .build();
+    }
 }

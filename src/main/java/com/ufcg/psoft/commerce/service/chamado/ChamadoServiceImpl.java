@@ -5,7 +5,6 @@ import com.ufcg.psoft.commerce.dto.ChamadoResponseDTO;
 import com.ufcg.psoft.commerce.exception.*;
 import com.ufcg.psoft.commerce.model.*;
 import com.ufcg.psoft.commerce.repository.*;
-import jakarta.persistence.Transient;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -123,5 +122,19 @@ public class ChamadoServiceImpl implements ChamadoService {
         Chamado chamado = chamadoRepository.findById(chamadoId)
                 .orElseThrow(() -> new CommerceException("Chamado não encontrado"));
         return modelMapper.map(chamado, ChamadoResponseDTO.class);
+    }
+    @Override
+    public void cancelar(Long id, Long idCliente, String codigoAcesso) {
+        Chamado chamado = chamadoRepository.findById(id)
+                .orElseThrow(() -> new CommerceException("O chamado não existe!"));
+        if (chamado.getStatus().equals("EM_ATENDIMENTO") || chamado.getStatus().equals("CONCLUIDO")) {
+            throw new ChamadoNaoPodeSerCancelado();
+        }
+        if (!chamado.getCliente().getId().equals(idCliente)) {
+            throw new ClienteNaoExisteException();        }
+        if (!chamado.getCliente().getCodigo().equals(codigoAcesso)) {
+            throw new CodigoDeAcessoInvalidoException();
+        }
+        chamadoRepository.deleteById(id);
     }
 }
