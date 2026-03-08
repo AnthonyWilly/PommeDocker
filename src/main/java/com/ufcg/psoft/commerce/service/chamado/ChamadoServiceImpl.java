@@ -5,7 +5,6 @@ import com.ufcg.psoft.commerce.dto.ChamadoResponseDTO;
 import com.ufcg.psoft.commerce.exception.*;
 import com.ufcg.psoft.commerce.model.*;
 import com.ufcg.psoft.commerce.repository.*;
-import jakarta.persistence.Transient;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -123,5 +122,25 @@ public class ChamadoServiceImpl implements ChamadoService {
         Chamado chamado = chamadoRepository.findById(chamadoId)
                 .orElseThrow(() -> new CommerceException("Chamado não encontrado"));
         return modelMapper.map(chamado, ChamadoResponseDTO.class);
+    }
+
+    @Override
+    public ChamadoResponseDTO buscarChamadoPorCliente(Long chamadoId, Long idCliente) {
+        Chamado chamado = chamadoRepository.findByIdAndClienteId(chamadoId,idCliente)
+                .orElseThrow(() -> new CommerceException("Chamado não encontrado"));
+        return modelMapper.map(chamado, ChamadoResponseDTO.class);
+    }
+    @Override
+    public List<ChamadoResponseDTO> listarChamadosCliente(Long idCliente) {
+        List<Chamado> chamados = chamadoRepository.findByClienteIdOrderByStatusEData(idCliente);
+        return chamados.stream()
+                .map(c -> modelMapper.map(c, ChamadoResponseDTO.class))
+                .collect(Collectors.toList());
+    }
+    public List<ChamadoResponseDTO> listarChamadosClientePorStatus(Long idCliente, ChamadoStatus chamadoStatus) {
+        List<Chamado> chamados = chamadoRepository.findByClienteIdAndStatusOrderByDataCriacaoDesc(idCliente, chamadoStatus);
+        return chamados.stream()
+                .map(c -> modelMapper.map(c, ChamadoResponseDTO.class))
+                .collect(Collectors.toList());
     }
 }

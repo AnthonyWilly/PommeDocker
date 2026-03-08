@@ -10,4 +10,8 @@ public interface ChamadoService {
     void removerChamado(Long chamadoId, String codigoAcesso);
     List<ChamadoResponseDTO> listarChamados(Long clienteId, String codigoAcesso);
     ChamadoResponseDTO buscarChamado(Long chamadoId);
+
+    ChamadoResponseDTO buscarChamadoPorCliente(Long chamadoId, Long idCliente);
+
+    List<ChamadoResponseDTO> listarChamadosCliente(Long idCliente);
 }
