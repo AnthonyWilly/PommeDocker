@@ -2,6 +2,8 @@ package com.ufcg.psoft.commerce.controller;
 
 import com.ufcg.psoft.commerce.dto.ChamadoPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ChamadoResponseDTO;
+import com.ufcg.psoft.commerce.dto.EmpresaResponseDTO;
+import com.ufcg.psoft.commerce.model.ChamadoStatus;
 import com.ufcg.psoft.commerce.service.chamado.ChamadoService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping(produces = MediaType.APPLICATION_JSON_VALUE)
@@ -35,7 +39,6 @@ public class ChamadoController {
         return ResponseEntity
                 .ok(chamadoService.confirmarPagamento(chamadoId, codigoAcesso, metodoPagamento));
     }
-
     @DeleteMapping("/chamados/{chamadoId}")
     public ResponseEntity<Void> removerChamado(
             @PathVariable Long chamadoId,
@@ -45,4 +48,30 @@ public class ChamadoController {
                 .noContent()
                 .build();
     }
+
+    @GetMapping("clientes/{clienteId}/chamados/{chamadoId}")
+    public ResponseEntity<ChamadoResponseDTO> buscarChamadoCliente(
+            @PathVariable Long clienteId,
+            @PathVariable Long chamadoId,
+            @RequestHeader String codigoAcesso) {
+        return ResponseEntity.ok(chamadoService.buscarChamadoPorCliente(chamadoId, clienteId, codigoAcesso));
+
+    }
+
+    @GetMapping("clientes/{clienteId}/chamados")
+    public ResponseEntity<List<ChamadoResponseDTO>> listarTodosChamados(
+            @PathVariable Long clienteId,
+            @RequestHeader String codigoAcesso) {
+        return ResponseEntity.ok(chamadoService.listarChamadosCliente(clienteId, codigoAcesso));
+    }
+
+    @GetMapping("clientes/{clienteId}/chamados/status")
+    public ResponseEntity<List<ChamadoResponseDTO>> listarChamadosClienteStatus(
+            @PathVariable Long clienteId,
+            @RequestParam(required = false) ChamadoStatus status,
+            @RequestHeader String codigoAcesso) {
+        return ResponseEntity.ok(chamadoService.listarChamadosClientePorStatus(clienteId,status, codigoAcesso));
+
+    }
+
 }

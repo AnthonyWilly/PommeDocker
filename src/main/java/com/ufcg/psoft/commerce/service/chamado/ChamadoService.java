@@ -2,6 +2,8 @@ package com.ufcg.psoft.commerce.service.chamado;
 
 import com.ufcg.psoft.commerce.dto.ChamadoPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ChamadoResponseDTO;
+import com.ufcg.psoft.commerce.model.ChamadoStatus;
+
 import java.util.List;
 
 public interface ChamadoService {
@@ -11,7 +13,9 @@ public interface ChamadoService {
     List<ChamadoResponseDTO> listarChamados(Long clienteId, String codigoAcesso);
     ChamadoResponseDTO buscarChamado(Long chamadoId);
 
-    ChamadoResponseDTO buscarChamadoPorCliente(Long chamadoId, Long idCliente);
+    ChamadoResponseDTO buscarChamadoPorCliente(Long chamadoId, Long idCliente,  String codigoAcesso);
 
-    List<ChamadoResponseDTO> listarChamadosCliente(Long idCliente);
+    List<ChamadoResponseDTO> listarChamadosCliente(Long idCliente,  String codigoAcesso);
+
+    List<ChamadoResponseDTO> listarChamadosClientePorStatus(Long idCliente, ChamadoStatus chamadoStatus, String codigoAcesso);
 }
