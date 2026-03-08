@@ -325,9 +325,85 @@ public class ChamadoServiceTests {
             empresaService.aprovarTecnico(empresa.getId(), tecnico.getId(), empresa.getCodigoAcesso());
             chamado.getEstado().atribuirTecnico(chamado, tecnico);
             chamado.getEstado().avancar(chamado);
-            // CONCLUIDO
             verify(listener, never()).notificar(any(Tecnico.class));
 
+        }
+    }
+    @Nested
+    @DisplayName("Testes de Cancelamento de Chamado no Service")
+    class CancelamentoChamadoService {
+
+        @Test
+        @DisplayName("Deve cancelar chamado com sucesso")
+        void deveCancelarComSucesso() {
+            // Moca o findById (o que seu service usa)
+            when(chamadoRepository.findById(chamado.getId())).thenReturn(Optional.of(chamado));
+
+            chamadoService.cancelar(chamado.getId(), clienteBasico.getId(), "123456");
+
+            // Verifica o deleteById (o que seu service usa)
+            verify(chamadoRepository, times(1)).deleteById(chamado.getId());
+        }
+
+        @Test
+        @DisplayName("Deve falhar quando o status for EM_ATENDIMENTO")
+        void deveFalharSeStatusEmAtendimento() {
+            chamado.setStatus("EM_ATENDIMENTO");
+            when(chamadoRepository.findById(chamado.getId())).thenReturn(Optional.of(chamado));
+            assertThrows(ChamadoNaoPodeSerCancelado.class, () ->
+                    chamadoService.cancelar(chamado.getId(), clienteBasico.getId(), "123456")
+            );
+            verify(chamadoRepository, never()).deleteById(anyLong());
+        }
+        @Test
+        @DisplayName("Deve falhar quando o status for CHAMADO_RECEBIDO")
+        void deveFalharSeStatusEmAtendimento() {
+            chamado.setStatus("CHAMADO_RECEBIDO");
+            when(chamadoRepository.findById(chamado.getId())).thenReturn(Optional.of(chamado));
+            assertThrows(ChamadoNaoPodeSerCancelado.class, () ->
+                    chamadoService.cancelar(chamado.getId(), clienteBasico.getId(), "123456")
+            );
+            verify(chamadoRepository, never()).deleteById(anyLong());
+        }
+        @Test
+        @DisplayName("Deve falhar quando o status for AGUARDANDO_TECNICO")
+        void deveFalharSeStatusEmAtendimento() {
+            chamado.setStatus("AGUARDANDO_TECNICO");
+            when(chamadoRepository.findById(chamado.getId())).thenReturn(Optional.of(chamado));
+            assertThrows(ChamadoNaoPodeSerCancelado.class, () ->
+                    chamadoService.cancelar(chamado.getId(), clienteBasico.getId(), "123456")
+            );
+            verify(chamadoRepository, never()).deleteById(anyLong());
+        }
+        @Test
+        @DisplayName("Deve falhar quando o status for AGUARDANDO_PAGAMENTO")
+        void deveFalharSeStatusEmAtendimento() {
+            chamado.setStatus("AGUARDANDO_PAGAMENTO");
+            when(chamadoRepository.findById(chamado.getId())).thenReturn(Optional.of(chamado));
+            assertThrows(ChamadoNaoPodeSerCancelado.class, () ->
+                    chamadoService.cancelar(chamado.getId(), clienteBasico.getId(), "123456")
+            );
+            verify(chamadoRepository, never()).deleteById(anyLong());
+        }
+        @Test
+        @DisplayName("Deve falhar quando o ID do cliente for diferente do dono do chamado")
+        void deveFalharSeChamadoForDeOutroCliente() {
+            when(chamadoRepository.findById(chamado.getId())).thenReturn(Optional.of(chamado));
+            assertThrows(ClienteNaoExisteException.class, () ->
+                    chamadoService.cancelar(chamado.getId(), 99L, "123456")
+            );
+            verify(chamadoRepository, never()).deleteById(anyLong());
+        }
+
+        @Test
+        @DisplayName("Deve falhar com código de acesso inválido")
+        void deveFalharComCodigoInvalido() {
+            when(chamadoRepository.findById(chamado.getId())).thenReturn(Optional.of(chamado));
+
+            assertThrows(CodigoDeAcessoInvalidoException.class, () ->
+                    chamadoService.cancelar(chamado.getId(), clienteBasico.getId(), "CODIGO_ERRADO")
+            );
+            verify(chamadoRepository, never()).deleteById(anyLong());
         }
     }
 }
