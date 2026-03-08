@@ -1,6 +1,7 @@
 package com.ufcg.psoft.commerce.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ufcg.psoft.commerce.model.StatusDisponibilidade;
 import com.ufcg.psoft.commerce.model.Tecnico;
 import com.ufcg.psoft.commerce.model.TipoVeiculo;
 import jakarta.persistence.Column;
@@ -14,6 +15,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -49,6 +51,9 @@ public class TecnicoResponseDTO {
     @Column(nullable = false)
     private String placaVeiculo;
 
+    @JsonProperty("statusDisponibilidade")
+    private StatusDisponibilidade statusDisponibilidade;
+
     public TecnicoResponseDTO(Tecnico tecnico) {
         this.id = tecnico.getId();
         this.nome = tecnico.getNome();
@@ -56,5 +61,6 @@ public class TecnicoResponseDTO {
         this.especialidade = tecnico.getEspecialidade();
         this.placaVeiculo = tecnico.getPlacaVeiculo();
         this.tipoVeiculo = tecnico.getTipoVeiculo();
+        this.statusDisponibilidade = tecnico.getStatusDisponibilidade();
     }
 }
