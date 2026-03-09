@@ -1,6 +1,8 @@
 package com.ufcg.psoft.commerce.service.chamado;
 import com.ufcg.psoft.commerce.dto.ChamadoPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ChamadoResponseDTO;
+import com.ufcg.psoft.commerce.exception.ChamadoNaoPodeSerCancelado;
+import com.ufcg.psoft.commerce.exception.ClienteNaoExisteException;
 import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
 import com.ufcg.psoft.commerce.exception.PlanoInvalidoException;
 import com.ufcg.psoft.commerce.model.*;
@@ -352,34 +354,28 @@ public class ChamadoServiceTests {
             verify(chamadoRepository, never()).deleteById(anyLong());
         }
         @Test
-        @DisplayName("Deve falhar quando o status for CHAMADO_RECEBIDO")
-        void deveFalharSeStatusEmAtendimento() {
+        @DisplayName("Deve cancelar quando o status for CHAMADO_RECEBIDO")
+        void deveCancelarSeStatusChamadoRecebido() {
             chamado.setStatus("CHAMADO_RECEBIDO");
             when(chamadoRepository.findById(chamado.getId())).thenReturn(Optional.of(chamado));
-            assertThrows(ChamadoNaoPodeSerCancelado.class, () ->
-                    chamadoService.cancelar(chamado.getId(), clienteBasico.getId(), "123456")
-            );
-            verify(chamadoRepository, never()).deleteById(anyLong());
+            chamadoService.cancelar(chamado.getId(), clienteBasico.getId(), "123456");
+            verify(chamadoRepository, times(1)).deleteById(chamado.getId());
         }
         @Test
-        @DisplayName("Deve falhar quando o status for AGUARDANDO_TECNICO")
-        void deveFalharSeStatusEmAtendimento() {
+        @DisplayName("Deve cancelar quando o status for AGUARDANDO_TECNICO")
+        void deveCancelarAguardandoTecnico() {
             chamado.setStatus("AGUARDANDO_TECNICO");
             when(chamadoRepository.findById(chamado.getId())).thenReturn(Optional.of(chamado));
-            assertThrows(ChamadoNaoPodeSerCancelado.class, () ->
-                    chamadoService.cancelar(chamado.getId(), clienteBasico.getId(), "123456")
-            );
-            verify(chamadoRepository, never()).deleteById(anyLong());
+            chamadoService.cancelar(chamado.getId(), clienteBasico.getId(), "123456");
+            verify(chamadoRepository, times(1)).deleteById(chamado.getId());
         }
         @Test
-        @DisplayName("Deve falhar quando o status for AGUARDANDO_PAGAMENTO")
-        void deveFalharSeStatusEmAtendimento() {
+        @DisplayName("Deve cancelar quando o status for AGUARDANDO_PAGAMENTO")
+        void deveCancelarSeStatusAguardandoPagamento() {
             chamado.setStatus("AGUARDANDO_PAGAMENTO");
             when(chamadoRepository.findById(chamado.getId())).thenReturn(Optional.of(chamado));
-            assertThrows(ChamadoNaoPodeSerCancelado.class, () ->
-                    chamadoService.cancelar(chamado.getId(), clienteBasico.getId(), "123456")
-            );
-            verify(chamadoRepository, never()).deleteById(anyLong());
+            chamadoService.cancelar(chamado.getId(), clienteBasico.getId(), "123456");
+            verify(chamadoRepository, times(1)).deleteById(chamado.getId());
         }
         @Test
         @DisplayName("Deve falhar quando o ID do cliente for diferente do dono do chamado")

@@ -6,6 +6,7 @@ import com.ufcg.psoft.commerce.dto.ChamadoPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ChamadoResponseDTO;
 import com.ufcg.psoft.commerce.dto.EmpresaPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.PagamentoRequestDTO;
+import com.ufcg.psoft.commerce.exception.ChamadoNaoPodeSerCancelado;
 import com.ufcg.psoft.commerce.exception.PlanoInvalidoException;
 import com.ufcg.psoft.commerce.model.*;
 import com.ufcg.psoft.commerce.repository.*;
@@ -13,6 +14,7 @@ import com.ufcg.psoft.commerce.model.Plano;
 import com.ufcg.psoft.commerce.model.Urgencia;
 import com.ufcg.psoft.commerce.model.TipoServico;
 import com.ufcg.psoft.commerce.service.empresa.EmpresaServiceImpl;
+import jakarta.servlet.ServletException;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -538,16 +540,18 @@ public class ChamadoControllerTests {
                     .empresa(empresa)
                     .servico(servicoComum)
                     .enderecoAtendimento(clienteBasico.getEndereco())
-                    .status("EM_ATENDIMENTO") // Status que impede o cancelamento
+                    .status("EM_ATENDIMENTO")
                     .dataCriacao(LocalDateTime.now())
                     .build();
             Chamado chamadoSalvo = chamadoRepository.save(chamado);
-            driver.perform(delete("/clientes/{clienteId}/chamados/{chamadoId}",
-                            clienteBasico.getId(), chamadoSalvo.getId())
-                            .header("codigoAcesso", clienteBasico.getCodigo())
-                            .contentType(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isBadRequest()) // Esperamos um erro 400
-                    .andDo(print());
+            Exception resolvedException = assertThrows(ServletException.class, () -> {
+                driver.perform(delete("/clientes/{clienteId}/chamados/{chamadoId}",
+                                clienteBasico.getId(), chamadoSalvo.getId())
+                                .header("codigoAcesso", clienteBasico.getCodigo()))
+                        .andReturn();
+            });
+            assertTrue(resolvedException.getCause() instanceof ChamadoNaoPodeSerCancelado);
+            assertEquals("O Chamado Não Pode Ser Cancelado no Estado Atual!", resolvedException.getCause().getMessage());
             assertTrue(chamadoRepository.findById(chamadoSalvo.getId()).isPresent());
         }
         @Test
@@ -562,12 +566,14 @@ public class ChamadoControllerTests {
                     .dataCriacao(LocalDateTime.now())
                     .build();
             Chamado chamadoSalvo = chamadoRepository.save(chamado);
-            driver.perform(delete("/clientes/{clienteId}/chamados/{chamadoId}",
-                            clienteBasico.getId(), chamadoSalvo.getId())
-                            .header("codigoAcesso", clienteBasico.getCodigo())
-                            .contentType(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isBadRequest()) // Esperamos um erro 400
-                    .andDo(print());
+            Exception resolvedException = assertThrows(ServletException.class, () -> {
+                driver.perform(delete("/clientes/{clienteId}/chamados/{chamadoId}",
+                                clienteBasico.getId(), chamadoSalvo.getId())
+                                .header("codigoAcesso", clienteBasico.getCodigo()))
+                        .andReturn();
+            });
+            assertTrue(resolvedException.getCause() instanceof ChamadoNaoPodeSerCancelado);
+            assertEquals("O Chamado Não Pode Ser Cancelado no Estado Atual!", resolvedException.getCause().getMessage());
             assertTrue(chamadoRepository.findById(chamadoSalvo.getId()).isPresent());
         }
         @Test
@@ -576,6 +582,9 @@ public class ChamadoControllerTests {
             Cliente invasor = clienteRepository.save(Cliente.builder()
                     .nome("Cliente Invasor")
                     .codigo("654321")
+                    .dataCobranca(LocalDate.now())
+                    .planoAtual(Plano.BASICO)
+                    .endereco("Rua dos Bobos, 0")
                     .build());
             Chamado chamadoDoBasico = chamadoRepository.save(Chamado.builder()
                     .cliente(clienteBasico)
@@ -587,7 +596,7 @@ public class ChamadoControllerTests {
                             invasor.getId(), chamadoDoBasico.getId())
                             .header("codigoAcesso", invasor.getCodigo())
                             .contentType(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isBadRequest())
+                    .andExpect(status().isNotFound())
                     .andDo(print());
             assertTrue(chamadoRepository.findById(chamadoDoBasico.getId()).isPresent());
         }
@@ -606,7 +615,7 @@ public class ChamadoControllerTests {
                             clienteBasico.getId(), chamadoSalvo.getId())
                             .header("codigoAcesso", "SENHA_ERRADA") // Senha incorreta
                             .contentType(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isBadRequest()) // Ou .isForbidden()/.isUnauthorized() dependendo do seu Handler
+                    .andExpect(status().isBadRequest())
                     .andDo(print());
             assertTrue(chamadoRepository.findById(chamadoSalvo.getId()).isPresent());
         }
