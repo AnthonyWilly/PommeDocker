@@ -16,11 +16,10 @@ public interface ChamadoRepository extends JpaRepository<Chamado, Long> {
 
 	Optional<Chamado> findByIdAndClienteId(Long id, Long clienteId);
 
-	// US20: "Visualizar seu próprio histórico" -> APENAS ID do CLIENTE
 	@Query("SELECT c FROM Chamado c WHERE c.cliente.id = :clienteId " +
-			"ORDER BY CASE WHEN c.status = com.ufcg.psoft.commerce.model.ChamadoStatus.CONCLUIDO THEN 1 ELSE 0 END ASC, " +
+			"ORDER BY CASE WHEN c.status = 'CONCLUIDO' THEN 1 ELSE 0 END ASC, " +
 			"c.dataCriacao DESC")
 	List<Chamado> findByClienteIdOrderByStatusEData(Long clienteId);
-	List<Chamado> findByClienteIdAndStatusOrderByDataCriacaoDesc(Long clienteId, ChamadoStatus status);
+	List<Chamado> findByClienteIdAndStatusOrderByDataCriacaoDesc(Long clienteId, String status);
 }
 

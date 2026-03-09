@@ -157,7 +157,10 @@ public class ChamadoServiceImpl implements ChamadoService {
         if (!cliente.getCodigo().equals(codigoAcesso)) {
             throw new CodigoDeAcessoInvalidoException();
         }
-        List<Chamado> chamados = chamadoRepository.findByClienteIdAndStatusOrderByDataCriacaoDesc(idCliente, chamadoStatus);
+        List<Chamado> chamados = chamadoRepository.findByClienteIdAndStatusOrderByDataCriacaoDesc(
+                idCliente,
+                chamadoStatus.name()
+        );
         return chamados.stream()
                 .map(c -> modelMapper.map(c, ChamadoResponseDTO.class))
                 .collect(Collectors.toList());
