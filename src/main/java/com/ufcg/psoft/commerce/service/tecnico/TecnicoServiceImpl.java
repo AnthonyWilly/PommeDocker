@@ -114,6 +114,56 @@ public class TecnicoServiceImpl implements TecnicoService {
         if (!tecnico.getAcesso().equals(codigoAcesso)) {
             throw new CodigoDeAcessoInvalidoException();
         }
+        if (novoStatus == StatusDisponibilidade.OCUPADO) {
+            throw new CommerceException(
+                "Nao e permitido alterar manualmente para o status OCUPADO!"
+            );
+        }
+        if (
+            tecnico.getStatusDisponibilidade() == StatusDisponibilidade.OCUPADO
+        ) {
+            throw new CommerceException(
+                "Nao e possivel alterar a disponibilidade enquanto o tecnico esta OCUPADO!"
+            );
+        }
+        if (tecnico.getStatusDisponibilidade() == novoStatus) {
+            return modelMapper.map(tecnico, TecnicoResponseDTO.class);
+        }
+        return registrarMudancaDeStatus(tecnico, novoStatus);
+    }
+
+    @Override
+    public void validarTecnicoDisponivel(Long id) {
+        Tecnico tecnico = tecnicoRepository
+            .findById(id)
+            .orElseThrow(TecnicoNaoExisteException::new);
+        if (!tecnico.getStatusDisponibilidade().isDisponivel()) {
+            throw new CommerceException(
+                "O tecnico nao esta disponivel para atendimento!"
+            );
+        }
+    }
+
+    @Override
+    public void marcarComoOcupado(Long id) {
+        Tecnico tecnico = tecnicoRepository
+            .findById(id)
+            .orElseThrow(TecnicoNaoExisteException::new);
+        registrarMudancaDeStatus(tecnico, StatusDisponibilidade.OCUPADO);
+    }
+
+    @Override
+    public void marcarComoAtivo(Long id) {
+        Tecnico tecnico = tecnicoRepository
+            .findById(id)
+            .orElseThrow(TecnicoNaoExisteException::new);
+        registrarMudancaDeStatus(tecnico, StatusDisponibilidade.ATIVO);
+    }
+
+    private TecnicoResponseDTO registrarMudancaDeStatus(
+        Tecnico tecnico,
+        StatusDisponibilidade novoStatus
+    ) {
         LocalDateTime agora = LocalDateTime.now();
         tecnico.setStatusDisponibilidade(novoStatus);
         tecnico.setDataUltimaMudancaDisponibilidade(agora);
@@ -126,17 +176,5 @@ public class TecnicoServiceImpl implements TecnicoService {
                 .build()
         );
         return modelMapper.map(tecnico, TecnicoResponseDTO.class);
-    }
-
-    @Override
-    public void validarTecnicoDisponivel(Long id) {
-        Tecnico tecnico = tecnicoRepository
-            .findById(id)
-            .orElseThrow(TecnicoNaoExisteException::new);
-        if (tecnico.getStatusDisponibilidade() != StatusDisponibilidade.ATIVO) {
-            throw new CommerceException(
-                "O tecnico nao esta disponivel para atendimento!"
-            );
-        }
     }
 }

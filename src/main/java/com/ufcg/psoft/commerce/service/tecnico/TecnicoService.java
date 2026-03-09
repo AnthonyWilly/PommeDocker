@@ -29,4 +29,8 @@ public interface TecnicoService {
     );
 
     void validarTecnicoDisponivel(Long id);
+
+    void marcarComoOcupado(Long id);
+
+    void marcarComoAtivo(Long id);
 }

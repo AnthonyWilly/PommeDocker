@@ -144,6 +144,7 @@ public class GerenciamentoStatusServiceTests {
             doNothing()
                 .when(tecnicoService)
                 .validarTecnicoDisponivel(tecnico.getId());
+            doNothing().when(tecnicoService).marcarComoOcupado(tecnico.getId());
 
             when(empresaRepository.findById(empresa.getId())).thenReturn(
                 Optional.of(empresa)

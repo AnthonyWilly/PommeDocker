@@ -241,8 +241,15 @@ public class EmpresaServiceImpl implements EmpresaService {
                 "O chamado não pertence à empresa informada."
             );
         }
+        String statusAntes = chamado.getStatus();
         chamado.getEstado().avancar(chamado);
         Chamado chamadoSalvo = chamadoRepository.save(chamado);
+        if (
+            "EM_ATENDIMENTO".equals(statusAntes) &&
+            chamadoSalvo.getTecnico() != null
+        ) {
+            tecnicoService.marcarComoAtivo(chamadoSalvo.getTecnico().getId());
+        }
 
         return ChamadoResponseDTO.builder()
             .id(chamadoSalvo.getId())
@@ -292,6 +299,7 @@ public class EmpresaServiceImpl implements EmpresaService {
         }
         tecnicoService.validarTecnicoDisponivel(tecnicoId);
         chamado.atribuirTecnico(tecnico);
+        tecnicoService.marcarComoOcupado(tecnicoId);
         Chamado chamadoSalvo = chamadoRepository.save(chamado);
         return ChamadoResponseDTO.builder()
             .id(chamadoSalvo.getId())
