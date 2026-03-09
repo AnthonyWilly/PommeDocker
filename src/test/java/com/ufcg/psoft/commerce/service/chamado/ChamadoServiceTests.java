@@ -336,12 +336,8 @@ public class ChamadoServiceTests {
         @Test
         @DisplayName("Deve cancelar chamado com sucesso")
         void deveCancelarComSucesso() {
-            // Moca o findById (o que seu service usa)
             when(chamadoRepository.findById(chamado.getId())).thenReturn(Optional.of(chamado));
-
             chamadoService.cancelar(chamado.getId(), clienteBasico.getId(), "123456");
-
-            // Verifica o deleteById (o que seu service usa)
             verify(chamadoRepository, times(1)).deleteById(chamado.getId());
         }
 
