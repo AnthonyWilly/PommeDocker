@@ -488,7 +488,7 @@ public class ChamadoControllerTests {
                     .build();
             chamadoRepository.save(chamadoStatus);
             String responseJsonString = driver.perform(get("/clientes/{clienteId}/chamados/status", clienteBasico.getId())
-                            .param("status", statusAlvo.name()) // Envia a String que o Spring converterá para Enum
+                            .param("status", statusAlvo.name())
                             .header("codigoAcesso", clienteBasico.getCodigo())
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
@@ -538,7 +538,35 @@ public class ChamadoControllerTests {
         void quandoListamosComCodigoInvalido() throws Exception {
             String codigoErrado = "000000";
             driver.perform(get("/clientes/{clienteId}/chamados", clienteBasico.getId())
-                            .header("codigoAcesso", codigoErrado) 
+                            .header("codigoAcesso", codigoErrado)
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isBadRequest())
+                    .andDo(print());
+        }
+        @Test
+        @DisplayName("Quando buscamos um chamado específico com código de acesso inválido")
+        void quandoBuscamosUmChamadoComCodigoInvalido() throws Exception {
+            Chamado chamado = Chamado.builder()
+                    .cliente(clienteBasico)
+                    .status("AGUARDANDO_PAGAMENTO")
+                    .build();
+            Chamado chamadoSalvo = chamadoRepository.save(chamado);
+            String codigoErrado = "000000";
+            driver.perform(get("/clientes/{clienteId}/chamados/{chamadoId}",
+                            clienteBasico.getId(), chamadoSalvo.getId())
+                            .header("codigoAcesso", codigoErrado)
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isBadRequest())
+                    .andDo(print());
+        }
+
+        @Test
+        @DisplayName("Quando listamos chamados por status com código de acesso inválido")
+        void quandoListamosPorStatusComCodigoInvalido() throws Exception {
+            String codigoErrado = "000000";
+            driver.perform(get("/clientes/{clienteId}/chamados/status", clienteBasico.getId())
+                            .param("status", "AGUARDANDO_PAGAMENTO")
+                            .header("codigoAcesso", codigoErrado)
                             .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isBadRequest())
                     .andDo(print());
