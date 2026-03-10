@@ -13,7 +13,7 @@ import com.ufcg.psoft.commerce.exception.SenhaInvalidaException;
 import com.ufcg.psoft.commerce.exception.TecnicoNaoExisteException;
 import com.ufcg.psoft.commerce.exception.ResourceNotFoundException;
 import com.ufcg.psoft.commerce.model.*;
-import com.ufcg.psoft.commerce.repository.HistoricoDisponibilidadeRepository;
+//import com.ufcg.psoft.commerce.repository.HistoricoDisponibilidadeRepository ;
 import com.ufcg.psoft.commerce.repository.ChamadoRepository;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
 import com.ufcg.psoft.commerce.repository.ServicoRepository;
@@ -211,7 +211,6 @@ public class EmpresaServiceImpl implements EmpresaService {
         }
 
         chamado.getEstado().avancar(chamado);
-
         if (chamado.getStatus().equals(ChamadoStatus.AGUARDANDO_TECNICO.getNome())) {
 
             Optional<Tecnico> tecnicoDisponivel = tecnicoRepository.findTecnicoAtivoMaisTempoParaEmpresa(empresaId);
@@ -221,7 +220,6 @@ public class EmpresaServiceImpl implements EmpresaService {
                 chamado.atribuirTecnico(tecnico);
                 mudarStatusTecnico(tecnico, StatusDisponibilidade.OCUPADO);
             }
-            
         }
 
         Chamado chamadoSalvo = chamadoRepository.save(chamado);
@@ -260,7 +258,6 @@ public class EmpresaServiceImpl implements EmpresaService {
                 .enderecoAtendimento(chamadoSalvo.getEnderecoAtendimento())
                 .build();
     }
-
     private void mudarStatusTecnico(Tecnico tecnico, StatusDisponibilidade novoStatus) {
         tecnico.setStatusDisponibilidade(novoStatus);
         tecnico.setDataUltimaMudancaDisponibilidade(LocalDateTime.now());
