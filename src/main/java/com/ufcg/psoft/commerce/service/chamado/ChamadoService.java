@@ -12,7 +12,6 @@ public interface ChamadoService {
     void removerChamado(Long chamadoId, String codigoAcesso);
     List<ChamadoResponseDTO> listarChamados(Long clienteId, String codigoAcesso);
     ChamadoResponseDTO buscarChamado(Long chamadoId);
-<<<<<<< HEAD
 
     ChamadoResponseDTO buscarChamadoPorCliente(Long chamadoId, Long idCliente,  String codigoAcesso);
 
@@ -20,7 +19,5 @@ public interface ChamadoService {
 
     List<ChamadoResponseDTO> listarChamadosClientePorStatus(Long idCliente, ChamadoStatus chamadoStatus, String codigoAcesso);
     void cancelar(Long id, Long idCliente, String codigoAcesso);
-=======
     ChamadoResponseDTO confirmarConclusao(Long clienteId, String codigoAcesso, Long chamadoId);
->>>>>>> e7a956b (refactor: move confirmacao de cliente service para chamado service)
 }

@@ -118,24 +118,4 @@ public class ClienteServiceImpl implements ClienteService {
         return cliente;
     }
 
-        @Override
-    @Transactional
-    public ChamadoResponseDTO confirmarConclusaoChamado(Long clienteId, String codigoAcesso, Long chamadoId) {
-
-        Cliente cliente = autenticarCliente(clienteId, codigoAcesso);
-
-        Chamado chamado = chamadoRepository.findById(chamadoId)
-                .orElseThrow(() -> new ChamadoNaoEncontradoException(chamadoId));
-
-        if (!chamado.getCliente().getId().equals(cliente.getId())) {
-            throw new ClienteNaoAutorizadoException(
-                    "Você não tem permissão para confirmar este chamado.");
-        }
-
-        if (!(chamado.getEstado() instanceof ChamadoEstadoAguardandoConfirmacao estadoAtual)) {
-            throw new IllegalStateException(
-                    "O chamado não está aguardando confirmação do cliente. " +
-                    "Status atual: " + chamado.getEstado().getNome());
-        }
-
 }
