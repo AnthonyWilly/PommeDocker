@@ -290,7 +290,6 @@ public class GerenciamentoStatusControllerTests {
                 .andDo(print());
         }
     }
-}
 
     @Nested
     @DisplayName("Testes de notificação por falta de técnicos (US19)")

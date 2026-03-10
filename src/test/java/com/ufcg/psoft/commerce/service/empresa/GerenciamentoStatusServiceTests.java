@@ -16,6 +16,7 @@ import com.ufcg.psoft.commerce.model.*;
 import com.ufcg.psoft.commerce.repository.*;
 import com.ufcg.psoft.commerce.service.chamado.ChamadoServiceImpl;
 import com.ufcg.psoft.commerce.service.tecnico.TecnicoService;
+import com.ufcg.psoft.commerce.service.tecnico.TecnicoServiceImpl;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -53,7 +54,7 @@ public class GerenciamentoStatusServiceTests {
     @Spy
     private ModelMapper modelMapper = new ModelMapper();
   
-    @InjectMocks
+    @Mock
     private TecnicoService tecnicoService;
 
     @InjectMocks
