@@ -24,8 +24,5 @@ public interface ChamadoRepository extends JpaRepository<Chamado, Long> {
 
 	List<Chamado> findByClienteIdAndStatusOrderByDataCriacaoDesc(Long clienteId, String status);
 
-	@Query("SELECT c FROM Chamado c WHERE c.empresa.id = :empresaId" +
-			"AND c.status = 'AGUARDANDO_TECNICO' ORDER BY c.dataCriacao ASC LIMIT 1")
-    Optional<Chamado> findChamadoMaisAntigoAguardando(@Param("empresaId") Long empresaId);
-
+	Optional<Chamado> findFirstByEmpresaIdAndStatusOrderByDataCriacaoAsc(Long empresaId, String status);
 }

@@ -1,22 +1,35 @@
 package com.ufcg.psoft.commerce.model;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.persistence.*;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Entity
 @Data
-@Builder
+@Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
 public class Tecnico {
+
     @JsonProperty("id")
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
@@ -45,6 +58,17 @@ public class Tecnico {
     @JsonIgnore
     @Column(nullable = false)
     private String acesso;
+
+    @JsonProperty("statusDisponibilidade")
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private StatusDisponibilidade statusDisponibilidade =
+        StatusDisponibilidade.DESCANSO;
+
+    @JsonProperty("dataUltimaMudancaDisponibilidade")
+    @Column
+    private LocalDateTime dataUltimaMudancaDisponibilidade;
 
     @JsonIgnore
     @ManyToMany(fetch = FetchType.EAGER)

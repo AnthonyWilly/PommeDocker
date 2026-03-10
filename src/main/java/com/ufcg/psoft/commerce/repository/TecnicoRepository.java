@@ -13,8 +13,8 @@ public interface TecnicoRepository extends JpaRepository<Tecnico, Long> {
 
     List<Tecnico> findByNomeContaining(String nome);
 
-    @Query("SELECT t FROM Tecnico t JOIN t.empresasAprovadoras e WHERE" +
-            "e.id = :empresaId AND t.statusDisponibilidade = 'ATIVO'" +
+    @Query("SELECT t FROM Tecnico t JOIN t.empresasAprovadoras e WHERE " +
+            "e.id = :empresaId AND t.statusDisponibilidade = 'ATIVO' " +
             "ORDER BY t.dataUltimaMudancaDisponibilidade ASC LIMIT 1")
     Optional<Tecnico> findTecnicoAtivoMaisTempoParaEmpresa(@Param("empresaId") Long empresaId);
 

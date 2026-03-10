@@ -1,34 +1,40 @@
 package com.ufcg.psoft.commerce.service.empresa;
 
-import com.ufcg.psoft.commerce.dto.EmpresaPostPutRequestDTO;
-import com.ufcg.psoft.commerce.dto.EmpresaResponseDTO;
-import com.ufcg.psoft.commerce.dto.PagamentoRequestDTO;
-import com.ufcg.psoft.commerce.dto.PagamentoResponseDTO;
-import com.ufcg.psoft.commerce.dto.ChamadoResponseDTO;
-import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
-import com.ufcg.psoft.commerce.exception.CommerceException;
-import com.ufcg.psoft.commerce.exception.EmpresaJaCadastradaException;
-import com.ufcg.psoft.commerce.exception.EmpresaNaoExisteException;
-import com.ufcg.psoft.commerce.exception.SenhaInvalidaException;
-import com.ufcg.psoft.commerce.exception.TecnicoNaoExisteException;
-import com.ufcg.psoft.commerce.exception.ResourceNotFoundException;
-import com.ufcg.psoft.commerce.model.*;
-//import com.ufcg.psoft.commerce.repository.HistoricoDisponibilidadeRepository ;
-import com.ufcg.psoft.commerce.repository.ChamadoRepository;
-import com.ufcg.psoft.commerce.repository.EmpresaRepository;
-import com.ufcg.psoft.commerce.repository.ServicoRepository;
-import com.ufcg.psoft.commerce.repository.TecnicoRepository;
-import jakarta.persistence.Transient;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.ufcg.psoft.commerce.dto.ChamadoResponseDTO;
+import com.ufcg.psoft.commerce.dto.EmpresaPostPutRequestDTO;
+import com.ufcg.psoft.commerce.dto.EmpresaResponseDTO;
+import com.ufcg.psoft.commerce.dto.PagamentoRequestDTO;
+import com.ufcg.psoft.commerce.dto.PagamentoResponseDTO;
+import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
+import com.ufcg.psoft.commerce.exception.CommerceException;
+import com.ufcg.psoft.commerce.exception.EmpresaJaCadastradaException;
+import com.ufcg.psoft.commerce.exception.EmpresaNaoExisteException;
+import com.ufcg.psoft.commerce.exception.ResourceNotFoundException;
+import com.ufcg.psoft.commerce.exception.SenhaInvalidaException;
+import com.ufcg.psoft.commerce.exception.TecnicoNaoExisteException;
+import com.ufcg.psoft.commerce.model.Chamado;
+import com.ufcg.psoft.commerce.model.ChamadoStatus;
+import com.ufcg.psoft.commerce.model.Empresa;
+import com.ufcg.psoft.commerce.model.HistoricoDisponibilidade;
+import com.ufcg.psoft.commerce.model.Pagamento;
+import com.ufcg.psoft.commerce.model.StatusDisponibilidade;
+import com.ufcg.psoft.commerce.model.Tecnico;
+import com.ufcg.psoft.commerce.repository.ChamadoRepository;
+import com.ufcg.psoft.commerce.repository.EmpresaRepository;
+import com.ufcg.psoft.commerce.repository.HistoricoDisponibilidadeRepository ;
+import com.ufcg.psoft.commerce.repository.ServicoRepository;
+import com.ufcg.psoft.commerce.repository.TecnicoRepository;
+import com.ufcg.psoft.commerce.service.tecnico.TecnicoService;
 
 @Service
 public class EmpresaServiceImpl implements EmpresaService {
@@ -46,7 +52,10 @@ public class EmpresaServiceImpl implements EmpresaService {
     private TecnicoRepository tecnicoRepository;
 
     @Autowired
-    private HistoricoDisponibilidadeRepository HistoricoDisponibilidadeRepository;
+    private TecnicoService tecnicoService;
+
+    @Autowired
+    private HistoricoDisponibilidadeRepository historicoDisponibilidadeRepository;
 
     private static final String SENHA_ADMIN_PADRAO = "admin123";
 
@@ -210,7 +219,9 @@ public class EmpresaServiceImpl implements EmpresaService {
             throw new RuntimeException("O chamado não pertence à empresa informada.");
         }
 
+        String statusAntes = chamado.getStatus();
         chamado.getEstado().avancar(chamado);
+        
         if (chamado.getStatus().equals(ChamadoStatus.AGUARDANDO_TECNICO.getNome())) {
 
             Optional<Tecnico> tecnicoDisponivel = tecnicoRepository.findTecnicoAtivoMaisTempoParaEmpresa(empresaId);

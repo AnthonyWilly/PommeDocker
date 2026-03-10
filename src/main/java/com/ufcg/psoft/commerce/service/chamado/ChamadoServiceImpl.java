@@ -26,13 +26,17 @@ import com.ufcg.psoft.commerce.model.ChamadoEstadoAguardandoPagamento;
 import com.ufcg.psoft.commerce.model.ChamadoStatus;
 import com.ufcg.psoft.commerce.model.Cliente;
 import com.ufcg.psoft.commerce.model.Empresa;
+import com.ufcg.psoft.commerce.model.HistoricoDisponibilidade;
 import com.ufcg.psoft.commerce.model.Plano;
 import com.ufcg.psoft.commerce.model.Servico;
+import com.ufcg.psoft.commerce.model.StatusDisponibilidade;
 import com.ufcg.psoft.commerce.model.Tecnico;
 import com.ufcg.psoft.commerce.repository.ChamadoRepository;
 import com.ufcg.psoft.commerce.repository.ClienteRepository;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
+import com.ufcg.psoft.commerce.repository.HistoricoDisponibilidadeRepository;
 import com.ufcg.psoft.commerce.repository.ServicoRepository;
+import com.ufcg.psoft.commerce.repository.TecnicoRepository;
 
 @Service
 public class ChamadoServiceImpl implements ChamadoService {
@@ -45,6 +49,8 @@ public class ChamadoServiceImpl implements ChamadoService {
     private EmpresaRepository empresaRepository;
     @Autowired
     private ServicoRepository servicoRepository;
+    @Autowired
+    private TecnicoRepository tecnicoRepository;
     @Autowired
     private HistoricoDisponibilidadeRepository historicoDisponibilidadeRepository;
     @Autowired
@@ -236,7 +242,7 @@ public class ChamadoServiceImpl implements ChamadoService {
         if (tecnico == null)
             return; 
 
-        Optional<Chamado> proximoChamado = chamadoRepository.findChamadoMaisAntigoAguardando(empresaId);
+        Optional<Chamado> proximoChamado = chamadoRepository.findFirstByEmpresaIdAndStatusOrderByDataCriacaoAsc(empresaId, ChamadoStatus.AGUARDANDO_TECNICO.getNome());
 
         if (proximoChamado.isPresent()) {
             Chamado proximo = proximoChamado.get();
@@ -247,7 +253,6 @@ public class ChamadoServiceImpl implements ChamadoService {
         else {
             mudarStatusTecnico(tecnico, StatusDisponibilidade.ATIVO);
         }
-
     }
 
     private void mudarStatusTecnico(Tecnico tecnico, StatusDisponibilidade novoStatus) {
