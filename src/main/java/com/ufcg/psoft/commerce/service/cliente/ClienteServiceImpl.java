@@ -138,9 +138,4 @@ public class ClienteServiceImpl implements ClienteService {
                     "Status atual: " + chamado.getEstado().getNome());
         }
 
-        estadoAtual.confirmarConclusao(chamado);
-        Chamado atualizado = chamadoRepository.save(chamado);
-        return modelMapper.map(atualizado, ChamadoResponseDTO.class);
-    }
-
 }

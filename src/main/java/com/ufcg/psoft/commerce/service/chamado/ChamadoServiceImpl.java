@@ -124,9 +124,11 @@ public class ChamadoServiceImpl implements ChamadoService {
         return modelMapper.map(chamado, ChamadoResponseDTO.class);
     }
 
-    @Override
-    public ChamadoResponseDTO buscarChamadoPorCliente(Long chamadoId, Long idCliente,  String codigoAcesso) {
-        Cliente cliente = clienteRepository.findById(idCliente)
+    
+     @Override
+    @Transactional
+    public ChamadoResponseDTO confirmarConclusao(Long clienteId, String codigoAcesso, Long chamadoId) {
+        Cliente cliente = clienteRepository.findById(clienteId)
                 .orElseThrow(ClienteNaoExisteException::new);
 
         if (!cliente.getCodigo().equals(codigoAcesso)) {
@@ -179,5 +181,21 @@ public class ChamadoServiceImpl implements ChamadoService {
             throw new CodigoDeAcessoInvalidoException();
         }
         chamadoRepository.deleteById(id);
+
+        Chamado chamado = chamadoRepository.findById(chamadoId)
+                .orElseThrow(() -> new CommerceException("Chamado não encontrado"));
+
+        if (!chamado.getCliente().getId().equals(cliente.getId())) {
+            throw new CodigoDeAcessoInvalidoException();
+        }
+
+        if (!(chamado.getEstado() instanceof ChamadoEstadoAguardandoConfirmacao estado)) {
+            throw new CommerceException("Chamado não está aguardando confirmação do cliente. Status atual: "
+                    + chamado.getEstado().getNome());
+        }
+
+        estado.confirmarConclusao(chamado);
+
+        return modelMapper.map(chamadoRepository.save(chamado), ChamadoResponseDTO.class);
     }
 }
