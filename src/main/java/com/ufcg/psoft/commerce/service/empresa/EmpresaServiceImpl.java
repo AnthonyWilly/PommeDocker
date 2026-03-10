@@ -203,6 +203,11 @@ public class EmpresaServiceImpl implements EmpresaService {
             throw new RuntimeException("O chamado não pertence à empresa informada.");
         }
         chamado.getEstado().avancar(chamado);
+        if ("AGUARDANDO_TECNICO".equals(chamado.getStatus()) &&
+                tecnicoRepository.countByStatusTecnico(StatusTecnico.ATIVO) == 0 &&
+                chamado.getCliente() != null) {
+            chamado.getCliente().notificarFaltaDeTecnicos();
+        }
         Chamado chamadoSalvo = chamadoRepository.save(chamado);
 
         return ChamadoResponseDTO.builder()
