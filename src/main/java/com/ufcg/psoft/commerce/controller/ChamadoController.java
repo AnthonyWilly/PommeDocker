@@ -84,4 +84,11 @@ public class ChamadoController {
                 .noContent()
                 .build();
     }
+    @PatchMapping("/clientes/{clienteId}/chamados/{chamadoId}/confirmar-conclusao")
+    public ResponseEntity<ChamadoResponseDTO> confirmarConclusao(
+            @PathVariable Long clienteId,
+            @PathVariable Long chamadoId,
+            @RequestHeader("codigoAcesso") String codigoAcesso) {
+        return ResponseEntity.ok(chamadoService.confirmarConclusao(clienteId, codigoAcesso, chamadoId));
+    }
 }
