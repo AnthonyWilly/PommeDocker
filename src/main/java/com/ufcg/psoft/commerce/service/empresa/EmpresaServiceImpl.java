@@ -18,12 +18,15 @@ import com.ufcg.psoft.commerce.repository.EmpresaRepository;
 import com.ufcg.psoft.commerce.repository.ServicoRepository;
 import com.ufcg.psoft.commerce.repository.TecnicoRepository;
 import jakarta.persistence.Transient;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -40,6 +43,9 @@ public class EmpresaServiceImpl implements EmpresaService {
 
     @Autowired
     private TecnicoRepository tecnicoRepository;
+
+    @Autowired
+    private HistoricoDisponibilidadeRepository HistoricoDisponibilidadeRepository;
 
     private static final String SENHA_ADMIN_PADRAO = "admin123";
 
@@ -202,7 +208,21 @@ public class EmpresaServiceImpl implements EmpresaService {
         if (!chamado.getEmpresa().getId().equals(empresa.getId())) {
             throw new RuntimeException("O chamado não pertence à empresa informada.");
         }
+
         chamado.getEstado().avancar(chamado);
+
+        if (chamado.getStatus().equals(ChamadoStatus.AGUARDANDO_TECNICO.getNome())) {
+
+            Optional<Tecnico> tecnicoDisponivel = tecnicoRepository.findTecnicoAtivoMaisTempoParaEmpresa(empresaId);
+
+            if (tecnicoDisponivel.isPresent()) {
+                Tecnico tecnico = tecnicoDisponivel.get();
+                chamado.atribuirTecnico(tecnico);
+                mudarStatusTecnico(tecnico, StatusDisponibilidade.OCUPADO);
+            }
+            
+        }
+
         Chamado chamadoSalvo = chamadoRepository.save(chamado);
 
         return ChamadoResponseDTO.builder()
@@ -238,6 +258,19 @@ public class EmpresaServiceImpl implements EmpresaService {
                 .servicoId(chamadoSalvo.getServico() != null ? chamadoSalvo.getServico().getId() : null)
                 .enderecoAtendimento(chamadoSalvo.getEnderecoAtendimento())
                 .build();
+    }
+
+    private void mudarStatusTecnico(Tecnico tecnico, StatusDisponibilidade novoStatus) {
+        tecnico.setStatusDisponibilidade(novoStatus);
+        tecnico.setDataUltimaMudancaDisponibilidade(LocalDateTime.now());
+        tecnicoRepository.save(tecnico);
+
+        HistoricoDisponibilidade historico = HistoricoDisponibilidade.builder()
+                .tecnicoId(tecnico.getId())
+                .novoStatus(novoStatus)
+                .dataHora(LocalDateTime.now())
+                .build();
+        historicoDisponibilidadeRepository.save(historico);
     }
 
 }
