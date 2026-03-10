@@ -62,6 +62,9 @@ public class GerenciamentoStatusServiceTests {
     @Mock
     private ServicoRepository servicoRepository;
 
+    @Mock
+    private HistoricoDisponibilidadeRepository historicoRepository;
+
     @InjectMocks
     private EmpresaServiceImpl empresaService;
 
@@ -213,7 +216,7 @@ public class GerenciamentoStatusServiceTests {
                 .placaVeiculo("ABC-9999")
                 .corVeiculo("Preto")
                 .empresasAprovadoras(List.of(empresa2))
-                .disponivel(true)
+                .statusDisponibilidade(StatusDisponibilidade.ATIVO)
                 .dataUltimaMudancaDisponibilidade(LocalDateTime.now().minusHours(5))
                 .especialidade("Geral")
                 .build());
@@ -281,7 +284,7 @@ public class GerenciamentoStatusServiceTests {
             // Assert
             assertAll(
                 () -> assertEquals("EM_ATENDIMENTO", resultado.getStatus()),
-                () -> assertFalse(tecnicoDisponivel.isDisponivel()),
+                () -> assertEquals(StatusDisponibilidade.OCUPADO, tecnicoDisponivel.getStatusDisponibilidade()),
                 () -> verify(tecnicoRepository, times(1)).save(tecnicoDisponivel),
                 () -> verify(chamadoRepository, times(1)).save(proximoChamado)
             );
@@ -316,7 +319,7 @@ public class GerenciamentoStatusServiceTests {
         void tecnicoDeveSerAlocadoParaOutraChamadaAoFicarDisponivel() {
             // Arrange
             chamadoPrincipal.setStatus("EM_ATENDIMENTO");
-            tecnicoDisponivel.setDisponivel(false); 
+            tecnicoDisponivel.setSattusDisponibilidade(StatusDisponibilidade.OCUPADO); 
             chamadoPrincipal.setTecnico(tecnicoDisponivel);
 
             when(empresaRepository.findById(empresa2.getId())).thenReturn(Optional.of(empresa2));
@@ -342,7 +345,7 @@ public class GerenciamentoStatusServiceTests {
         void tecnicoDeveFicarDisponivelSeNaoHouverChamado() {
             // Arrange
             chamadoPrincipal.setStatus("EM_ATENDIMENTO");
-            tecnicoDisponivel.setDisponivel(false); 
+            tecnicoDisponivel.setSattusDisponibilidade(StatusDisponibilidade.OCUPADO); 
             chamadoPrincipal.setTecnico(tecnicoDisponivel);
 
             when(empresaRepository.findById(empresa2.getId())).thenReturn(Optional.of(empresa2));
@@ -357,7 +360,7 @@ public class GerenciamentoStatusServiceTests {
             // Assert
             assertAll(
                     () -> assertEquals("CONCLUIDO", resultado.getStatus()),
-                    () -> assertTrue(tecnicoDisponivel.isDisponivel()),
+                    () -> assertEquals(StatusDisponibilidade.ATIVO, tecnicoDisponivel.getStatusDisponibilidade()),
                     () -> verify(tecnicoRepository, times(1)).save(tecnicoDisponivel)
             );
         }

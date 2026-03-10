@@ -228,7 +228,7 @@ public class GerenciamentoStatusControllerTests {
                 .placaVeiculo("ABC-9999")
                 .corVeiculo("Preto")
                 .empresasAprovadoras(List.of(empresaPadrao))
-                .disponivel(true)
+                .statusDisponibilidade(StatusDisponibilidade.ATIVO)
                 .dataUltimaMudancaDisponibilidade(LocalDateTime.now().minusHours(5))
                 .especialidade("Geral")
                 .build());
@@ -240,7 +240,7 @@ public class GerenciamentoStatusControllerTests {
                 .placaVeiculo("ABC-1111")
                 .corVeiculo("Preto")
                 .empresasAprovadoras(List.of(empresaPadrao))
-                .disponivel(true)
+                .disponivel(StatusDisponibilidade.ATIVO)
                 .dataUltimaMudancaDisponibilidade(LocalDateTime.now().minusHours(1))
                 .especialidade("Geral")
                 .build());
@@ -259,6 +259,7 @@ public class GerenciamentoStatusControllerTests {
                         .andDo(print());
 
             entityManager.flush();
+            entityManager.clear();
 
             // Assert
             Chamado chamadaAtualizada = chamadoRepository.findById(chamado.getId()).get();
@@ -267,7 +268,7 @@ public class GerenciamentoStatusControllerTests {
             assertAll(
                     () -> assertEquals(ChamadoStatus.EM_ATENDIMENTO.getNome(), chamadaAtualizada.getStatus()),
                     () -> assertEquals(tecnicoAntigoDisponivel.getId(), chamadaAtualizada.getTecnico().getId()),
-                    () -> assertFalse(tecnicoAtualizado.isDisponivel())
+                    () -> assertEquals(StatusDisponibilidade.OCUPADO, tecnicoAtualizado.getStatusDisponibilidade())
             );
 
         }                    
@@ -277,8 +278,8 @@ public class GerenciamentoStatusControllerTests {
         void deixaChamadaAguardandoTecnico() throws Exception {
 
             // Arrange
-            tecnicoAntigoDisponivel.setDisponivel(false);
-            tecnicoNovoDisponivel.setDisponivel(false);
+            tecnicoAntigoDisponivel.setStatusDisponibilidade(StatusDisponibilidade.OCUPADO)
+            tecnicoNovoDisponivel.setStatusDisponibilidade(StatusDisponibilidade.OCUPADO)
             tecnicoRepository.saveAll(List.of(tecnicoAntigoDisponivel, tecnicoNovoDisponivel));
 
             // Act
@@ -302,8 +303,8 @@ public class GerenciamentoStatusControllerTests {
         void chamadoDeveAvancarQuandoTecnicoFicaDisponivel() throws Exception {
 
             // Arrange
-            tecnicoAntigoDisponivel.setDisponivel(false);
-            tecnicoNovoDisponivel.setDisponivel(false);
+            tecnicoAntigoDisponivel.setStatusDisponibilidade(StatusDisponibilidade.OCUPADO)
+            tecnicoNovoDisponivel.setStatusDisponibilidade(StatusDisponibilidade.OCUPADO)
             tecnicoRepository.saveAll(List.of(tecnicoAntigoDisponivel, tecnicoNovoDisponivel));
 
             chamado.setStatus(ChamadoStatus.EM_ATENDIMENTO.getNome());
@@ -337,7 +338,7 @@ public class GerenciamentoStatusControllerTests {
             assertAll(
                 () -> assertEquals(ChamadoStatus.CONCLUIDO.getNome(), chamadoAtualizado.getStatus()),
                 () -> assertEquals(tecnicoNovoDisponivel.getId(), chamadoAguardandoTecnicoAtualizado.getTecnico().getId()),
-                () -> assertFalse(tecnicoAtualizado.isDisponivel())
+                () -> assertEquals(StatusDisponibilidade.OCUPADO, tecnicoAtualizado.getStatusDisponibilidade())
             );
 
         }
