@@ -577,8 +577,6 @@ public class ChamadoControllerTests {
         }
     }
 
-}
-        }
      
     
     @Nested

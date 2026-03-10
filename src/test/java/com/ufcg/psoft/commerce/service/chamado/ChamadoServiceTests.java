@@ -340,14 +340,21 @@ public class ChamadoServiceTests {
     class ListagemDeChamados {
 
         @Test
-        @DisplayName("Listar histórico ordenado (Não concluídos primeiro)")
-        void listarHistoricoOrdenado() {
+        @DisplayName("Listar histórico ordenado - Garantir que a ordem (Não concluídos primeiro) é mantida")
+        void listarHistoricoOrdenadoComVariosStatus() {
+            Chamado chamado1 = Chamado.builder().id(1L).status("AGUARDANDO_TECNICO").build();
+            Chamado chamado2 = Chamado.builder().id(2L).status("EM_ANALISE").build();
+            Chamado chamado3 = Chamado.builder().id(3L).status("CONCLUIDO").build();
+            List<Chamado> listaDoBanco = Arrays.asList(chamado1, chamado2, chamado3);
             when(clienteRepository.findById(clienteBasico.getId())).thenReturn(Optional.of(clienteBasico));
             when(chamadoRepository.findByClienteIdOrderByStatusEData(clienteBasico.getId()))
-                    .thenReturn(Arrays.asList(chamado));
+                    .thenReturn(listaDoBanco);
             List<ChamadoResponseDTO> resultado = chamadoService.listarChamadosCliente(clienteBasico.getId(), "123456");
             assertAll(
-                    () -> assertEquals(1, resultado.size()),
+                    () -> assertEquals(3, resultado.size(), "Deveria retornar 3 chamados"),
+                    () -> assertEquals("AGUARDANDO_TECNICO", resultado.get(0).getStatus()),
+                    () -> assertEquals("EM_ANALISE", resultado.get(1).getStatus()),
+                    () -> assertEquals("CONCLUIDO", resultado.get(2).getStatus()),
                     () -> verify(chamadoRepository, times(1)).findByClienteIdOrderByStatusEData(clienteBasico.getId())
             );
         }
@@ -419,13 +426,12 @@ public class ChamadoServiceTests {
             );
         }
     }
-
+    @Nested
     @DisplayName("Testes de Cancelamento de Chamado no Service")
     class CancelamentoChamadoService {
 
         @Test
-        @DisplayName("Deve 
-                     chamado com sucesso")
+        @DisplayName("Deve cancelar chamado com sucesso")
         void deveCancelarComSucesso() {
             when(chamadoRepository.findById(chamado.getId())).thenReturn(Optional.of(chamado));
             chamadoService.cancelar(chamado.getId(), clienteBasico.getId(), "123456");
