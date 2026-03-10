@@ -81,5 +81,14 @@ public class ClienteController {
                         return ResponseEntity.ok(clienteService.setPlanoBasico(id, codigo));
                 return ResponseEntity.badRequest().body("Plano invalido");
         }
+        
+    @PatchMapping("/{clienteId}/chamados/{chamadoId}/confirmar-conclusao")
+        public ResponseEntity<ChamadoResponseDTO> confirmarConclusaoChamado(
+            @PathVariable Long clienteId,
+            @PathVariable Long chamadoId,
+            @RequestParam String codigoAcesso) {
+            return ResponseEntity
+            .ok(clienteService.confirmarConclusaoChamado(clienteId, codigoAcesso, chamadoId));
+    }
 
 }

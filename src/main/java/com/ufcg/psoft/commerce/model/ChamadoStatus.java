@@ -11,6 +11,7 @@ public enum ChamadoStatus {
     EM_ANALISE("EM_ANALISE", ChamadoEstadoEmAnalise::new),
     AGUARDANDO_TECNICO("AGUARDANDO_TECNICO", ChamadoEstadoAguardandoTecnico::new),
     EM_ATENDIMENTO("EM_ATENDIMENTO", ChamadoEstadoEmAtendimento::new),
+    AGUARDANDO_CONFIRMACAO("AGUARDANDO_CONFIRMACAO", ChamadoEstadoAguardandoConfirmacao::new),
     CONCLUIDO("CONCLUIDO", ChamadoEstadoConcluido::new),
     CANCELADO("CANCELADO", ChamadoEstadoCancelado::new);
 
