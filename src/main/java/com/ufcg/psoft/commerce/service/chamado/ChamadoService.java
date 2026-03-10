@@ -19,4 +19,5 @@ public interface ChamadoService {
 
     List<ChamadoResponseDTO> listarChamadosClientePorStatus(Long idCliente, ChamadoStatus chamadoStatus, String codigoAcesso);
     void cancelar(Long id, Long idCliente, String codigoAcesso);
+    ChamadoResponseDTO confirmarConclusao(Long clienteId, String codigoAcesso, Long chamadoId);
 }
