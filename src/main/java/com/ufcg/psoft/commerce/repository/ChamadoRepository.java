@@ -29,4 +29,3 @@ public interface ChamadoRepository extends JpaRepository<Chamado, Long> {
     Optional<Chamado> findChamadoMaisAntigoAguardando(@Param("empresaId") Long empresaId);
 
 }
-

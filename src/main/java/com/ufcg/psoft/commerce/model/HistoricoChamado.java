@@ -34,8 +34,6 @@ public class HistoricoChamado {
     @JoinColumn(name = "tecnico_id")
     private Tecnico tecnico;
 
-
     private String status;
-
 
 }

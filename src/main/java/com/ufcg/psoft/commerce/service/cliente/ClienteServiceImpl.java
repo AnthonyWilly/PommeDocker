@@ -94,12 +94,12 @@ public class ClienteServiceImpl implements ClienteService {
     }
 
     @Override
-    public ClienteResponseDTO setPlanoPremium(long id, String codigoAcesso){
+    public ClienteResponseDTO setPlanoPremium(Long id, String codigoAcesso){
         return alterarPlano(id, codigoAcesso, "Premium");
     }
 
     @Override
-    public ClienteResponseDTO setPlanoBasico(long id, String codigoAcesso){
+    public ClienteResponseDTO setPlanoBasico(Long id, String codigoAcesso){
         return alterarPlano(id, codigoAcesso, "Basico");
     }
 

@@ -452,132 +452,137 @@ public class ChamadoControllerTests {
 
     @Nested
     @DisplayName("Conjunto de casos de teste de verificação de Listagem de Chamados")
+
         class ListagemChamados {
-        @Test
-        @DisplayName("Quando buscamos um chamado de um cliente")
-        void quandoBuscamosChamadoDeUmCliente() throws Exception {
-                     Chamado chamado = Chamado.builder()
-                    .cliente(clienteBasico)
-                    .empresa(empresa)
-                    .servico(servicoComum)
-                     .status("AGUARDANDO_PAGAMENTO")
-                    .build();
-            chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
-            Chamado chamadoSalvo = chamadoRepository.save(chamado);
-            String responseJsonString = driver.perform(get("/clientes/{clienteId}/chamados/{chamadoId}",
-                            clienteBasico.getId(),
-                            chamadoSalvo.getId())
-                            .header("codigoAcesso", clienteBasico.getCodigo())
-                            .contentType(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isOk())
-                    .andDo(print())
-                    .andReturn().getResponse().getContentAsString();
 
-            ChamadoResponseDTO resultado = objectMapper.readValue(responseJsonString, ChamadoResponseDTO.class);
-            assertAll(
-                    () -> assertNotNull(resultado),
-                    () -> assertEquals(chamadoSalvo.getId(), resultado.getId()),
-                    () -> assertEquals("AGUARDANDO_PAGAMENTO", resultado.getStatus())
-            );
-        }
-                  @Test
-        @DisplayName("Quando listamos chamados filtrando por status")
-        void quandoListamosPorStatus() throws Exception {
-            ChamadoStatus statusAlvo = ChamadoStatus.AGUARDANDO_PAGAMENTO;
-            Chamado chamadoStatus = Chamado.builder()
-                    .cliente(clienteBasico)
-                    .empresa(empresa)
-                    .servico(servicoComum)
-                    .status(statusAlvo.name())
-                    .build();
-            chamadoRepository.save(chamadoStatus);
-            String responseJsonString = driver.perform(get("/clientes/{clienteId}/chamados/status", clienteBasico.getId())
-                            .param("status", statusAlvo.name())
-                            .header("codigoAcesso", clienteBasico.getCodigo())
-                            .contentType(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isOk())
-                    .andDo(print())
-                    .andReturn().getResponse().getContentAsString();
-            List<ChamadoResponseDTO> resultado = objectMapper.readValue(responseJsonString,
-                    new TypeReference<List<ChamadoResponseDTO>>() {});
-            assertAll(
-                    () -> assertFalse(resultado.isEmpty(), "A lista não deveria estar vazia"),
-                    () -> assertEquals(statusAlvo.name(), resultado.get(0).getStatus()),
-                    () -> assertTrue(resultado.stream().allMatch(c -> c.getStatus().equals(statusAlvo.name())))
-            );
-        }
-        @Test
-        @DisplayName("Quando listamos todos os chamados de um cliente com sucesso")
-        void quandoListamosTodosOsChamados() throws Exception {
-            Chamado chamado1 = Chamado.builder()
-                    .cliente(clienteBasico)
-                    .empresa(empresa)
-                    .servico(servicoComum)
-                    .status("AGUARDANDO_PAGAMENTO")
-                    .build();
-            Chamado chamado2 = Chamado.builder()
-                    .cliente(clienteBasico)
-                    .empresa(empresa)
-                    .servico(servicoComum)
-                    .status("CONCLUIDO")
-                    .build();
-            chamadoRepository.saveAll(Arrays.asList(chamado1, chamado2));
-            String responseJsonString = driver.perform(get("/clientes/{clienteId}/chamados", clienteBasico.getId())
-                            .header("codigoAcesso", clienteBasico.getCodigo())
-                            .contentType(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isOk())
-                    .andDo(print())
-                    .andReturn().getResponse().getContentAsString();
-            List<ChamadoResponseDTO> resultado = objectMapper.readValue(responseJsonString,
-                    new TypeReference<List<ChamadoResponseDTO>>() {});
-            assertAll(
-                    () -> assertNotNull(resultado),
-                    () -> assertEquals(2, resultado.size(), "Deveria retornar os 2 chamados do cliente"),
-                    () -> assertEquals("AGUARDANDO_PAGAMENTO", resultado.get(0).getStatus()),
-                    () -> assertEquals("CONCLUIDO", resultado.get(1).getStatus())
-            );
-        }
-        @Test
-        @DisplayName("Quando listamos chamados com código de acesso inválido")
-        void quandoListamosComCodigoInvalido() throws Exception {
-            String codigoErrado = "000000";
-            driver.perform(get("/clientes/{clienteId}/chamados", clienteBasico.getId())
-                            .header("codigoAcesso", codigoErrado)
-                            .contentType(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isBadRequest())
-                    .andDo(print());
-        }
-        @Test
-        @DisplayName("Quando buscamos um chamado específico com código de acesso inválido")
-        void quandoBuscamosUmChamadoComCodigoInvalido() throws Exception {
-            Chamado chamado = Chamado.builder()
-                    .cliente(clienteBasico)
-                    .status("AGUARDANDO_PAGAMENTO")
-                    .build();
-            Chamado chamadoSalvo = chamadoRepository.save(chamado);
-            String codigoErrado = "000000";
-            driver.perform(get("/clientes/{clienteId}/chamados/{chamadoId}",
-                            clienteBasico.getId(), chamadoSalvo.getId())
-                            .header("codigoAcesso", codigoErrado)
-                            .contentType(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isBadRequest())
-                    .andDo(print());
-        }
+            @Test
+            @DisplayName("Quando buscamos um chamado de um cliente")
+            void quandoBuscamosChamadoDeUmCliente() throws Exception {
+                Chamado chamado = Chamado.builder()
+                .cliente(clienteBasico)
+                .empresa(empresa)
+                .servico(servicoComum)
+                .status("AGUARDANDO_PAGAMENTO")
+                .build();
+        
+                chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
+                Chamado chamadoSalvo = chamadoRepository.save(chamado);
+                String responseJsonString = driver.perform(get("/clientes/{clienteId}/chamados/{chamadoId}",
+                                clienteBasico.getId(),
+                                chamadoSalvo.getId())
+                                .header("codigoAcesso", clienteBasico.getCodigo())
+                                .contentType(MediaType.APPLICATION_JSON))
+                        .andExpect(status().isOk())
+                        .andDo(print())
+                        .andReturn().getResponse().getContentAsString();
 
-        @Test
-        @DisplayName("Quando listamos chamados por status com código de acesso inválido")
-        void quandoListamosPorStatusComCodigoInvalido() throws Exception {
-            String codigoErrado = "000000";
-            driver.perform(get("/clientes/{clienteId}/chamados/status", clienteBasico.getId())
-                            .param("status", "AGUARDANDO_PAGAMENTO")
-                            .header("codigoAcesso", codigoErrado)
-                            .contentType(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isBadRequest())
-                    .andDo(print());
-        }
+                ChamadoResponseDTO resultado = objectMapper.readValue(responseJsonString, ChamadoResponseDTO.class);
+                assertAll(
+                        () -> assertNotNull(resultado),
+                        () -> assertEquals(chamadoSalvo.getId(), resultado.getId()),
+                        () -> assertEquals("AGUARDANDO_PAGAMENTO", resultado.getStatus())
+                );
+            }
+
+            @Test
+            @DisplayName("Quando listamos chamados filtrando por status")
+            void quandoListamosPorStatus() throws Exception {
+                ChamadoStatus statusAlvo = ChamadoStatus.AGUARDANDO_PAGAMENTO;
+                Chamado chamadoStatus = Chamado.builder()
+                        .cliente(clienteBasico)
+                        .empresa(empresa)
+                        .servico(servicoComum)
+                        .status(statusAlvo.name())
+                        .build();
+                chamadoRepository.save(chamadoStatus);
+                String responseJsonString = driver.perform(get("/clientes/{clienteId}/chamados/status", clienteBasico.getId())
+                                .param("status", statusAlvo.name())
+                                .header("codigoAcesso", clienteBasico.getCodigo())
+                                .contentType(MediaType.APPLICATION_JSON))
+                        .andExpect(status().isOk())
+                        .andDo(print())
+                        .andReturn().getResponse().getContentAsString();
+                List<ChamadoResponseDTO> resultado = objectMapper.readValue(responseJsonString,
+                        new TypeReference<List<ChamadoResponseDTO>>() {});
+                assertAll(
+                        () -> assertFalse(resultado.isEmpty(), "A lista não deveria estar vazia"),
+                        () -> assertEquals(statusAlvo.name(), resultado.get(0).getStatus()),
+                        () -> assertTrue(resultado.stream().allMatch(c -> c.getStatus().equals(statusAlvo.name())))
+                );
+            }
+
+            @Test
+            @DisplayName("Quando listamos todos os chamados de um cliente com sucesso")
+            void quandoListamosTodosOsChamados() throws Exception {
+                Chamado chamado1 = Chamado.builder()
+                        .cliente(clienteBasico)
+                        .empresa(empresa)
+                        .servico(servicoComum)
+                        .status("AGUARDANDO_PAGAMENTO")
+                        .build();
+                Chamado chamado2 = Chamado.builder()
+                        .cliente(clienteBasico)
+                        .empresa(empresa)
+                        .servico(servicoComum)
+                        .status("CONCLUIDO")
+                        .build();
+                chamadoRepository.saveAll(Arrays.asList(chamado1, chamado2));
+                String responseJsonString = driver.perform(get("/clientes/{clienteId}/chamados", clienteBasico.getId())
+                                .header("codigoAcesso", clienteBasico.getCodigo())
+                                .contentType(MediaType.APPLICATION_JSON))
+                        .andExpect(status().isOk())
+                        .andDo(print())
+                        .andReturn().getResponse().getContentAsString();
+                List<ChamadoResponseDTO> resultado = objectMapper.readValue(responseJsonString,
+                        new TypeReference<List<ChamadoResponseDTO>>() {});
+                assertAll(
+                        () -> assertNotNull(resultado),
+                        () -> assertEquals(2, resultado.size(), "Deveria retornar os 2 chamados do cliente"),
+                        () -> assertEquals("AGUARDANDO_PAGAMENTO", resultado.get(0).getStatus()),
+                        () -> assertEquals("CONCLUIDO", resultado.get(1).getStatus())
+                );
+            }
+
+            @Test
+            @DisplayName("Quando listamos chamados com código de acesso inválido")
+            void quandoListamosComCodigoInvalido() throws Exception {
+                String codigoErrado = "000000";
+                driver.perform(get("/clientes/{clienteId}/chamados", clienteBasico.getId())
+                                .header("codigoAcesso", codigoErrado)
+                                .contentType(MediaType.APPLICATION_JSON))
+                        .andExpect(status().isBadRequest())
+                        .andDo(print());
+            }
+
+            @Test
+            @DisplayName("Quando buscamos um chamado específico com código de acesso inválido")
+            void quandoBuscamosUmChamadoComCodigoInvalido() throws Exception {
+                Chamado chamado = Chamado.builder()
+                        .cliente(clienteBasico)
+                        .status("AGUARDANDO_PAGAMENTO")
+                        .build();
+                Chamado chamadoSalvo = chamadoRepository.save(chamado);
+                String codigoErrado = "000000";
+                driver.perform(get("/clientes/{clienteId}/chamados/{chamadoId}",
+                                clienteBasico.getId(), chamadoSalvo.getId())
+                                .header("codigoAcesso", codigoErrado)
+                                .contentType(MediaType.APPLICATION_JSON))
+                        .andExpect(status().isBadRequest())
+                        .andDo(print());
+            }
+
+            @Test
+            @DisplayName("Quando listamos chamados por status com código de acesso inválido")
+            void quandoListamosPorStatusComCodigoInvalido() throws Exception {
+                String codigoErrado = "000000";
+                driver.perform(get("/clientes/{clienteId}/chamados/status", clienteBasico.getId())
+                                .param("status", "AGUARDANDO_PAGAMENTO")
+                                .header("codigoAcesso", codigoErrado)
+                                .contentType(MediaType.APPLICATION_JSON))
+                        .andExpect(status().isBadRequest())
+                        .andDo(print());
+            }
     }
-
-     
     
     @Nested
     @DisplayName("Conjunto de casos de teste de verificação de Cancelamento de chamados")
@@ -624,6 +629,7 @@ public class ChamadoControllerTests {
                     .andDo(print());
             assertFalse(chamadoRepository.findById(chamadoSalvo.getId()).isPresent());
         }
+
         @Test
         @DisplayName("Deve cancelar chamado com sucesso quando chamado foi recebido")
         void cancelarChamadoComSucessoChamadoRecebido() throws Exception {
@@ -644,6 +650,7 @@ public class ChamadoControllerTests {
                     .andDo(print());
             assertFalse(chamadoRepository.findById(chamadoSalvo.getId()).isPresent());
         }
+
         @Test
         @DisplayName("Deve cancelar chamado com sucesso em analise")
         void cancelarChamadoComSucessoEmAnalise() throws Exception {
@@ -664,6 +671,7 @@ public class ChamadoControllerTests {
                     .andDo(print());
             assertFalse(chamadoRepository.findById(chamadoSalvo.getId()).isPresent());
         }
+
         @Test
         @DisplayName("Não deve cancelar chamado quando o status for EM_ATENDIMENTO")
         void naoDeveCancelarChamadoEmAtendimento() throws Exception {
@@ -686,6 +694,7 @@ public class ChamadoControllerTests {
             assertEquals("O Chamado Não Pode Ser Cancelado no Estado Atual!", resolvedException.getCause().getMessage());
             assertTrue(chamadoRepository.findById(chamadoSalvo.getId()).isPresent());
         }
+
         @Test
         @DisplayName("Não deve cancelar chamado quando o status for concluido")
         void naoDeveCancelarChamadoConcluido() throws Exception {
@@ -708,6 +717,7 @@ public class ChamadoControllerTests {
             assertEquals("O Chamado Não Pode Ser Cancelado no Estado Atual!", resolvedException.getCause().getMessage());
             assertTrue(chamadoRepository.findById(chamadoSalvo.getId()).isPresent());
         }
+
         @Test
         @DisplayName("Não deve cancelar chamado se o ID do cliente não for o dono do chamado")
         void naoDeveCancelarChamadoDeOutroCliente() throws Exception {
@@ -733,6 +743,7 @@ public class ChamadoControllerTests {
             assertTrue(chamadoRepository.findById(chamadoDoBasico.getId()).isPresent());
         }
         @Test
+        
         @DisplayName("Não deve cancelar chamado quando o código de acesso for inválido")
         void naoDeveCancelarChamadoComSenhaInvalida() throws Exception {
             Chamado chamado = Chamado.builder()

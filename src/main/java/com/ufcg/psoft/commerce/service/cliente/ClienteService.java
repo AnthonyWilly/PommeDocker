@@ -16,4 +16,5 @@ public interface ClienteService {
     void remover(Long id, String codigo);
     ClienteResponseDTO setPlanoPremium(Long id, String codigo);
     ClienteResponseDTO setPlanoBasico(Long id, String codigo);
+
 }

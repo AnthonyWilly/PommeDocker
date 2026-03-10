@@ -258,6 +258,7 @@ public class EmpresaServiceImpl implements EmpresaService {
                 .enderecoAtendimento(chamadoSalvo.getEnderecoAtendimento())
                 .build();
     }
+
     private void mudarStatusTecnico(Tecnico tecnico, StatusDisponibilidade novoStatus) {
         tecnico.setStatusDisponibilidade(novoStatus);
         tecnico.setDataUltimaMudancaDisponibilidade(LocalDateTime.now());

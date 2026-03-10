@@ -2,12 +2,13 @@ package com.ufcg.psoft.commerce.service.chamado;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.springframework.transaction.annotation.Transactional;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.ufcg.psoft.commerce.dto.ChamadoPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ChamadoResponseDTO;
@@ -20,6 +21,7 @@ import com.ufcg.psoft.commerce.exception.PlanoInvalidoException;
 import com.ufcg.psoft.commerce.exception.ServicoNaoExisteException;
 import com.ufcg.psoft.commerce.model.Chamado;
 import com.ufcg.psoft.commerce.model.ChamadoEstado;
+import com.ufcg.psoft.commerce.model.ChamadoEstadoAguardandoConfirmacao;
 import com.ufcg.psoft.commerce.model.ChamadoEstadoAguardandoPagamento;
 import com.ufcg.psoft.commerce.model.ChamadoStatus;
 import com.ufcg.psoft.commerce.model.Cliente;
@@ -145,20 +147,21 @@ public class ChamadoServiceImpl implements ChamadoService {
         return modelMapper.map(chamado, ChamadoResponseDTO.class);
     }
 
-    
-     @Override
-    @Transactional
-    public ChamadoResponseDTO confirmarConclusao(Long clienteId, String codigoAcesso, Long chamadoId) {
-        Cliente cliente = clienteRepository.findById(clienteId)
+    @Override
+    public ChamadoResponseDTO buscarChamadoPorCliente(Long chamadoId, Long idCliente,  String codigoAcesso) {
+        Cliente cliente = clienteRepository.findById(idCliente)
                 .orElseThrow(ClienteNaoExisteException::new);
 
         if (!cliente.getCodigo().equals(codigoAcesso)) {
             throw new CodigoDeAcessoInvalidoException();
         }
+
         Chamado chamado = chamadoRepository.findByIdAndClienteId(chamadoId,idCliente)
                 .orElseThrow(() -> new CommerceException("Chamado não encontrado"));
+
         return modelMapper.map(chamado, ChamadoResponseDTO.class);
     }
+    
     @Override
     public List<ChamadoResponseDTO> listarChamadosCliente(Long idCliente, String codigoAcesso) {
         Cliente cliente = clienteRepository.findById(idCliente)
@@ -172,6 +175,7 @@ public class ChamadoServiceImpl implements ChamadoService {
                 .map(c -> modelMapper.map(c, ChamadoResponseDTO.class))
                 .collect(Collectors.toList());
     }
+    
     @Override
     public List<ChamadoResponseDTO> listarChamadosClientePorStatus(Long idCliente, ChamadoStatus chamadoStatus, String codigoAcesso) {
         Cliente cliente = clienteRepository.findById(idCliente)
@@ -202,7 +206,13 @@ public class ChamadoServiceImpl implements ChamadoService {
             throw new CodigoDeAcessoInvalidoException();
         }
         chamadoRepository.deleteById(id);
+    }
 
+    @Override
+    @Transactional
+    public ChamadoResponseDTO confirmarConclusao(Long clienteId, String codigoAcesso, Long chamadoId) {
+        Cliente cliente = clienteRepository.findById(clienteId)
+                .orElseThrow(ClienteNaoExisteException::new);
         Chamado chamado = chamadoRepository.findById(chamadoId)
                 .orElseThrow(() -> new CommerceException("Chamado não encontrado"));
 
@@ -217,6 +227,8 @@ public class ChamadoServiceImpl implements ChamadoService {
 
         estado.confirmarConclusao(chamado);
 
+        realocarOuLiberarTecnico(chamado.getTecnico(), chamado.getEmpresa().getId());
+
         return modelMapper.map(chamadoRepository.save(chamado), ChamadoResponseDTO.class);
     }
     
@@ -227,14 +239,15 @@ public class ChamadoServiceImpl implements ChamadoService {
         Optional<Chamado> proximoChamado = chamadoRepository.findChamadoMaisAntigoAguardando(empresaId);
 
         if (proximoChamado.isPresent()) {
-            Chamado chamado = proximoChamado.get();
-            chamado.atribuirTecnico(tecnico);
-            chamado.mudaEstado(ChamadoStatus.EM_ATENDIMENTO.getInstancia());
-
-            chamadoRepository.save(chamado);
+            Chamado proximo = proximoChamado.get();
+            proximo.atribuirTecnico(tecnico);
+            proximo.mudaEstado(ChamadoStatus.EM_ATENDIMENTO.getInstancia());
+            chamadoRepository.save(proximo);
+        }
         else {
             mudarStatusTecnico(tecnico, StatusDisponibilidade.ATIVO);
         }
+
     }
 
     private void mudarStatusTecnico(Tecnico tecnico, StatusDisponibilidade novoStatus) {
@@ -250,4 +263,5 @@ public class ChamadoServiceImpl implements ChamadoService {
 
         historicoDisponibilidadeRepository.save(historico);
     }
+
 }
