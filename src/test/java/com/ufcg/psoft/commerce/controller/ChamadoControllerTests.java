@@ -11,9 +11,6 @@ import com.ufcg.psoft.commerce.exception.ChamadoNaoPodeSerCancelado;
 import com.ufcg.psoft.commerce.exception.PlanoInvalidoException;
 import com.ufcg.psoft.commerce.model.*;
 import com.ufcg.psoft.commerce.repository.*;
-import com.ufcg.psoft.commerce.model.Plano;
-import com.ufcg.psoft.commerce.model.Urgencia;
-import com.ufcg.psoft.commerce.model.TipoServico;
 import com.ufcg.psoft.commerce.service.empresa.EmpresaServiceImpl;
 import jakarta.servlet.ServletException;
 import org.junit.jupiter.api.*;
@@ -334,19 +331,20 @@ public class ChamadoControllerTests {
                     .empresa(empresa)
                     .servico(servicoComum)
                     .enderecoAtendimento(clienteBasico.getEndereco())
-                    .status("EM_ATENDIMENTO")
+                    .status("AGUARDANDO_CONFIRMACAO")
                     .tecnico(tecnico)
                     .build();
-            chamado.mudaEstado(new ChamadoEstadoEmAtendimento());
+            chamado.mudaEstado(new ChamadoEstadoAguardandoConfirmacao());
             chamado = chamadoRepository.save(chamado);
             driver.perform(
-                            put("/empresas/" + empresa.getId()
+                            patch("/clientes/" + clienteBasico.getId()
                                     + "/chamados/" + chamado.getId()
-                                    + "/avancar-status")
-                                    .header("codigoAcesso", empresa.getCodigoAcesso())
+                                    + "/confirmar-conclusao")
+                                    .header("codigoAcesso", clienteBasico.getCodigo())
                                     .contentType(MediaType.APPLICATION_JSON)
                     )
                     .andExpect(status().isOk());
+
             Chamado atualizado =
                     chamadoRepository.findById(chamado.getId()).orElseThrow();
             assertEquals(

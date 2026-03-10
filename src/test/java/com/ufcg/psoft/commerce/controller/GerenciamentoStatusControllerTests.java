@@ -2,16 +2,17 @@ package com.ufcg.psoft.commerce.controller;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.jupiter.api.AfterEach;
@@ -36,6 +37,7 @@ import com.ufcg.psoft.commerce.model.Cliente;
 import com.ufcg.psoft.commerce.model.Empresa;
 import com.ufcg.psoft.commerce.model.Plano;
 import com.ufcg.psoft.commerce.model.Servico;
+import com.ufcg.psoft.commerce.model.StatusDisponibilidade;
 import com.ufcg.psoft.commerce.model.Tecnico;
 import com.ufcg.psoft.commerce.model.TipoServico;
 import com.ufcg.psoft.commerce.model.TipoVeiculo;
@@ -47,6 +49,7 @@ import com.ufcg.psoft.commerce.repository.ServicoRepository;
 import com.ufcg.psoft.commerce.repository.TecnicoRepository;
 
 import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -211,6 +214,7 @@ public class GerenciamentoStatusControllerTests {
 
     @Nested
     @DisplayName("Testes de atribuição automática de técnicos a chamadas")
+    @Transactional
     class AtribuicaoAutomaticaTecnicosChamadas {
 
         private Tecnico tecnicoAntigoDisponivel;
@@ -227,7 +231,7 @@ public class GerenciamentoStatusControllerTests {
                 .tipoVeiculo(TipoVeiculo.CARRO)
                 .placaVeiculo("ABC-9999")
                 .corVeiculo("Preto")
-                .empresasAprovadoras(List.of(empresaPadrao))
+                .empresasAprovadoras(new ArrayList<>(List.of(empresaPadrao)))
                 .statusDisponibilidade(StatusDisponibilidade.ATIVO)
                 .dataUltimaMudancaDisponibilidade(LocalDateTime.now().minusHours(5))
                 .especialidade("Geral")
@@ -239,8 +243,8 @@ public class GerenciamentoStatusControllerTests {
                 .tipoVeiculo(TipoVeiculo.CARRO)
                 .placaVeiculo("ABC-1111")
                 .corVeiculo("Preto")
-                .empresasAprovadoras(List.of(empresaPadrao))
-                .disponivel(StatusDisponibilidade.ATIVO)
+                .empresasAprovadoras(new ArrayList<>(List.of(empresaPadrao)))
+                .statusDisponibilidade(StatusDisponibilidade.ATIVO)
                 .dataUltimaMudancaDisponibilidade(LocalDateTime.now().minusHours(1))
                 .especialidade("Geral")
                 .build());
@@ -278,8 +282,8 @@ public class GerenciamentoStatusControllerTests {
         void deixaChamadaAguardandoTecnico() throws Exception {
 
             // Arrange
-            tecnicoAntigoDisponivel.setStatusDisponibilidade(StatusDisponibilidade.OCUPADO)
-            tecnicoNovoDisponivel.setStatusDisponibilidade(StatusDisponibilidade.OCUPADO)
+            tecnicoAntigoDisponivel.setStatusDisponibilidade(StatusDisponibilidade.OCUPADO);
+            tecnicoNovoDisponivel.setStatusDisponibilidade(StatusDisponibilidade.OCUPADO);
             tecnicoRepository.saveAll(List.of(tecnicoAntigoDisponivel, tecnicoNovoDisponivel));
 
             // Act
@@ -303,11 +307,11 @@ public class GerenciamentoStatusControllerTests {
         void chamadoDeveAvancarQuandoTecnicoFicaDisponivel() throws Exception {
 
             // Arrange
-            tecnicoAntigoDisponivel.setStatusDisponibilidade(StatusDisponibilidade.OCUPADO)
-            tecnicoNovoDisponivel.setStatusDisponibilidade(StatusDisponibilidade.OCUPADO)
+            tecnicoAntigoDisponivel.setStatusDisponibilidade(StatusDisponibilidade.OCUPADO);
+            tecnicoNovoDisponivel.setStatusDisponibilidade(StatusDisponibilidade.OCUPADO);
             tecnicoRepository.saveAll(List.of(tecnicoAntigoDisponivel, tecnicoNovoDisponivel));
 
-            chamado.setStatus(ChamadoStatus.EM_ATENDIMENTO.getNome());
+            chamado.setStatus(ChamadoStatus.AGUARDANDO_CONFIRMACAO.getNome());
             chamado.setTecnico(tecnicoNovoDisponivel);
             chamadoRepository.save(chamado);
 
@@ -321,11 +325,10 @@ public class GerenciamentoStatusControllerTests {
                     .build());
 
             // Act
-            driver.perform(put(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/" + chamado.getId() + "/avancar-status")
-                    .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
+            driver.perform(patch("/clientes/" + clientePadrao.getId() + "/chamados/" + chamado.getId() + "/confirmar-conclusao")
+                    .header("codigoAcesso", clientePadrao.getCodigo())
                     .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andDo(print());
+                .andExpect(status().isOk());
 
             entityManager.flush();
 
