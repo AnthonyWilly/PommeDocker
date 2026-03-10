@@ -32,10 +32,10 @@ public class ChamadoServiceImpl implements ChamadoService {
     public ChamadoResponseDTO criarChamado(Long clienteId, String codigoAcesso, ChamadoPostPutRequestDTO dto) {
         Cliente cliente = clienteRepository.findById(clienteId)
                 .orElseThrow(ClienteNaoExisteException::new);
-        
+
         Empresa empresa = empresaRepository.findById(dto.getEmpresaId())
                 .orElseThrow(EmpresaNaoExisteException::new);
-        
+
         Servico servico = servicoRepository.findById(dto.getServicoId())
                 .orElseThrow(ServicoNaoExisteException::new);
 
@@ -43,9 +43,9 @@ public class ChamadoServiceImpl implements ChamadoService {
             throw new CodigoDeAcessoInvalidoException();
         }
 
-        
+
         boolean servicoIsPremium = servico.getPlano() == Plano.PREMIUM;
-        boolean clienteIsPremium = cliente.getPlanoAtual() == Plano.PREMIUM; 
+        boolean clienteIsPremium = cliente.getPlanoAtual() == Plano.PREMIUM;
 
         if (servicoIsPremium && !clienteIsPremium) {
             throw new PlanoInvalidoException();
@@ -67,7 +67,7 @@ public class ChamadoServiceImpl implements ChamadoService {
                 .estado(estadoInicial)
                 .status(estadoInicial.getNome())
                 .build();
-        
+
         Chamado salvo = chamadoRepository.save(chamado);
         return modelMapper.map(salvo, ChamadoResponseDTO.class);
     }
@@ -82,7 +82,7 @@ public class ChamadoServiceImpl implements ChamadoService {
         }
 
         chamado.confirmarPagamento();
-        
+
         Chamado salvo = chamadoRepository.save(chamado);
         return modelMapper.map(salvo, ChamadoResponseDTO.class);
     }
@@ -101,7 +101,7 @@ public class ChamadoServiceImpl implements ChamadoService {
 
         chamadoRepository.delete(chamado);
     }
-    
+
     @Override
     public List<ChamadoResponseDTO> listarChamados(Long clienteId, String codigoAcesso) {
         Cliente cliente = clienteRepository.findById(clienteId)
@@ -123,6 +123,47 @@ public class ChamadoServiceImpl implements ChamadoService {
                 .orElseThrow(() -> new CommerceException("Chamado não encontrado"));
         return modelMapper.map(chamado, ChamadoResponseDTO.class);
     }
+
+    @Override
+    public ChamadoResponseDTO buscarChamadoPorCliente(Long chamadoId, Long idCliente,  String codigoAcesso) {
+        Cliente cliente = clienteRepository.findById(idCliente)
+                .orElseThrow(ClienteNaoExisteException::new);
+
+        if (!cliente.getCodigo().equals(codigoAcesso)) {
+            throw new CodigoDeAcessoInvalidoException();
+        }
+        Chamado chamado = chamadoRepository.findByIdAndClienteId(chamadoId,idCliente)
+                .orElseThrow(() -> new CommerceException("Chamado não encontrado"));
+        return modelMapper.map(chamado, ChamadoResponseDTO.class);
+    }
+    @Override
+    public List<ChamadoResponseDTO> listarChamadosCliente(Long idCliente, String codigoAcesso) {
+        Cliente cliente = clienteRepository.findById(idCliente)
+                .orElseThrow(ClienteNaoExisteException::new);
+
+        if (!cliente.getCodigo().equals(codigoAcesso)) {
+            throw new CodigoDeAcessoInvalidoException();
+        }
+        List<Chamado> chamados = chamadoRepository.findByClienteIdOrderByStatusEData(idCliente);
+        return chamados.stream()
+                .map(c -> modelMapper.map(c, ChamadoResponseDTO.class))
+                .collect(Collectors.toList());
+    }
+    @Override
+    public List<ChamadoResponseDTO> listarChamadosClientePorStatus(Long idCliente, ChamadoStatus chamadoStatus, String codigoAcesso) {
+        Cliente cliente = clienteRepository.findById(idCliente)
+                .orElseThrow(ClienteNaoExisteException::new);
+
+        if (!cliente.getCodigo().equals(codigoAcesso)) {
+            throw new CodigoDeAcessoInvalidoException();
+        }
+        List<Chamado> chamados = chamadoRepository.findByClienteIdAndStatusOrderByDataCriacaoDesc(
+                idCliente,
+                chamadoStatus.name()
+        );
+        return chamados.stream()
+                .map(c -> modelMapper.map(c, ChamadoResponseDTO.class))
+                .collect(Collectors.toList());
     @Override
     public void cancelar(Long id, Long idCliente, String codigoAcesso) {
         Chamado chamado = chamadoRepository.findById(id)
