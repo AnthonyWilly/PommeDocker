@@ -1,9 +1,22 @@
 package com.ufcg.psoft.commerce.service.empresa;
 
-import com.ufcg.psoft.commerce.dto.ChamadoResponseDTO;
-import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
-import com.ufcg.psoft.commerce.model.*;
-import com.ufcg.psoft.commerce.repository.*;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -13,11 +26,22 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import com.ufcg.psoft.commerce.dto.ChamadoResponseDTO;
+import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
+import com.ufcg.psoft.commerce.model.Chamado;
+import com.ufcg.psoft.commerce.model.Cliente;
+import com.ufcg.psoft.commerce.model.Empresa;
+import com.ufcg.psoft.commerce.model.Plano;
+import com.ufcg.psoft.commerce.model.Servico;
+import com.ufcg.psoft.commerce.model.Tecnico;
+import com.ufcg.psoft.commerce.model.TipoServico;
+import com.ufcg.psoft.commerce.model.TipoVeiculo;
+import com.ufcg.psoft.commerce.model.Urgencia;
+import com.ufcg.psoft.commerce.repository.ChamadoRepository;
+import com.ufcg.psoft.commerce.repository.ClienteRepository;
+import com.ufcg.psoft.commerce.repository.EmpresaRepository;
+import com.ufcg.psoft.commerce.repository.ServicoRepository;
+import com.ufcg.psoft.commerce.repository.TecnicoRepository;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Testes de Serviço de Gerenciamento de Status ")
@@ -31,6 +55,12 @@ public class GerenciamentoStatusServiceTests {
 
     @Mock
     private TecnicoRepository tecnicoRepository;
+
+    @Mock
+    private ClienteRepository clienteRepository;
+    
+    @Mock
+    private ServicoRepository servicoRepository;
 
     @InjectMocks
     private EmpresaServiceImpl empresaService;
@@ -60,7 +90,7 @@ public class GerenciamentoStatusServiceTests {
     }
 
     @Nested
-    @DisplayName("Cenários de Sucesso")
+    @DisplayName("Cenários de Sucesso no avanço dos estados")
     class SucessoTests {
 
         @Test
@@ -124,7 +154,7 @@ public class GerenciamentoStatusServiceTests {
     }
 
     @Nested
-    @DisplayName("Cenários de Erro e Validação")
+    @DisplayName("Cenários de Erro e Validação no avanço dos estados")
     class FalhaTests {
 
         @Test
@@ -152,6 +182,184 @@ public class GerenciamentoStatusServiceTests {
             });
             
             verify(chamadoRepository, never()).save(any(Chamado.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("Testes de atribuição automática dos técnicos às chamadas")
+    class AtribuicaoAutomaticaTecnicosChamadas {
+
+        private Tecnico tecnicoDisponivel;
+        private Empresa empresa2;
+        private Cliente cliente2;
+        private Servico servico2;
+        private Chamado proximoChamado;
+        private Chamado chamadoPrincipal;
+
+        @BeforeEach
+        void setupTestesDeAtribuicaoAutomatica() {
+            empresa2 = empresaRepository.save(Empresa.builder()
+                .id(2L)
+                .nome("Service Corp")
+                .codigoAcesso("123456")
+                .cnpj("12.345.678/0001-90")
+                .build());
+                
+            tecnicoDisponivel = tecnicoRepository.save(Tecnico.builder()
+                .id(10L)
+                .nome("Tecnico Um da Silva")
+                .acesso("654321")
+                .tipoVeiculo(TipoVeiculo.CARRO)
+                .placaVeiculo("ABC-9999")
+                .corVeiculo("Preto")
+                .empresasAprovadoras(List.of(empresa2))
+                .disponivel(true)
+                .dataUltimaMudancaDisponibilidade(LocalDateTime.now().minusHours(5))
+                .especialidade("Geral")
+                .build());
+
+            cliente2 = clienteRepository.save(Cliente.builder()
+                .id(30L)
+                .nome("Teste Basico")
+                .codigo("123456")
+                .endereco("Rua Base, 100")
+                .planoAtual(Plano.BASICO)
+                .dataCobranca(LocalDate.now())
+                .build());
+
+            servico2 = servicoRepository.save(Servico.builder()
+                .id(70L)
+                .nome("Manutenção Simples")
+                .descricao("Reparo básico")
+                .urgencia(Urgencia.NORMAL)
+                .duracao(30.0)
+                .preco(100.0)
+                .empresa(empresa2)
+                .plano(Plano.BASICO)
+                .disponivel(true)
+                .tipo(TipoServico.ELETRICA)
+                .build());
+
+            proximoChamado = Chamado.builder()
+                .id(37L)
+                .empresa(empresa2)
+                .cliente(cliente2)
+                .servico(servico2)
+                .enderecoAtendimento("Rua dos Tocantins, 100")
+                .dataCriacao(LocalDateTime.now())
+                .status("CHAMADO_RECEBIDO")
+                .build();
+
+            chamadoPrincipal = Chamado.builder()
+                .id(20L)
+                .empresa(empresa2)
+                .cliente(cliente2)
+                .servico(servico2)
+                .enderecoAtendimento("Rua dos Veredas, 200")
+                .dataCriacao(LocalDateTime.now())
+                .status("EM_ANALISE") 
+                .build();
+                
+        }
+
+        @Test
+        @DisplayName("Atribui técnico automaticamente e muda seu status para indisponível for alocado")
+        void atribuiETornaIndisponivelTecnicoAutomaticamente() {
+
+            // Arrange
+            proximoChamado.setStatus("EM_ANALISE");
+
+            when(empresaRepository.findById(empresa2.getId())).thenReturn(Optional.of(empresa2));
+            when(chamadoRepository.findById(proximoChamado.getId())).thenReturn(Optional.of(proximoChamado));
+            when(tecnicoRepository.findTecnicoDisponivelMaisTempoParaEmpresa(empresa2.getId())).thenReturn(Optional.of(tecnicoDisponivel));
+            when(chamadoRepository.save(any(Chamado.class))).thenAnswer(i -> i.getArgument(0));
+            when(tecnicoRepository.save(any(Tecnico.class))).thenAnswer(i -> i.getArgument(0));
+
+            // Act
+            ChamadoResponseDTO resultado = empresaService.avancarStatus(empresa2.getId(), "123456", proximoChamado.getId());
+
+            // Assert
+            assertAll(
+                () -> assertEquals("EM_ATENDIMENTO", resultado.getStatus()),
+                () -> assertFalse(tecnicoDisponivel.isDisponivel()),
+                () -> verify(tecnicoRepository, times(1)).save(tecnicoDisponivel),
+                () -> verify(chamadoRepository, times(1)).save(proximoChamado)
+            );
+
+        }
+
+        @Test
+        @DisplayName("Deve apenas permanecer AGUARDANDO_TECNICO se não houver técnico disponivel")
+        void devePermanecerAguardandoTecnicoSeNaoHouveTecnico() {
+            
+            proximoChamado.setStatus("EM_ANALISE");
+
+            when(empresaRepository.findById(empresa2.getId())).thenReturn(Optional.of(empresa2));
+            when(chamadoRepository.findById(proximoChamado.getId())).thenReturn(Optional.of(proximoChamado));
+            when(tecnicoRepository.findTecnicoDisponivelMaisTempoParaEmpresa(empresa2.getId())).thenReturn(Optional.empty());
+            when(chamadoRepository.save(any(Chamado.class))).thenAnswer(i -> i.getArgument(0));
+
+            // Act
+            ChamadoResponseDTO resultado = empresaService.avancarStatus(empresa2.getId(), "123456", proximoChamado.getId());
+
+            // Assert
+            assertAll(
+                    () -> assertEquals("AGUARDANDO_TECNICO", resultado.getStatus()),
+                    () -> verify(tecnicoRepository, never()).save(any()),
+                    () -> verify(chamadoRepository, times(1)).save(proximoChamado)
+            );
+
+        }
+
+        @Test
+        @DisplayName("Técnico deve ser alocado para outra chamada ao ficar disponviel")
+        void tecnicoDeveSerAlocadoParaOutraChamadaAoFicarDisponivel() {
+            // Arrange
+            chamadoPrincipal.setStatus("EM_ATENDIMENTO");
+            tecnicoDisponivel.setDisponivel(false); 
+            chamadoPrincipal.setTecnico(tecnicoDisponivel);
+
+            when(empresaRepository.findById(empresa2.getId())).thenReturn(Optional.of(empresa2));
+            when(chamadoRepository.findById(chamadoPrincipal.getId())).thenReturn(Optional.of(chamadoPrincipal));
+            when(chamadoRepository.findChamadoMaisAntigoAguardando(empresa2.getId())).thenReturn(Optional.of(proximoChamado));
+            when(chamadoRepository.save(any(Chamado.class))).thenAnswer(i -> i.getArgument(0));
+
+            // Act: 
+            ChamadoResponseDTO resultado = empresaService.avancarStatus(empresa2.getId(), "123456", chamadoPrincipal.getId());
+
+            // Assert
+            assertAll(
+                    () -> assertEquals("CONCLUIDO", resultado.getStatus()),
+                    () -> assertEquals("EM_ATENDIMENTO", proximoChamado.getStatus()),
+                    () -> assertNotNull(proximoChamado.getTecnico()),
+                    () -> verify(chamadoRepository, times(2)).save(any(Chamado.class)),
+                    () -> verify(tecnicoRepository, never()).save(any())
+            );
+        }
+
+        @Test
+        @DisplayName("Técnico deve ficar disponivel se não houver chamado AGUARDANDO_TECNICO")
+        void tecnicoDeveFicarDisponivelSeNaoHouverChamado() {
+            // Arrange
+            chamadoPrincipal.setStatus("EM_ATENDIMENTO");
+            tecnicoDisponivel.setDisponivel(false); 
+            chamadoPrincipal.setTecnico(tecnicoDisponivel);
+
+            when(empresaRepository.findById(empresa2.getId())).thenReturn(Optional.of(empresa2));
+            when(chamadoRepository.findById(chamadoPrincipal.getId())).thenReturn(Optional.of(chamadoPrincipal));
+            when(chamadoRepository.findChamadoMaisAntigoAguardando(empresa2.getId())).thenReturn(Optional.empty());
+            when(chamadoRepository.save(any(Chamado.class))).thenAnswer(i -> i.getArgument(0));
+            when(tecnicoRepository.save(any(Tecnico.class))).thenAnswer(i -> i.getArgument(0));
+
+            // Act
+            ChamadoResponseDTO resultado = empresaService.avancarStatus(empresa2.getId(), "123456", chamadoPrincipal.getId());
+
+            // Assert
+            assertAll(
+                    () -> assertEquals("CONCLUIDO", resultado.getStatus()),
+                    () -> assertTrue(tecnicoDisponivel.isDisponivel()),
+                    () -> verify(tecnicoRepository, times(1)).save(tecnicoDisponivel)
+            );
         }
     }
 }
