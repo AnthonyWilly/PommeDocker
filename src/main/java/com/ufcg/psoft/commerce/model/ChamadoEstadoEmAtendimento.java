@@ -14,7 +14,8 @@ public class ChamadoEstadoEmAtendimento implements ChamadoEstado {
 
     @Override
     public void avancar(Chamado chamado) {
-        chamado.mudaEstado(ChamadoStatus.CONCLUIDO.getInstancia());
+        chamado.setStatus(ChamadoStatus.AGUARDANDO_CONFIRMACAO.getNome());
+        chamado.setEstado(new ChamadoEstadoAguardandoConfirmacao());
     }
 
     @Override
