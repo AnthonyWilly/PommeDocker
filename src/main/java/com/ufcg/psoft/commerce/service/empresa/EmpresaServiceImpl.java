@@ -1,14 +1,7 @@
 package com.ufcg.psoft.commerce.service.empresa;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.ufcg.psoft.commerce.dto.ChamadoResponseDTO;
 import com.ufcg.psoft.commerce.dto.EmpresaPostPutRequestDTO;
@@ -22,19 +15,20 @@ import com.ufcg.psoft.commerce.exception.EmpresaNaoExisteException;
 import com.ufcg.psoft.commerce.exception.ResourceNotFoundException;
 import com.ufcg.psoft.commerce.exception.SenhaInvalidaException;
 import com.ufcg.psoft.commerce.exception.TecnicoNaoExisteException;
-import com.ufcg.psoft.commerce.model.Chamado;
-import com.ufcg.psoft.commerce.model.ChamadoStatus;
-import com.ufcg.psoft.commerce.model.Empresa;
-import com.ufcg.psoft.commerce.model.HistoricoDisponibilidade;
-import com.ufcg.psoft.commerce.model.Pagamento;
-import com.ufcg.psoft.commerce.model.StatusDisponibilidade;
-import com.ufcg.psoft.commerce.model.Tecnico;
+import com.ufcg.psoft.commerce.model.*;
 import com.ufcg.psoft.commerce.repository.ChamadoRepository;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
 import com.ufcg.psoft.commerce.repository.HistoricoDisponibilidadeRepository ;
 import com.ufcg.psoft.commerce.repository.ServicoRepository;
 import com.ufcg.psoft.commerce.repository.TecnicoRepository;
 import com.ufcg.psoft.commerce.service.tecnico.TecnicoService;
+import jakarta.persistence.Transient;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class EmpresaServiceImpl implements EmpresaService {
@@ -71,10 +65,10 @@ public class EmpresaServiceImpl implements EmpresaService {
         }
 
         Empresa empresa = Empresa.builder()
-                .nome(dto.getNome())
-                .cnpj(dto.getCnpj())
-                .codigoAcesso(dto.getCodigoAcesso())
-                .build();
+            .nome(dto.getNome())
+            .cnpj(dto.getCnpj())
+            .codigoAcesso(dto.getCodigoAcesso())
+            .build();
 
         return new EmpresaResponseDTO(empresaRepository.save(empresa));
     }
@@ -87,13 +81,19 @@ public class EmpresaServiceImpl implements EmpresaService {
 
     @Override
     public List<EmpresaResponseDTO> listar() {
-        return empresaRepository.findAll().stream()
-                .map(EmpresaResponseDTO::new)
-                .collect(Collectors.toList());
+        return empresaRepository
+            .findAll()
+            .stream()
+            .map(EmpresaResponseDTO::new)
+            .collect(Collectors.toList());
     }
 
     @Override
-    public EmpresaResponseDTO alterar(Long id, String codigoAcesso, EmpresaPostPutRequestDTO dto) {
+    public EmpresaResponseDTO alterar(
+        Long id,
+        String codigoAcesso,
+        EmpresaPostPutRequestDTO dto
+    ) {
         validarSenhaAdmin(dto.getSenhaAdmin());
 
         Empresa empresa = buscarEmpresaPeloId(id);
@@ -119,8 +119,9 @@ public class EmpresaServiceImpl implements EmpresaService {
     }
 
     private Empresa buscarEmpresaPeloId(Long id) {
-        return empresaRepository.findById(id)
-                .orElseThrow(EmpresaNaoExisteException::new);
+        return empresaRepository
+            .findById(id)
+            .orElseThrow(EmpresaNaoExisteException::new);
     }
 
     private void validarSenhaAdmin(String senhaAdmin) {
@@ -136,11 +137,16 @@ public class EmpresaServiceImpl implements EmpresaService {
     }
 
     @Override
-    public void aprovarTecnico(Long empresaId, Long tecnicoId, String codigoAcesso) {
+    public void aprovarTecnico(
+        Long empresaId,
+        Long tecnicoId,
+        String codigoAcesso
+    ) {
         Empresa empresa = buscarEmpresaPeloId(empresaId);
         validarCodigoAcesso(empresa, codigoAcesso);
-        Tecnico tecnico = tecnicoRepository.findById(tecnicoId)
-                .orElseThrow(TecnicoNaoExisteException::new);
+        Tecnico tecnico = tecnicoRepository
+            .findById(tecnicoId)
+            .orElseThrow(TecnicoNaoExisteException::new);
         if (!tecnico.getEmpresasAprovadoras().contains(empresa)) {
             tecnico.getEmpresasAprovadoras().add(empresa);
             tecnicoRepository.save(tecnico);
@@ -148,20 +154,30 @@ public class EmpresaServiceImpl implements EmpresaService {
     }
 
     @Override
-    public void rejeitarTecnico(Long empresaId, Long tecnicoId, String codigoAcesso) {
+    public void rejeitarTecnico(
+        Long empresaId,
+        Long tecnicoId,
+        String codigoAcesso
+    ) {
         Empresa empresa = buscarEmpresaPeloId(empresaId);
         validarCodigoAcesso(empresa, codigoAcesso);
-        
-        Tecnico tecnico = tecnicoRepository.findById(tecnicoId)
-                .orElseThrow(TecnicoNaoExisteException::new);
-        
+
+        Tecnico tecnico = tecnicoRepository
+            .findById(tecnicoId)
+            .orElseThrow(TecnicoNaoExisteException::new);
+
         tecnico.getEmpresasAprovadoras().remove(empresa);
         tecnicoRepository.save(tecnico);
     }
 
     @Override
     @Transactional
-    public PagamentoResponseDTO confirmarPagamento(Long empresaId, Long chamadoId, String codigoAcesso, PagamentoRequestDTO pagamentoRequestDTO) {
+    public PagamentoResponseDTO confirmarPagamento(
+        Long empresaId,
+        Long chamadoId,
+        String codigoAcesso,
+        PagamentoRequestDTO pagamentoRequestDTO
+    ) {
         Empresa empresa = buscarEmpresaPeloId(empresaId);
         Chamado chamado = buscarChamadoPeloId(chamadoId);
 
@@ -173,16 +189,14 @@ public class EmpresaServiceImpl implements EmpresaService {
         }
 
         BigDecimal valorFinal = pagamento.calcularValorFinal(
-                pagamentoRequestDTO.getMetodoPagamento(),
-                pagamentoRequestDTO.getValorTotal()
+            pagamentoRequestDTO.getMetodoPagamento(),
+            pagamentoRequestDTO.getValorTotal()
         );
 
         chamado.confirmarPagamento();
         chamadoRepository.save(chamado);
-        
-        return PagamentoResponseDTO.builder()
-                .valorFinal(valorFinal)
-                .build();
+
+        return PagamentoResponseDTO.builder().valorFinal(valorFinal).build();
     }
 
     private Chamado buscarChamadoPeloId(Long chamadoId) {
@@ -190,40 +204,60 @@ public class EmpresaServiceImpl implements EmpresaService {
             throw new CommerceException("Chamado invalido");
         }
 
-        return chamadoRepository.findById(chamadoId)
-                .orElseThrow(() -> new CommerceException("Chamado invalido"));
+        return chamadoRepository
+            .findById(chamadoId)
+            .orElseThrow(() -> new CommerceException("Chamado invalido"));
     }
 
     private void validarChamado(Empresa empresa, Chamado chamado) {
-        if (chamado == null || chamado.getId() == null || chamado.getId() <= 0) {
+        if (
+            chamado == null || chamado.getId() == null || chamado.getId() <= 0
+        ) {
             throw new CommerceException("Chamado invalido");
         }
         if (!chamado.getEmpresa().getId().equals(empresa.getId())) {
             throw new CommerceException("Chamado nao pertence a empresa");
         }
     }
+
     @Override
     @Transactional
-    public ChamadoResponseDTO avancarStatus(Long empresaId, String codigoAcesso, Long chamadoId) {
-        Empresa empresa = empresaRepository.findById(empresaId)
-                .orElseThrow(() -> new ResourceNotFoundException("Empresa não encontrada."));
+    public ChamadoResponseDTO avancarStatus(
+        Long empresaId,
+        String codigoAcesso,
+        Long chamadoId
+    ) {
+        Empresa empresa = empresaRepository
+            .findById(empresaId)
+            .orElseThrow(() ->
+                new ResourceNotFoundException("Empresa não encontrada.")
+            );
 
         if (!empresa.getCodigoAcesso().equals(codigoAcesso)) {
             throw new CodigoDeAcessoInvalidoException();
         }
 
-        Chamado chamado = chamadoRepository.findById(chamadoId)
-                .orElseThrow(() -> new ResourceNotFoundException("Chamado não encontrado."));
+        Chamado chamado = chamadoRepository
+            .findById(chamadoId)
+            .orElseThrow(() ->
+                new ResourceNotFoundException("Chamado não encontrado.")
+            );
 
         if (!chamado.getEmpresa().getId().equals(empresa.getId())) {
-            throw new RuntimeException("O chamado não pertence à empresa informada.");
+            throw new RuntimeException(
+                "O chamado não pertence à empresa informada."
+            );
         }
-
+      
         String statusAntes = chamado.getStatus();
         chamado.getEstado().avancar(chamado);
-        
+        if ("AGUARDANDO_TECNICO".equals(chamado.getStatus()) &&
+                tecnicoRepository.countByStatusTecnico(StatusTecnico.ATIVO) == 0 &&
+                chamado.getCliente() != null) {
+            chamado.getCliente().notificarFaltaDeTecnicos();
+        }
+      
         if (chamado.getStatus().equals(ChamadoStatus.AGUARDANDO_TECNICO.getNome())) {
-
             Optional<Tecnico> tecnicoDisponivel = tecnicoRepository.findTecnicoAtivoMaisTempoParaEmpresa(empresaId);
 
             if (tecnicoDisponivel.isPresent()) {
@@ -232,42 +266,85 @@ public class EmpresaServiceImpl implements EmpresaService {
                 mudarStatusTecnico(tecnico, StatusDisponibilidade.OCUPADO);
             }
         }
-
+      
         Chamado chamadoSalvo = chamadoRepository.save(chamado);
+        if (
+            "EM_ATENDIMENTO".equals(statusAntes) &&
+            chamadoSalvo.getTecnico() != null
+        ) {
+            tecnicoService.marcarComoAtivo(chamadoSalvo.getTecnico().getId());
+        }
 
         return ChamadoResponseDTO.builder()
-                .id(chamadoSalvo.getId())
-                .status(chamadoSalvo.getStatus())
-                .clienteId(chamadoSalvo.getCliente() != null ? chamadoSalvo.getCliente().getId() : null)
-                .empresaId(chamadoSalvo.getEmpresa() != null ? chamadoSalvo.getEmpresa().getId() : null)
-                .servicoId(chamadoSalvo.getServico() != null ? chamadoSalvo.getServico().getId() : null)
-                .enderecoAtendimento(chamadoSalvo.getEnderecoAtendimento())
-                .build();
+            .id(chamadoSalvo.getId())
+            .status(chamadoSalvo.getStatus())
+            .clienteId(
+                chamadoSalvo.getCliente() != null
+                    ? chamadoSalvo.getCliente().getId()
+                    : null
+            )
+            .empresaId(
+                chamadoSalvo.getEmpresa() != null
+                    ? chamadoSalvo.getEmpresa().getId()
+                    : null
+            )
+            .servicoId(
+                chamadoSalvo.getServico() != null
+                    ? chamadoSalvo.getServico().getId()
+                    : null
+            )
+            .enderecoAtendimento(chamadoSalvo.getEnderecoAtendimento())
+            .build();
     }
 
     @Override
     @Transactional
-    public ChamadoResponseDTO atribuirTecnico(Long empresaId, String codigoAcesso, Long chamadoId, Long tecnicoId) {
+    public ChamadoResponseDTO atribuirTecnico(
+        Long empresaId,
+        String codigoAcesso,
+        Long chamadoId,
+        Long tecnicoId
+    ) {
         Empresa empresa = buscarEmpresaPeloId(empresaId);
         validarCodigoAcesso(empresa, codigoAcesso);
-        Chamado chamado = chamadoRepository.findById(chamadoId)
-                .orElseThrow(() -> new ResourceNotFoundException("Chamado não encontrado."));
+        Chamado chamado = chamadoRepository
+            .findById(chamadoId)
+            .orElseThrow(() ->
+                new ResourceNotFoundException("Chamado não encontrado.")
+            );
         validarChamado(empresa, chamado);
-        Tecnico tecnico = tecnicoRepository.findById(tecnicoId)
-                .orElseThrow(TecnicoNaoExisteException::new);
+        Tecnico tecnico = tecnicoRepository
+            .findById(tecnicoId)
+            .orElseThrow(TecnicoNaoExisteException::new);
         if (!tecnico.getEmpresasAprovadoras().contains(empresa)) {
-            throw new RuntimeException("O técnico não está aprovado por esta empresa.");
+            throw new RuntimeException(
+                "O técnico não está aprovado por esta empresa."
+            );
         }
+        tecnicoService.validarTecnicoDisponivel(tecnicoId);
         chamado.atribuirTecnico(tecnico);
+        tecnicoService.marcarComoOcupado(tecnicoId);
         Chamado chamadoSalvo = chamadoRepository.save(chamado);
         return ChamadoResponseDTO.builder()
-                .id(chamadoSalvo.getId())
-                .status(chamadoSalvo.getStatus())
-                .clienteId(chamadoSalvo.getCliente() != null ? chamadoSalvo.getCliente().getId() : null)
-                .empresaId(chamadoSalvo.getEmpresa() != null ? chamadoSalvo.getEmpresa().getId() : null)
-                .servicoId(chamadoSalvo.getServico() != null ? chamadoSalvo.getServico().getId() : null)
-                .enderecoAtendimento(chamadoSalvo.getEnderecoAtendimento())
-                .build();
+            .id(chamadoSalvo.getId())
+            .status(chamadoSalvo.getStatus())
+            .clienteId(
+                chamadoSalvo.getCliente() != null
+                    ? chamadoSalvo.getCliente().getId()
+                    : null
+            )
+            .empresaId(
+                chamadoSalvo.getEmpresa() != null
+                    ? chamadoSalvo.getEmpresa().getId()
+                    : null
+            )
+            .servicoId(
+                chamadoSalvo.getServico() != null
+                    ? chamadoSalvo.getServico().getId()
+                    : null
+            )
+            .enderecoAtendimento(chamadoSalvo.getEnderecoAtendimento())
+            .build();
     }
 
     private void mudarStatusTecnico(Tecnico tecnico, StatusDisponibilidade novoStatus) {

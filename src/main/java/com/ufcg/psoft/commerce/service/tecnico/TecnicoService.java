@@ -5,9 +5,9 @@ import java.util.List;
 import com.ufcg.psoft.commerce.dto.TecnicoPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.TecnicoResponseDTO;
 import com.ufcg.psoft.commerce.model.StatusDisponibilidade;
+import java.util.List;
 
 public interface TecnicoService {
-
     TecnicoResponseDTO criar(TecnicoPostPutRequestDTO tecnicoDTO);
 
     TecnicoResponseDTO recuperar(Long id);
@@ -16,7 +16,11 @@ public interface TecnicoService {
 
     List<TecnicoResponseDTO> listarPorNome(String nome);
 
-    TecnicoResponseDTO alterar(Long id, String codigoAcesso, TecnicoPostPutRequestDTO tecnicoDTO);
+    TecnicoResponseDTO alterar(
+        Long id,
+        String codigoAcesso,
+        TecnicoPostPutRequestDTO tecnicoDTO
+    );
 
     void remover(Long id, String codigoAcesso);
 

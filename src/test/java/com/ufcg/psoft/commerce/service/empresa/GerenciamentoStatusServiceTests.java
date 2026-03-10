@@ -1,20 +1,21 @@
 package com.ufcg.psoft.commerce.service.empresa;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+import com.ufcg.psoft.commerce.dto.ChamadoResponseDTO;
+import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
+import com.ufcg.psoft.commerce.model.*;
+import com.ufcg.psoft.commerce.repository.*;
+import com.ufcg.psoft.commerce.service.chamado.ChamadoServiceImpl;
+import com.ufcg.psoft.commerce.service.tecnico.TecnicoService;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -26,29 +27,6 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
-
-import com.ufcg.psoft.commerce.dto.ChamadoResponseDTO;
-import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
-import com.ufcg.psoft.commerce.model.Chamado;
-import com.ufcg.psoft.commerce.model.ChamadoEstadoAguardandoConfirmacao;
-import com.ufcg.psoft.commerce.model.ChamadoEstadoAguardandoTecnico;
-import com.ufcg.psoft.commerce.model.ChamadoStatus;
-import com.ufcg.psoft.commerce.model.Cliente;
-import com.ufcg.psoft.commerce.model.Empresa;
-import com.ufcg.psoft.commerce.model.Plano;
-import com.ufcg.psoft.commerce.model.Servico;
-import com.ufcg.psoft.commerce.model.StatusDisponibilidade;
-import com.ufcg.psoft.commerce.model.Tecnico;
-import com.ufcg.psoft.commerce.model.TipoServico;
-import com.ufcg.psoft.commerce.model.TipoVeiculo;
-import com.ufcg.psoft.commerce.model.Urgencia;
-import com.ufcg.psoft.commerce.repository.ChamadoRepository;
-import com.ufcg.psoft.commerce.repository.ClienteRepository;
-import com.ufcg.psoft.commerce.repository.EmpresaRepository;
-import com.ufcg.psoft.commerce.repository.HistoricoDisponibilidadeRepository;
-import com.ufcg.psoft.commerce.repository.ServicoRepository;
-import com.ufcg.psoft.commerce.repository.TecnicoRepository;
-import com.ufcg.psoft.commerce.service.chamado.ChamadoServiceImpl;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Testes de Serviço de Gerenciamento de Status ")
@@ -74,6 +52,9 @@ public class GerenciamentoStatusServiceTests {
 
     @Spy
     private ModelMapper modelMapper = new ModelMapper();
+  
+    @InjectMocks
+    private TecnicoService tecnicoService;
 
     @InjectMocks
     private EmpresaServiceImpl empresaService;
@@ -88,21 +69,21 @@ public class GerenciamentoStatusServiceTests {
     @BeforeEach
     void setUp() {
         empresa = Empresa.builder()
-                .id(1L)
-                .nome("Service Corp")
-                .codigoAcesso(CODIGO_ACESSO)
-                .build();
-        
+            .id(1L)
+            .nome("Service Corp")
+            .codigoAcesso(CODIGO_ACESSO)
+            .build();
+
         Cliente cliente = Cliente.builder().id(100L).build();
         Servico servico = Servico.builder().id(200L).build();
 
         chamado = Chamado.builder()
-                .id(10L)
-                .empresa(empresa)
-                .cliente(cliente)
-                .servico(servico)
-                .status("CHAMADO_RECEBIDO")
-                .build();
+            .id(10L)
+            .empresa(empresa)
+            .cliente(cliente)
+            .servico(servico)
+            .status("CHAMADO_RECEBIDO")
+            .build();
     }
 
     @Nested
@@ -110,17 +91,29 @@ public class GerenciamentoStatusServiceTests {
     class SucessoTests {
 
         @Test
-        @DisplayName("Avança estado de 'Chamado recebido' para 'Em análise' com sucesso")
+        @DisplayName(
+            "Avança estado de 'Chamado recebido' para 'Em análise' com sucesso"
+        )
         void avancarEstadoRecebidoParaAnalise() {
-            when(empresaRepository.findById(empresa.getId())).thenReturn(Optional.of(empresa));
-            when(chamadoRepository.findById(chamado.getId())).thenReturn(Optional.of(chamado));
-            when(chamadoRepository.save(any(Chamado.class))).thenAnswer(invocation -> {
-                Chamado c = invocation.getArgument(0);
-                c.setStatus("EM_ANALISE");
-                return c;
-            });
+            when(empresaRepository.findById(empresa.getId())).thenReturn(
+                Optional.of(empresa)
+            );
+            when(chamadoRepository.findById(chamado.getId())).thenReturn(
+                Optional.of(chamado)
+            );
+            when(chamadoRepository.save(any(Chamado.class))).thenAnswer(
+                invocation -> {
+                    Chamado c = invocation.getArgument(0);
+                    c.setStatus("EM_ANALISE");
+                    return c;
+                }
+            );
 
-            ChamadoResponseDTO resultado = empresaService.avancarStatus(empresa.getId(), CODIGO_ACESSO, chamado.getId());
+            ChamadoResponseDTO resultado = empresaService.avancarStatus(
+                empresa.getId(),
+                CODIGO_ACESSO,
+                chamado.getId()
+            );
 
             assertNotNull(resultado);
             assertEquals("EM_ANALISE", resultado.getStatus());
@@ -128,45 +121,80 @@ public class GerenciamentoStatusServiceTests {
         }
 
         @Test
-        @DisplayName("Avança estado de 'Em análise' para 'Aguardando técnico' com sucesso")
+        @DisplayName(
+            "Avança estado de 'Em análise' para 'Aguardando técnico' com sucesso"
+        )
         void avancarEstadoAnaliseParaAguardandoTecnico() {
             chamado.setStatus("EM_ANALISE");
 
-            when(empresaRepository.findById(empresa.getId())).thenReturn(Optional.of(empresa));
-            when(chamadoRepository.findById(chamado.getId())).thenReturn(Optional.of(chamado));
+            when(empresaRepository.findById(empresa.getId())).thenReturn(
+                Optional.of(empresa)
+            );
+            when(chamadoRepository.findById(chamado.getId())).thenReturn(
+                Optional.of(chamado)
+            );
 
-            when(chamadoRepository.save(any(Chamado.class))).thenAnswer(invocation -> {
-                Chamado c = invocation.getArgument(0);
-                c.setStatus("AGUARDANDO_TECNICO");
-                return c;
-            });
+            when(chamadoRepository.save(any(Chamado.class))).thenAnswer(
+                invocation -> {
+                    Chamado c = invocation.getArgument(0);
+                    c.setStatus("AGUARDANDO_TECNICO");
+                    return c;
+                }
+            );
 
-            ChamadoResponseDTO resultado = empresaService.avancarStatus(empresa.getId(), CODIGO_ACESSO, chamado.getId());
+            ChamadoResponseDTO resultado = empresaService.avancarStatus(
+                empresa.getId(),
+                CODIGO_ACESSO,
+                chamado.getId()
+            );
 
             assertEquals("AGUARDANDO_TECNICO", resultado.getStatus());
             verify(chamadoRepository, times(1)).save(any(Chamado.class));
         }
 
         @Test
-        @DisplayName("Atribui técnico com sucesso quando chamado está Aguardando Técnico")
+        @DisplayName(
+            "Atribui técnico com sucesso quando chamado está Aguardando Técnico"
+        )
         void atribuirTecnicoComSucesso() {
             chamado.setStatus("AGUARDANDO_TECNICO");
-            Tecnico tecnico = Tecnico.builder().id(300L).build();
+            Tecnico tecnico = Tecnico.builder()
+                .id(300L)
+                .statusDisponibilidade(
+                    com.ufcg.psoft.commerce.model.StatusDisponibilidade.ATIVO
+                )
+                .build();
             tecnico.getEmpresasAprovadoras().add(empresa);
+            doNothing()
+                .when(tecnicoService)
+                .validarTecnicoDisponivel(tecnico.getId());
+            doNothing().when(tecnicoService).marcarComoOcupado(tecnico.getId());
 
-            when(empresaRepository.findById(empresa.getId())).thenReturn(Optional.of(empresa));
-            when(chamadoRepository.findById(chamado.getId())).thenReturn(Optional.of(chamado));
-            when(tecnicoRepository.findById(tecnico.getId())).thenReturn(Optional.of(tecnico));
-            
-            when(chamadoRepository.save(any(Chamado.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            when(empresaRepository.findById(empresa.getId())).thenReturn(
+                Optional.of(empresa)
+            );
+            when(chamadoRepository.findById(chamado.getId())).thenReturn(
+                Optional.of(chamado)
+            );
+            when(tecnicoRepository.findById(tecnico.getId())).thenReturn(
+                Optional.of(tecnico)
+            );
 
-            ChamadoResponseDTO resultado = empresaService.atribuirTecnico(empresa.getId(), CODIGO_ACESSO, chamado.getId(), tecnico.getId());
+            when(chamadoRepository.save(any(Chamado.class))).thenAnswer(
+                invocation -> invocation.getArgument(0)
+            );
+
+            ChamadoResponseDTO resultado = empresaService.atribuirTecnico(
+                empresa.getId(),
+                CODIGO_ACESSO,
+                chamado.getId(),
+                tecnico.getId()
+            );
 
             assertNotNull(resultado);
             assertEquals("EM_ATENDIMENTO", resultado.getStatus());
             verify(chamadoRepository, times(1)).save(any(Chamado.class));
         }
-
     }
 
     @Nested
@@ -174,29 +202,50 @@ public class GerenciamentoStatusServiceTests {
     class FalhaTests {
 
         @Test
-        @DisplayName("Lança exceção ao tentar avançar status com código de acesso inválido")
+        @DisplayName(
+            "Lança exceção ao tentar avançar status com código de acesso inválido"
+        )
         void avancarEstadoFalhaCodigoAcesso() {
-            when(empresaRepository.findById(empresa.getId())).thenReturn(Optional.of(empresa));
+            when(empresaRepository.findById(empresa.getId())).thenReturn(
+                Optional.of(empresa)
+            );
 
             assertThrows(CodigoDeAcessoInvalidoException.class, () -> {
-                empresaService.avancarStatus(empresa.getId(), "000000", chamado.getId());
+                empresaService.avancarStatus(
+                    empresa.getId(),
+                    "000000",
+                    chamado.getId()
+                );
             });
 
             verify(chamadoRepository, never()).save(any(Chamado.class));
         }
 
         @Test
-        @DisplayName("Lança exceção se o chamado não pertencer à empresa informada")
+        @DisplayName(
+            "Lança exceção se o chamado não pertencer à empresa informada"
+        )
         void avancarEstadoChamadoDeOutraEmpresa() {
-            Empresa outraEmpresa = Empresa.builder().id(2L).codigoAcesso("654321").build();
-            
-            when(empresaRepository.findById(outraEmpresa.getId())).thenReturn(Optional.of(outraEmpresa));
-            when(chamadoRepository.findById(chamado.getId())).thenReturn(Optional.of(chamado));
-            
+            Empresa outraEmpresa = Empresa.builder()
+                .id(2L)
+                .codigoAcesso("654321")
+                .build();
+
+            when(empresaRepository.findById(outraEmpresa.getId())).thenReturn(
+                Optional.of(outraEmpresa)
+            );
+            when(chamadoRepository.findById(chamado.getId())).thenReturn(
+                Optional.of(chamado)
+            );
+
             assertThrows(RuntimeException.class, () -> {
-                empresaService.avancarStatus(outraEmpresa.getId(), "654321", chamado.getId());
+                empresaService.avancarStatus(
+                    outraEmpresa.getId(),
+                    "654321",
+                    chamado.getId()
+                );
             });
-            
+
             verify(chamadoRepository, never()).save(any(Chamado.class));
         }
     }
