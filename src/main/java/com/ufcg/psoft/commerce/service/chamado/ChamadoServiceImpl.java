@@ -165,6 +165,7 @@ public class ChamadoServiceImpl implements ChamadoService {
                 .map(c -> modelMapper.map(c, ChamadoResponseDTO.class))
                 .collect(Collectors.toList());
     }
+
     @Override
     public void cancelar(Long id, Long idCliente, String codigoAcesso) {
         Chamado chamado = chamadoRepository.findById(id)
