@@ -243,6 +243,11 @@ public class EmpresaServiceImpl implements EmpresaService {
         }
         String statusAntes = chamado.getStatus();
         chamado.getEstado().avancar(chamado);
+        if ("AGUARDANDO_TECNICO".equals(chamado.getStatus()) &&
+                tecnicoRepository.countByStatusTecnico(StatusTecnico.ATIVO) == 0 &&
+                chamado.getCliente() != null) {
+            chamado.getCliente().notificarFaltaDeTecnicos();
+        }
         Chamado chamadoSalvo = chamadoRepository.save(chamado);
         if (
             "EM_ATENDIMENTO".equals(statusAntes) &&

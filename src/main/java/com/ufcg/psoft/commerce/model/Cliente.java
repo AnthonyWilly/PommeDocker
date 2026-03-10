@@ -79,4 +79,9 @@ public class Cliente implements ServicoObserver, ListenerChamado {
                 "voltou a estar disponível!"
         );
     }
+
+    @Override
+    public void notificarFaltaDeTecnicos() {
+        System.out.println("[NOTIFICAÇÃO] " + this.nome + ": Não há técnicos ativos disponíveis no momento. Seu chamado está aguardando alocação de profissional.");
+    }
 }

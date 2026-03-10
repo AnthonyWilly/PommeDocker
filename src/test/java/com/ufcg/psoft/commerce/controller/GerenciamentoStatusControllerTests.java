@@ -20,9 +20,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -263,6 +266,56 @@ public class GerenciamentoStatusControllerTests {
                 )
                 .andExpect(status().isNotFound())
                 .andDo(print());
+        }
+    }
+}
+
+    @Nested
+    @DisplayName("Testes de notificação por falta de técnicos (US19)")
+    class NotificacaoFaltaTecnicosTests {
+
+        @BeforeEach
+        void setUpEmAnalise() {
+            chamado.setStatus("EM_ANALISE");
+            chamadoRepository.save(chamado);
+        }
+
+        @ExtendWith(OutputCaptureExtension.class)
+        @Test
+        @DisplayName("Deve notificar cliente quando não há técnicos ativos ao entrar em AGUARDANDO_TECNICO")
+        void deveNotificarClienteQuandoNaoHaTecnicosAtivos(CapturedOutput output) throws Exception {
+            driver.perform(put(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/" + chamado.getId() + "/avancar-status")
+                            .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk());
+
+            Chamado atualizado = chamadoRepository.findById(chamado.getId()).orElseThrow();
+            assertEquals("AGUARDANDO_TECNICO", atualizado.getStatus());
+            assertTrue(output.getOut().contains(clientePadrao.getNome()));
+        }
+
+        @ExtendWith(OutputCaptureExtension.class)
+        @Test
+        @DisplayName("Não deve notificar cliente quando há técnicos ativos ao entrar em AGUARDANDO_TECNICO")
+        void naoDeveNotificarClienteQuandoHaTecnicosAtivos(CapturedOutput output) throws Exception {
+            tecnicoRepository.save(Tecnico.builder()
+                    .nome("Técnico Ativo")
+                    .especialidade("Geral")
+                    .corVeiculo("Preto")
+                    .tipoVeiculo(TipoVeiculo.CARRO)
+                    .placaVeiculo("XYZ-9999")
+                    .acesso("000000")
+                    .statusTecnico(StatusTecnico.ATIVO)
+                    .build());
+
+            driver.perform(put(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/" + chamado.getId() + "/avancar-status")
+                            .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk());
+
+            Chamado atualizado = chamadoRepository.findById(chamado.getId()).orElseThrow();
+            assertEquals("AGUARDANDO_TECNICO", atualizado.getStatus());
+            assertFalse(output.getOut().contains("Não há técnicos ativos"));
         }
     }
 }
