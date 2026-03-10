@@ -1,17 +1,35 @@
 package com.ufcg.psoft.commerce.service.chamado;
 
-import com.ufcg.psoft.commerce.dto.ChamadoPostPutRequestDTO;
-import com.ufcg.psoft.commerce.dto.ChamadoResponseDTO;
-import com.ufcg.psoft.commerce.exception.*;
-import com.ufcg.psoft.commerce.model.*;
-import com.ufcg.psoft.commerce.repository.*;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
+import com.ufcg.psoft.commerce.dto.ChamadoPostPutRequestDTO;
+import com.ufcg.psoft.commerce.dto.ChamadoResponseDTO;
+import com.ufcg.psoft.commerce.exception.ChamadoNaoPodeSerCancelado;
+import com.ufcg.psoft.commerce.exception.ClienteNaoExisteException;
+import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
+import com.ufcg.psoft.commerce.exception.CommerceException;
+import com.ufcg.psoft.commerce.exception.EmpresaNaoExisteException;
+import com.ufcg.psoft.commerce.exception.PlanoInvalidoException;
+import com.ufcg.psoft.commerce.exception.ServicoNaoExisteException;
+import com.ufcg.psoft.commerce.model.Chamado;
+import com.ufcg.psoft.commerce.model.ChamadoEstado;
+import com.ufcg.psoft.commerce.model.ChamadoEstadoAguardandoPagamento;
+import com.ufcg.psoft.commerce.model.ChamadoStatus;
+import com.ufcg.psoft.commerce.model.Cliente;
+import com.ufcg.psoft.commerce.model.Empresa;
+import com.ufcg.psoft.commerce.model.Plano;
+import com.ufcg.psoft.commerce.model.Servico;
+import com.ufcg.psoft.commerce.model.Tecnico;
+import com.ufcg.psoft.commerce.repository.ChamadoRepository;
+import com.ufcg.psoft.commerce.repository.ClienteRepository;
+import com.ufcg.psoft.commerce.repository.EmpresaRepository;
+import com.ufcg.psoft.commerce.repository.ServicoRepository;
 
 @Service
 public class ChamadoServiceImpl implements ChamadoService {
@@ -24,6 +42,8 @@ public class ChamadoServiceImpl implements ChamadoService {
     private EmpresaRepository empresaRepository;
     @Autowired
     private ServicoRepository servicoRepository;
+    @Autowired
+    private HistoricoDisponibilidadeRepository historicoDisponibilidadeRepository;
     @Autowired
     private ModelMapper modelMapper;
 
@@ -179,5 +199,36 @@ public class ChamadoServiceImpl implements ChamadoService {
             throw new CodigoDeAcessoInvalidoException();
         }
         chamadoRepository.deleteById(id);
+    }
+    
+    private void realocarOuLiberarTecnico(Tecnico tecnico, Long empresaId) {
+        if (tecnico == null)
+            return; 
+
+        Optional<Chamado> proximoChamado = chamadoRepository.findChamadoMaisAntigoAguardando(empresaId);
+
+        if (proximoChamado.isPresent()) {
+            Chamado chamado = proximoChamado.get();
+            chamado.atribuirTecnico(tecnico);
+            chamado.mudaEstado(ChamadoStatus.EM_ATENDIMENTO.getInstancia());
+
+            chamadoRepository.save(chamado);
+        else {
+            mudarStatusTecnico(tecnico, StatusDisponibilidade.ATIVO);
+        }
+    }
+
+    private void mudarStatusTecnico(Tecnico tecnico, StatusDisponibilidade novoStatus) {
+        tecnico.setStatusDisponibilidade(novoStatus);
+        tecnico.setDataUltimaMudancaDisponibilidade(LocalDateTime.now());
+        tecnicoRepository.save(tecnico);
+
+        HistoricoDisponibilidade historico = HistoricoDisponibilidade.builder()
+                .tecnicoId(tecnico.getId())
+                .novoStatus(novoStatus)
+                .dataHora(LocalDateTime.now())
+                .build();
+
+        historicoDisponibilidadeRepository.save(historico);
     }
 }
