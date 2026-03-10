@@ -3,6 +3,8 @@ import com.ufcg.psoft.commerce.dto.ChamadoPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ChamadoResponseDTO;
 import com.ufcg.psoft.commerce.dto.ServicoFiltroDTO;
 import com.ufcg.psoft.commerce.dto.ServicoResponseDTO;
+import com.ufcg.psoft.commerce.exception.ChamadoNaoPodeSerCancelado;
+import com.ufcg.psoft.commerce.exception.ClienteNaoExisteException;
 import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
 import com.ufcg.psoft.commerce.exception.PlanoInvalidoException;
 import com.ufcg.psoft.commerce.model.*;
@@ -418,4 +420,71 @@ public class ChamadoServiceTests {
         }
     }
 
+    @DisplayName("Testes de Cancelamento de Chamado no Service")
+    class CancelamentoChamadoService {
+
+        @Test
+        @DisplayName("Deve 
+                     chamado com sucesso")
+        void deveCancelarComSucesso() {
+            when(chamadoRepository.findById(chamado.getId())).thenReturn(Optional.of(chamado));
+            chamadoService.cancelar(chamado.getId(), clienteBasico.getId(), "123456");
+            verify(chamadoRepository, times(1)).deleteById(chamado.getId());
+        }
+
+        @Test
+        @DisplayName("Deve falhar quando o status for EM_ATENDIMENTO")
+        void deveFalharSeStatusEmAtendimento() {
+            chamado.setStatus("EM_ATENDIMENTO");
+            when(chamadoRepository.findById(chamado.getId())).thenReturn(Optional.of(chamado));
+            assertThrows(ChamadoNaoPodeSerCancelado.class, () ->
+                    chamadoService.cancelar(chamado.getId(), clienteBasico.getId(), "123456")
+            );
+            verify(chamadoRepository, never()).deleteById(anyLong());
+        }
+        @Test
+        @DisplayName("Deve cancelar quando o status for CHAMADO_RECEBIDO")
+        void deveCancelarSeStatusChamadoRecebido() {
+            chamado.setStatus("CHAMADO_RECEBIDO");
+            when(chamadoRepository.findById(chamado.getId())).thenReturn(Optional.of(chamado));
+            chamadoService.cancelar(chamado.getId(), clienteBasico.getId(), "123456");
+            verify(chamadoRepository, times(1)).deleteById(chamado.getId());
+        }
+        @Test
+        @DisplayName("Deve cancelar quando o status for AGUARDANDO_TECNICO")
+        void deveCancelarAguardandoTecnico() {
+            chamado.setStatus("AGUARDANDO_TECNICO");
+            when(chamadoRepository.findById(chamado.getId())).thenReturn(Optional.of(chamado));
+            chamadoService.cancelar(chamado.getId(), clienteBasico.getId(), "123456");
+            verify(chamadoRepository, times(1)).deleteById(chamado.getId());
+        }
+        @Test
+        @DisplayName("Deve cancelar quando o status for AGUARDANDO_PAGAMENTO")
+        void deveCancelarSeStatusAguardandoPagamento() {
+            chamado.setStatus("AGUARDANDO_PAGAMENTO");
+            when(chamadoRepository.findById(chamado.getId())).thenReturn(Optional.of(chamado));
+            chamadoService.cancelar(chamado.getId(), clienteBasico.getId(), "123456");
+            verify(chamadoRepository, times(1)).deleteById(chamado.getId());
+        }
+        @Test
+        @DisplayName("Deve falhar quando o ID do cliente for diferente do dono do chamado")
+        void deveFalharSeChamadoForDeOutroCliente() {
+            when(chamadoRepository.findById(chamado.getId())).thenReturn(Optional.of(chamado));
+            assertThrows(ClienteNaoExisteException.class, () ->
+                    chamadoService.cancelar(chamado.getId(), 99L, "123456")
+            );
+            verify(chamadoRepository, never()).deleteById(anyLong());
+        }
+
+        @Test
+        @DisplayName("Deve falhar com código de acesso inválido")
+        void deveFalharComCodigoInvalido() {
+            when(chamadoRepository.findById(chamado.getId())).thenReturn(Optional.of(chamado));
+
+            assertThrows(CodigoDeAcessoInvalidoException.class, () ->
+                    chamadoService.cancelar(chamado.getId(), clienteBasico.getId(), "CODIGO_ERRADO")
+            );
+            verify(chamadoRepository, never()).deleteById(anyLong());
+        }
+    }
 }

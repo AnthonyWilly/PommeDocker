@@ -164,5 +164,18 @@ public class ChamadoServiceImpl implements ChamadoService {
         return chamados.stream()
                 .map(c -> modelMapper.map(c, ChamadoResponseDTO.class))
                 .collect(Collectors.toList());
+    @Override
+    public void cancelar(Long id, Long idCliente, String codigoAcesso) {
+        Chamado chamado = chamadoRepository.findById(id)
+                .orElseThrow(() -> new CommerceException("O chamado não existe!"));
+        if (chamado.getStatus().equals("EM_ATENDIMENTO") || chamado.getStatus().equals("CONCLUIDO")) {
+            throw new ChamadoNaoPodeSerCancelado();
+        }
+        if (!chamado.getCliente().getId().equals(idCliente)) {
+            throw new ClienteNaoExisteException();        }
+        if (!chamado.getCliente().getCodigo().equals(codigoAcesso)) {
+            throw new CodigoDeAcessoInvalidoException();
+        }
+        chamadoRepository.deleteById(id);
     }
 }

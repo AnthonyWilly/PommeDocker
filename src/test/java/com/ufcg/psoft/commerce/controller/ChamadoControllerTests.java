@@ -5,7 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.ufcg.psoft.commerce.dto.ChamadoPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ChamadoResponseDTO;
+import com.ufcg.psoft.commerce.dto.EmpresaPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.PagamentoRequestDTO;
+import com.ufcg.psoft.commerce.exception.ChamadoNaoPodeSerCancelado;
 import com.ufcg.psoft.commerce.exception.PlanoInvalidoException;
 import com.ufcg.psoft.commerce.model.*;
 import com.ufcg.psoft.commerce.repository.*;
@@ -13,6 +15,7 @@ import com.ufcg.psoft.commerce.model.Plano;
 import com.ufcg.psoft.commerce.model.Urgencia;
 import com.ufcg.psoft.commerce.model.TipoServico;
 import com.ufcg.psoft.commerce.service.empresa.EmpresaServiceImpl;
+import jakarta.servlet.ServletException;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -30,6 +33,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
+import java.time.LocalDateTime;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.junit.jupiter.api.Assertions.*;
@@ -452,11 +456,11 @@ public class ChamadoControllerTests {
         @Test
         @DisplayName("Quando buscamos um chamado de um cliente")
         void quandoBuscamosChamadoDeUmCliente() throws Exception {
-            Chamado chamado = Chamado.builder()
+                     Chamado chamado = Chamado.builder()
                     .cliente(clienteBasico)
                     .empresa(empresa)
                     .servico(servicoComum)
-                    .status("AGUARDANDO_PAGAMENTO")
+                     .status("AGUARDANDO_PAGAMENTO")
                     .build();
             chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
             Chamado chamadoSalvo = chamadoRepository.save(chamado);
@@ -476,7 +480,7 @@ public class ChamadoControllerTests {
                     () -> assertEquals("AGUARDANDO_PAGAMENTO", resultado.getStatus())
             );
         }
-        @Test
+                  @Test
         @DisplayName("Quando listamos chamados filtrando por status")
         void quandoListamosPorStatus() throws Exception {
             ChamadoStatus statusAlvo = ChamadoStatus.AGUARDANDO_PAGAMENTO;
@@ -574,3 +578,181 @@ public class ChamadoControllerTests {
     }
 
 }
+        }
+     
+    
+    @Nested
+    @DisplayName("Conjunto de casos de teste de verificação de Cancelamento de chamados")
+    class CancelamentoChamado {
+
+        @Test
+        @DisplayName("Deve cancelar chamado com sucesso em aguardando tecnico")
+        void cancelarChamadoComSucessoAguardandoTecnico() throws Exception {
+            Chamado chamado = Chamado.builder()
+                    .cliente(clienteBasico)
+                    .empresa(empresa)
+                    .servico(servicoComum)
+                    .enderecoAtendimento(clienteBasico.getEndereco())
+                    .status("AGUARDANDO_TECNICO")
+                    .dataCriacao(LocalDateTime.now())
+                    .build();
+            Chamado chamadoSalvo = chamadoRepository.save(chamado);
+            driver.perform(delete("/clientes/{clienteId}/chamados/{chamadoId}",
+                            clienteBasico.getId(), chamadoSalvo.getId())
+                            .header("codigoAcesso", clienteBasico.getCodigo())
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isNoContent())
+                    .andDo(print());
+            assertFalse(chamadoRepository.findById(chamadoSalvo.getId()).isPresent());
+        }
+
+        @Test
+        @DisplayName("Deve cancelar chamado com sucesso em aguardando pagamento")
+        void cancelarChamadoComSucessoAguardandoPagamento() throws Exception {
+            Chamado chamado = Chamado.builder()
+                    .cliente(clienteBasico)
+                    .empresa(empresa)
+                    .servico(servicoComum)
+                    .enderecoAtendimento(clienteBasico.getEndereco())
+                    .status("AGUARDANDO_PAGAMENTO")
+                    .dataCriacao(LocalDateTime.now())
+                    .build();
+            Chamado chamadoSalvo = chamadoRepository.save(chamado);
+            driver.perform(delete("/clientes/{clienteId}/chamados/{chamadoId}",
+                            clienteBasico.getId(), chamadoSalvo.getId())
+                            .header("codigoAcesso", clienteBasico.getCodigo())
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isNoContent())
+                    .andDo(print());
+            assertFalse(chamadoRepository.findById(chamadoSalvo.getId()).isPresent());
+        }
+        @Test
+        @DisplayName("Deve cancelar chamado com sucesso quando chamado foi recebido")
+        void cancelarChamadoComSucessoChamadoRecebido() throws Exception {
+            Chamado chamado = Chamado.builder()
+                    .cliente(clienteBasico)
+                    .empresa(empresa)
+                    .servico(servicoComum)
+                    .enderecoAtendimento(clienteBasico.getEndereco())
+                    .status("CHAMADO_RECEBIDO")
+                    .dataCriacao(LocalDateTime.now())
+                    .build();
+            Chamado chamadoSalvo = chamadoRepository.save(chamado);
+            driver.perform(delete("/clientes/{clienteId}/chamados/{chamadoId}",
+                            clienteBasico.getId(), chamadoSalvo.getId())
+                            .header("codigoAcesso", clienteBasico.getCodigo())
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isNoContent())
+                    .andDo(print());
+            assertFalse(chamadoRepository.findById(chamadoSalvo.getId()).isPresent());
+        }
+        @Test
+        @DisplayName("Deve cancelar chamado com sucesso em analise")
+        void cancelarChamadoComSucessoEmAnalise() throws Exception {
+            Chamado chamado = Chamado.builder()
+                    .cliente(clienteBasico)
+                    .empresa(empresa)
+                    .servico(servicoComum)
+                    .enderecoAtendimento(clienteBasico.getEndereco())
+                    .status("EM_ANALISE")
+                    .dataCriacao(LocalDateTime.now())
+                    .build();
+            Chamado chamadoSalvo = chamadoRepository.save(chamado);
+            driver.perform(delete("/clientes/{clienteId}/chamados/{chamadoId}",
+                            clienteBasico.getId(), chamadoSalvo.getId())
+                            .header("codigoAcesso", clienteBasico.getCodigo())
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isNoContent())
+                    .andDo(print());
+            assertFalse(chamadoRepository.findById(chamadoSalvo.getId()).isPresent());
+        }
+        @Test
+        @DisplayName("Não deve cancelar chamado quando o status for EM_ATENDIMENTO")
+        void naoDeveCancelarChamadoEmAtendimento() throws Exception {
+            Chamado chamado = Chamado.builder()
+                    .cliente(clienteBasico)
+                    .empresa(empresa)
+                    .servico(servicoComum)
+                    .enderecoAtendimento(clienteBasico.getEndereco())
+                    .status("EM_ATENDIMENTO")
+                    .dataCriacao(LocalDateTime.now())
+                    .build();
+            Chamado chamadoSalvo = chamadoRepository.save(chamado);
+            Exception resolvedException = assertThrows(ServletException.class, () -> {
+                driver.perform(delete("/clientes/{clienteId}/chamados/{chamadoId}",
+                                clienteBasico.getId(), chamadoSalvo.getId())
+                                .header("codigoAcesso", clienteBasico.getCodigo()))
+                        .andReturn();
+            });
+            assertTrue(resolvedException.getCause() instanceof ChamadoNaoPodeSerCancelado);
+            assertEquals("O Chamado Não Pode Ser Cancelado no Estado Atual!", resolvedException.getCause().getMessage());
+            assertTrue(chamadoRepository.findById(chamadoSalvo.getId()).isPresent());
+        }
+        @Test
+        @DisplayName("Não deve cancelar chamado quando o status for concluido")
+        void naoDeveCancelarChamadoConcluido() throws Exception {
+            Chamado chamado = Chamado.builder()
+                    .cliente(clienteBasico)
+                    .empresa(empresa)
+                    .servico(servicoComum)
+                    .enderecoAtendimento(clienteBasico.getEndereco())
+                    .status("CONCLUIDO")
+                    .dataCriacao(LocalDateTime.now())
+                    .build();
+            Chamado chamadoSalvo = chamadoRepository.save(chamado);
+            Exception resolvedException = assertThrows(ServletException.class, () -> {
+                driver.perform(delete("/clientes/{clienteId}/chamados/{chamadoId}",
+                                clienteBasico.getId(), chamadoSalvo.getId())
+                                .header("codigoAcesso", clienteBasico.getCodigo()))
+                        .andReturn();
+            });
+            assertTrue(resolvedException.getCause() instanceof ChamadoNaoPodeSerCancelado);
+            assertEquals("O Chamado Não Pode Ser Cancelado no Estado Atual!", resolvedException.getCause().getMessage());
+            assertTrue(chamadoRepository.findById(chamadoSalvo.getId()).isPresent());
+        }
+        @Test
+        @DisplayName("Não deve cancelar chamado se o ID do cliente não for o dono do chamado")
+        void naoDeveCancelarChamadoDeOutroCliente() throws Exception {
+            Cliente invasor = clienteRepository.save(Cliente.builder()
+                    .nome("Cliente Invasor")
+                    .codigo("654321")
+                    .dataCobranca(LocalDate.now())
+                    .planoAtual(Plano.BASICO)
+                    .endereco("Rua dos Bobos, 0")
+                    .build());
+            Chamado chamadoDoBasico = chamadoRepository.save(Chamado.builder()
+                    .cliente(clienteBasico)
+                    .empresa(empresa)
+                    .status("EM_ANALISE")
+                    .dataCriacao(LocalDateTime.now())
+                    .build());
+            driver.perform(delete("/clientes/{clienteId}/chamados/{chamadoId}",
+                            invasor.getId(), chamadoDoBasico.getId())
+                            .header("codigoAcesso", invasor.getCodigo())
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isNotFound())
+                    .andDo(print());
+            assertTrue(chamadoRepository.findById(chamadoDoBasico.getId()).isPresent());
+        }
+        @Test
+        @DisplayName("Não deve cancelar chamado quando o código de acesso for inválido")
+        void naoDeveCancelarChamadoComSenhaInvalida() throws Exception {
+            Chamado chamado = Chamado.builder()
+                    .cliente(clienteBasico)
+                    .empresa(empresa)
+                    .servico(servicoComum)
+                    .status("EM_ANALISE")
+                    .dataCriacao(LocalDateTime.now())
+                    .build();
+            Chamado chamadoSalvo = chamadoRepository.save(chamado);
+            driver.perform(delete("/clientes/{clienteId}/chamados/{chamadoId}",
+                            clienteBasico.getId(), chamadoSalvo.getId())
+                            .header("codigoAcesso", "SENHA_ERRADA") // Senha incorreta
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isBadRequest())
+                    .andDo(print());
+            assertTrue(chamadoRepository.findById(chamadoSalvo.getId()).isPresent());
+        }
+    }
+}
+
