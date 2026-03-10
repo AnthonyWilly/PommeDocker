@@ -3,20 +3,21 @@ package com.ufcg.psoft.commerce.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Entity
 @Data
-@Builder
+@Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
 public class Tecnico {
+
     @JsonProperty("id")
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
@@ -46,6 +47,17 @@ public class Tecnico {
     @Column(nullable = false)
     private String acesso;
 
+    @JsonProperty("statusDisponibilidade")
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private StatusDisponibilidade statusDisponibilidade =
+        StatusDisponibilidade.DESCANSO;
+
+    @JsonProperty("dataUltimaMudancaDisponibilidade")
+    @Column
+    private LocalDateTime dataUltimaMudancaDisponibilidade;
+
     @JsonIgnore
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
@@ -63,4 +75,3 @@ public class Tecnico {
         return !empresasAprovadoras.isEmpty();
     }
 }
-
