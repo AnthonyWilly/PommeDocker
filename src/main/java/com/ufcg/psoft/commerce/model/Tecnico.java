@@ -81,7 +81,7 @@ public class Tecnico {
     private List<Empresa> empresasAprovadoras = new ArrayList<>();
 
     @Builder.Default
-    private StatusTecnico statusTecnico = StatusTecnico.ATIVO;
+    private StatusTecnico statusTecnico = StatusTecnico.INATIVO;
 
     public boolean isAprovado() {
         return !empresasAprovadoras.isEmpty();
