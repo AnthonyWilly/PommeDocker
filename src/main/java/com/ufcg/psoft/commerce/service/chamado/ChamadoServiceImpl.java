@@ -27,6 +27,7 @@ import com.ufcg.psoft.commerce.model.ChamadoStatus;
 import com.ufcg.psoft.commerce.model.Cliente;
 import com.ufcg.psoft.commerce.model.Empresa;
 import com.ufcg.psoft.commerce.model.HistoricoDisponibilidade;
+import com.ufcg.psoft.commerce.model.ListenerChamado;
 import com.ufcg.psoft.commerce.model.Plano;
 import com.ufcg.psoft.commerce.model.Servico;
 import com.ufcg.psoft.commerce.model.StatusDisponibilidade;
@@ -55,6 +56,8 @@ public class ChamadoServiceImpl implements ChamadoService {
     private HistoricoDisponibilidadeRepository historicoDisponibilidadeRepository;
     @Autowired
     private ModelMapper modelMapper;
+    @Autowired(required = false)
+    private List<ListenerChamado> listenersChamado;
 
 
     @Override
@@ -214,7 +217,7 @@ public class ChamadoServiceImpl implements ChamadoService {
         chamadoRepository.deleteById(id);
     }
 
-    @Override
+   @Override
     @Transactional
     public ChamadoResponseDTO confirmarConclusao(Long clienteId, String codigoAcesso, Long chamadoId) {
         Cliente cliente = clienteRepository.findById(clienteId)
@@ -235,7 +238,13 @@ public class ChamadoServiceImpl implements ChamadoService {
 
         realocarOuLiberarTecnico(chamado.getTecnico(), chamado.getEmpresa().getId());
 
-        return modelMapper.map(chamadoRepository.save(chamado), ChamadoResponseDTO.class);
+        Chamado salvo = chamadoRepository.save(chamado);
+
+        if (listenersChamado != null && !listenersChamado.isEmpty()) {
+            listenersChamado.forEach(listener -> listener.notificarConclusao(salvo));
+        }
+
+        return modelMapper.map(salvo, ChamadoResponseDTO.class);
     }
     
     private void realocarOuLiberarTecnico(Tecnico tecnico, Long empresaId) {
@@ -267,6 +276,28 @@ public class ChamadoServiceImpl implements ChamadoService {
                 .build();
 
         historicoDisponibilidadeRepository.save(historico);
+    }
+
+    @Override
+    public ChamadoResponseDTO informarServicoConcluido(Long chamadoId, Long tecnicoId, String codigoAcessoTecnico) {
+        Chamado chamado = chamadoRepository.findById(chamadoId)
+                .orElseThrow(() -> new CommerceException("Chamado não encontrado"));
+
+        Tecnico tecnico = tecnicoRepository.findById(tecnicoId)
+                .orElseThrow(() -> new CommerceException("Técnico não encontrado"));
+
+        if (!tecnico.getAcesso().equals(codigoAcessoTecnico)) {
+            throw new CodigoDeAcessoInvalidoException();
+        }
+
+        if (chamado.getTecnico() == null || !chamado.getTecnico().getId().equals(tecnicoId)) {
+            throw new CommerceException("Técnico não está atribuído a este chamado");
+        }
+
+        chamado.getEstado().avancar(chamado);
+        
+        Chamado salvo = chamadoRepository.save(chamado);
+        return modelMapper.map(salvo, ChamadoResponseDTO.class);
     }
 
 }

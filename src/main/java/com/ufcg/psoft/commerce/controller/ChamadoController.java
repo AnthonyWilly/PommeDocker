@@ -92,4 +92,12 @@ public class ChamadoController {
             @RequestHeader("codigoAcesso") String codigoAcesso) {
         return ResponseEntity.ok(chamadoService.confirmarConclusao(clienteId, codigoAcesso, chamadoId));
     }
+
+    @PatchMapping("/chamados/{chamadoId}/tecnicos/{tecnicoId}/finalizar")
+    public ResponseEntity<ChamadoResponseDTO> informarServicoConcluido(
+            @PathVariable Long chamadoId,
+            @PathVariable Long tecnicoId,
+            @RequestHeader("codigoAcesso") String codigoAcesso) {
+        return ResponseEntity.ok(chamadoService.informarServicoConcluido(chamadoId, tecnicoId, codigoAcesso));
+    }
 }
