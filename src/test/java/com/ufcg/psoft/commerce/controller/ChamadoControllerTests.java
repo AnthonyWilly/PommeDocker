@@ -1,5 +1,13 @@
 package com.ufcg.psoft.commerce.controller;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -12,8 +20,15 @@ import com.ufcg.psoft.commerce.exception.PlanoInvalidoException;
 import com.ufcg.psoft.commerce.model.*;
 import com.ufcg.psoft.commerce.repository.*;
 import com.ufcg.psoft.commerce.service.empresa.EmpresaServiceImpl;
+import com.ufcg.psoft.commerce.service.notificacao.EmpresaNotificacaoObserver; // Veio da us15
+
 import jakarta.servlet.ServletException;
-import com.ufcg.psoft.commerce.service.notificacao.EmpresaNotificacaoObserver;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
+
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -27,47 +42,47 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.List;
-import java.time.LocalDateTime;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 @SpringBootTest
 @AutoConfigureMockMvc
 @DisplayName("Testes do Controlador de Chamados")
 public class ChamadoControllerTests {
 
     final String URI_CHAMADOS = "/chamados";
+
+    // MANTIVE OS DOIS, MAS COM NOMES DIFERENTES PARA O JAVA NÃO RECLAMAR
     @SpyBean
-    private EmpresaNotificacaoObserver listenerChamado;
+    private EmpresaNotificacaoObserver empresaNotificacaoObserver; // Da US15
+
+    @MockBean
+    private ListenerChamado listenerChamadoMock; // Da DEV
+
     @Autowired
     MockMvc driver;
+
     @Autowired
     ChamadoRepository chamadoRepository;
+
     @Autowired
     ClienteRepository clienteRepository;
+
     @Autowired
     EmpresaRepository empresaRepository;
+
     @Autowired
     TecnicoRepository tecnicoRepository;
+
     @Autowired
     ServicoRepository servicoRepository;
+
     @Autowired
     EmpresaServiceImpl empresaService;
+
     @Autowired
     ObjectMapper objectMapper;
 
     @SpyBean
     Cliente cliente;
+
     Empresa empresa;
     Cliente clienteBasico;
     Cliente clientePremium;
@@ -78,29 +93,36 @@ public class ChamadoControllerTests {
     void setup() {
         objectMapper.registerModule(new JavaTimeModule());
 
-        empresa = empresaRepository.save(Empresa.builder()
+        empresa = empresaRepository.save(
+            Empresa.builder()
                 .nome("Service Corp")
                 .codigoAcesso("101010")
                 .cnpj("12.345.678/0001-90")
-                .build());
+                .build()
+        );
 
-        clienteBasico = clienteRepository.save(Cliente.builder()
+        clienteBasico = clienteRepository.save(
+            Cliente.builder()
                 .nome("Teste Basico")
                 .codigo("123456")
                 .endereco("Rua Base, 100")
                 .planoAtual(Plano.BASICO)
                 .dataCobranca(LocalDate.now())
-                .build());
+                .build()
+        );
 
-        clientePremium = clienteRepository.save(Cliente.builder()
+        clientePremium = clienteRepository.save(
+            Cliente.builder()
                 .nome("Teste Premium")
                 .codigo("654321")
                 .endereco("Rua VIP, 200")
                 .planoAtual(Plano.PREMIUM)
                 .dataCobranca(LocalDate.now())
-                .build());
+                .build()
+        );
 
-        servicoComum = servicoRepository.save(Servico.builder()
+        servicoComum = servicoRepository.save(
+            Servico.builder()
                 .nome("Pintura Simples")
                 .descricao("Pintura de um quarto")
                 .urgencia(Urgencia.NORMAL)
@@ -110,9 +132,11 @@ public class ChamadoControllerTests {
                 .plano(Plano.BASICO)
                 .disponivel(true)
                 .tipo(TipoServico.PINTURA)
-                .build());
+                .build()
+        );
 
-        servicoExclusivo = servicoRepository.save(Servico.builder()
+        servicoExclusivo = servicoRepository.save(
+            Servico.builder()
                 .nome("Instalação 24h")
                 .descricao("Instalação elétrica completa de urgência")
                 .urgencia(Urgencia.ALTA)
@@ -122,7 +146,8 @@ public class ChamadoControllerTests {
                 .plano(Plano.PREMIUM)
                 .disponivel(true)
                 .tipo(TipoServico.ELETRICA)
-                .build());
+                .build()
+        );
     }
 
     @AfterEach
@@ -137,46 +162,66 @@ public class ChamadoControllerTests {
     @Nested
     @DisplayName("Testes de Operações Basicas Em Chamado")
     class CRUDChamado {
+
         @Test
         @DisplayName("Criar chamado Básico com sucesso")
         void criarChamadoBasicoSucesso() throws Exception {
             ChamadoPostPutRequestDTO dto = ChamadoPostPutRequestDTO.builder()
-                    .servicoId(servicoComum.getId())
-                    .empresaId(empresa.getId())
-                    .build();
+                .servicoId(servicoComum.getId())
+                .empresaId(empresa.getId())
+                .build();
 
-            String response = driver.perform(post("/clientes/" + clienteBasico.getId() + "/chamados")
-                            .header("codigoAcesso", clienteBasico.getCodigo())
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(dto)))
-                    .andExpect(status().isCreated())
-                    .andDo(print())
-                    .andReturn().getResponse().getContentAsString();
+            String response = driver
+                .perform(
+                    post("/clientes/" + clienteBasico.getId() + "/chamados")
+                        .header("codigoAcesso", clienteBasico.getCodigo())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto))
+                )
+                .andExpect(status().isCreated())
+                .andDo(print())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
 
-            ChamadoResponseDTO result = objectMapper.readValue(response, ChamadoResponseDTO.class);
+            ChamadoResponseDTO result = objectMapper.readValue(
+                response,
+                ChamadoResponseDTO.class
+            );
 
             assertNotNull(result.getId());
-            assertEquals(clienteBasico.getEndereco(), result.getEnderecoAtendimento());
+            assertEquals(
+                clienteBasico.getEndereco(),
+                result.getEnderecoAtendimento()
+            );
         }
 
         @Test
         @DisplayName("Criar chamado Premium com sucesso")
         void criarChamadoPremiumSucesso() throws Exception {
             ChamadoPostPutRequestDTO dto = ChamadoPostPutRequestDTO.builder()
-                    .servicoId(servicoExclusivo.getId())
-                    .empresaId(empresa.getId())
-                    .enderecoAtendimento("Casa de Praia")
-                    .build();
+                .servicoId(servicoExclusivo.getId())
+                .empresaId(empresa.getId())
+                .enderecoAtendimento("Casa de Praia")
+                .build();
 
-            String response = driver.perform(post("/clientes/" + clientePremium.getId() + "/chamados")
-                            .header("codigoAcesso", clientePremium.getCodigo())
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(dto)))
-                    .andExpect(status().isCreated())
-                    .andDo(print())
-                    .andReturn().getResponse().getContentAsString();
+            String response = driver
+                .perform(
+                    post("/clientes/" + clientePremium.getId() + "/chamados")
+                        .header("codigoAcesso", clientePremium.getCodigo())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto))
+                )
+                .andExpect(status().isCreated())
+                .andDo(print())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
 
-            ChamadoResponseDTO result = objectMapper.readValue(response, ChamadoResponseDTO.class);
+            ChamadoResponseDTO result = objectMapper.readValue(
+                response,
+                ChamadoResponseDTO.class
+            );
 
             assertNotNull(result.getId());
             assertEquals("Casa de Praia", result.getEnderecoAtendimento());
@@ -186,39 +231,49 @@ public class ChamadoControllerTests {
         @DisplayName("Confirmar pagamento com sucesso")
         void confirmarPagamentoSucesso() throws Exception {
             Chamado chamado = Chamado.builder()
-                    .cliente(clienteBasico)
-                    .empresa(empresa)
-                    .servico(servicoComum)
-                    .status("AGUARDANDO_PAGAMENTO")
-                    .build();
+                .cliente(clienteBasico)
+                .empresa(empresa)
+                .servico(servicoComum)
+                .status("AGUARDANDO_PAGAMENTO")
+                .build();
             chamado.setEstado(new ChamadoEstadoAguardandoPagamento());
             chamado = chamadoRepository.save(chamado);
 
-            driver.perform(put(URI_CHAMADOS + "/" + chamado.getId() + "/pagamento")
-                            .header("codigoAcesso", clienteBasico.getCodigo())
-                            .param("metodoPagamento", "PIX")
-                            .contentType(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isOk())
-                    .andDo(print());
+            driver
+                .perform(
+                    put(URI_CHAMADOS + "/" + chamado.getId() + "/pagamento")
+                        .header("codigoAcesso", clienteBasico.getCodigo())
+                        .param("metodoPagamento", "PIX")
+                        .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isOk())
+                .andDo(print());
 
-            Chamado chamadoAtualizado = chamadoRepository.findById(chamado.getId()).orElseThrow();
+            Chamado chamadoAtualizado = chamadoRepository
+                .findById(chamado.getId())
+                .orElseThrow();
             assertEquals("CHAMADO_RECEBIDO", chamadoAtualizado.getStatus());
         }
 
         @Test
         @DisplayName("Cliente tenta remover chamado com código errado")
         void removerChamadoCodigoErrado() throws Exception {
-            Chamado chamado = chamadoRepository.save(Chamado.builder()
+            Chamado chamado = chamadoRepository.save(
+                Chamado.builder()
                     .cliente(clienteBasico)
                     .empresa(empresa)
                     .servico(servicoComum)
                     .status("AGUARDANDO_PAGAMENTO")
-                    .build());
+                    .build()
+            );
 
-            driver.perform(delete(URI_CHAMADOS + "/" + chamado.getId())
-                            .header("codigoAcesso", "000000")
-                            .contentType(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isBadRequest());
+            driver
+                .perform(
+                    delete(URI_CHAMADOS + "/" + chamado.getId())
+                        .header("codigoAcesso", "000000")
+                        .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isBadRequest());
 
             assertTrue(chamadoRepository.existsById(chamado.getId()));
         }
@@ -226,18 +281,23 @@ public class ChamadoControllerTests {
         @Test
         @DisplayName("Remover chamado com sucesso pelo cliente")
         void removerChamadoSucesso() throws Exception {
-            Chamado chamado = chamadoRepository.save(Chamado.builder()
+            Chamado chamado = chamadoRepository.save(
+                Chamado.builder()
                     .cliente(clienteBasico)
                     .empresa(empresa)
                     .servico(servicoComum)
                     .status("AGUARDANDO_PAGAMENTO")
-                    .build());
+                    .build()
+            );
 
-            driver.perform(delete(URI_CHAMADOS + "/" + chamado.getId())
-                            .header("codigoAcesso", clienteBasico.getCodigo())
-                            .contentType(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isNoContent())
-                    .andDo(print());
+            driver
+                .perform(
+                    delete(URI_CHAMADOS + "/" + chamado.getId())
+                        .header("codigoAcesso", clienteBasico.getCodigo())
+                        .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isNoContent())
+                .andDo(print());
 
             assertFalse(chamadoRepository.existsById(chamado.getId()));
         }
@@ -245,18 +305,23 @@ public class ChamadoControllerTests {
         @Test
         @DisplayName("Remover chamado com sucesso pela empresa")
         void removerChamadoPorEmpresaSucesso() throws Exception {
-            Chamado chamado = chamadoRepository.save(Chamado.builder()
+            Chamado chamado = chamadoRepository.save(
+                Chamado.builder()
                     .cliente(clienteBasico)
                     .empresa(empresa)
                     .servico(servicoComum)
                     .status("AGUARDANDO_PAGAMENTO")
-                    .build());
+                    .build()
+            );
 
-            driver.perform(delete(URI_CHAMADOS + "/" + chamado.getId())
-                            .header("codigoAcesso", empresa.getCodigoAcesso())
-                            .contentType(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isNoContent())
-                    .andDo(print());
+            driver
+                .perform(
+                    delete(URI_CHAMADOS + "/" + chamado.getId())
+                        .header("codigoAcesso", empresa.getCodigoAcesso())
+                        .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isNoContent())
+                .andDo(print());
 
             assertFalse(chamadoRepository.existsById(chamado.getId()));
         }
@@ -265,51 +330,64 @@ public class ChamadoControllerTests {
         @DisplayName("Cliente Basico tenta criar chamado Premium")
         void criarChamadoBasicoParaServicoPremium() throws Exception {
             ChamadoPostPutRequestDTO dto = ChamadoPostPutRequestDTO.builder()
-                    .servicoId(servicoExclusivo.getId())
-                    .empresaId(empresa.getId())
+                .servicoId(servicoExclusivo.getId())
+                .empresaId(empresa.getId())
+                .enderecoAtendimento("Rua Teste, 123")
+                .build();
 
-                    .enderecoAtendimento("Rua Teste, 123")
-                    .build();
-
-            driver.perform(post("/clientes/" + clienteBasico.getId() + "/chamados")
-                            .header("codigoAcesso", clienteBasico.getCodigo())
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(dto)))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(result -> assertTrue(result.getResolvedException() instanceof PlanoInvalidoException))
-                    .andDo(print());
+            driver
+                .perform(
+                    post("/clientes/" + clienteBasico.getId() + "/chamados")
+                        .header("codigoAcesso", clienteBasico.getCodigo())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto))
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(result ->
+                    assertTrue(
+                        result.getResolvedException() instanceof
+                            PlanoInvalidoException
+                    )
+                )
+                .andDo(print());
         }
     }
 
     @Nested
     @DisplayName("Testes de notificações em chamado")
     class NotificacaoChamado {
+
         @Test
-        @DisplayName("Deve entrar em EM_ANALISE sem técnico e sem notificar listener")
+        @DisplayName(
+            "Deve entrar em EM_ANALISE sem técnico e sem notificar listener"
+        )
         void deveEntrarEmAnaliseSemTecnicoESemNotificar() throws Exception {
             Chamado chamado = Chamado.builder()
-                    .cliente(clienteBasico)
-                    .empresa(empresa)
-                    .servico(servicoComum)
-                    .enderecoAtendimento(clienteBasico.getEndereco())
-                    .status("CHAMADO_RECEBIDO")
-                    .build();
+                .cliente(clienteBasico)
+                .empresa(empresa)
+                .servico(servicoComum)
+                .enderecoAtendimento(clienteBasico.getEndereco())
+                .status("CHAMADO_RECEBIDO")
+                .build();
             chamado.mudaEstado(new ChamadoEstadoRecebido());
             chamado = chamadoRepository.save(chamado);
-            driver.perform(
-                            put("/empresas/" + empresa.getId()
-                                    + "/chamados/" + chamado.getId()
-                                    + "/avancar-status")
-                                    .header("codigoAcesso", empresa.getCodigoAcesso())
-                                    .contentType(MediaType.APPLICATION_JSON)
+            driver
+                .perform(
+                    put(
+                        "/empresas/" +
+                            empresa.getId() +
+                            "/chamados/" +
+                            chamado.getId() +
+                            "/avancar-status"
                     )
-                    .andExpect(status().isOk());
-            Chamado atualizado =
-                    chamadoRepository.findById(chamado.getId()).orElseThrow();
-            assertEquals(
-                    "EM_ANALISE",
-                    atualizado.getStatus()
-            );
+                        .header("codigoAcesso", empresa.getCodigoAcesso())
+                        .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isOk());
+            Chamado atualizado = chamadoRepository
+                .findById(chamado.getId())
+                .orElseThrow();
+            assertEquals("EM_ANALISE", atualizado.getStatus());
             verify(listenerChamado, never()).notificar(any(Tecnico.class));
         }
 
@@ -317,13 +395,13 @@ public class ChamadoControllerTests {
         @DisplayName("Não deve notificar listener quando chamado for concluído")
         void naoDeveNotificarQuandoChamadoConcluido() throws Exception {
             Tecnico tecnico = Tecnico.builder()
-                    .nome("Carlos Silva")
-                    .especialidade("Eletricista")
-                    .corVeiculo("Branco")
-                    .tipoVeiculo(TipoVeiculo.CARRO)
-                    .placaVeiculo("ABC-1234")
-                    .acesso("123456")
-                    .build();
+                .nome("Carlos Silva")
+                .especialidade("Eletricista")
+                .corVeiculo("Branco")
+                .tipoVeiculo(TipoVeiculo.CARRO)
+                .placaVeiculo("ABC-1234")
+                .acesso("123456")
+                .build();
             tecnico.getEmpresasAprovadoras().add(empresa);
             tecnico = tecnicoRepository.save(tecnico);
             Chamado chamado = Chamado.builder()
@@ -352,99 +430,105 @@ public class ChamadoControllerTests {
                     atualizado.getStatus()
             );
             verify(listenerChamado, never()).notificar(any(Tecnico.class));
-            ;
         }
 
         @Test
-        @DisplayName("Não deve notificar listener quando entrar em CHAMADO_RECEBIDO")
+        @DisplayName(
+            "Não deve notificar listener quando entrar em CHAMADO_RECEBIDO"
+        )
         void naoDeveNotificarQuandoChamadoRecebido() throws Exception {
-
             // Arrange
 
             Chamado chamado = Chamado.builder()
-                    .cliente(clienteBasico)
-                    .empresa(empresa)
-                    .servico(servicoComum)
-                    .enderecoAtendimento(clienteBasico.getEndereco())
-                    .status("AGUARDANDO_PAGAMENTO")
-                    .build();
+                .cliente(clienteBasico)
+                .empresa(empresa)
+                .servico(servicoComum)
+                .enderecoAtendimento(clienteBasico.getEndereco())
+                .status("AGUARDANDO_PAGAMENTO")
+                .build();
             chamado.mudaEstado(new ChamadoEstadoAguardandoPagamento());
             chamado = chamadoRepository.save(chamado);
             PagamentoRequestDTO pagamentoDTO = PagamentoRequestDTO.builder()
-                    .metodoPagamento("PIX")
-                    .valorTotal(BigDecimal.valueOf(servicoComum.getPreco()))
-                    .build();
-            driver.perform(
-                            post("/empresas/{empresaId}/chamados/{chamadoId}/pagamentos",
-                                    empresa.getId(),
-                                    chamado.getId()
-                            )
-                                    .header("codigoAcesso", empresa.getCodigoAcesso())
-                                    .contentType(MediaType.APPLICATION_JSON)
-                                    .content(objectMapper.writeValueAsString(pagamentoDTO))
+                .metodoPagamento("PIX")
+                .valorTotal(BigDecimal.valueOf(servicoComum.getPreco()))
+                .build();
+            driver
+                .perform(
+                    post(
+                        "/empresas/{empresaId}/chamados/{chamadoId}/pagamentos",
+                        empresa.getId(),
+                        chamado.getId()
                     )
-                    .andExpect(status().isOk())
-                    .andDo(print());
+                        .header("codigoAcesso", empresa.getCodigoAcesso())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(pagamentoDTO))
+                )
+                .andExpect(status().isOk())
+                .andDo(print());
 
             // Assert
-            Chamado atualizado =
-                    chamadoRepository.findById(chamado.getId()).orElseThrow();
-            assertEquals(
-                    "CHAMADO_RECEBIDO",
-                    atualizado.getStatus()
-            );
+            Chamado atualizado = chamadoRepository
+                .findById(chamado.getId())
+                .orElseThrow();
+            assertEquals("CHAMADO_RECEBIDO", atualizado.getStatus());
             verify(listenerChamado, never()).notificar(any(Tecnico.class));
-
         }
 
         @ExtendWith(OutputCaptureExtension.class)
         @Test
         @DisplayName("Deve notificar listener quando entrar em EM_ATENDIMENTO")
-        void deveNotificarQuandoEntrarEmAtendimento(CapturedOutput output) throws Exception {
-
+        void deveNotificarQuandoEntrarEmAtendimento(CapturedOutput output)
+            throws Exception {
             Chamado chamado = Chamado.builder()
-                    .cliente(clienteBasico)
-                    .empresa(empresa)
-                    .servico(servicoComum)
-                    .enderecoAtendimento(clienteBasico.getEndereco())
-                    .status("AGUARDANDO_TECNICO")
-                    .build();
+                .cliente(clienteBasico)
+                .empresa(empresa)
+                .servico(servicoComum)
+                .enderecoAtendimento(clienteBasico.getEndereco())
+                .status("AGUARDANDO_TECNICO")
+                .build();
 
             chamado = chamadoRepository.save(chamado);
 
             Tecnico tecnico = tecnicoRepository.save(
-                    Tecnico.builder()
-                            .nome("Carlos Silva")
-                            .corVeiculo("Branco")
-                            .tipoVeiculo(TipoVeiculo.CARRO)
-                            .placaVeiculo("ABC-1234")
-                            .acesso("123")
-                            .especialidade("GERAL")
-                            .build()
+                Tecnico.builder()
+                    .nome("Carlos Silva")
+                    .corVeiculo("Branco")
+                    .tipoVeiculo(TipoVeiculo.CARRO)
+                    .placaVeiculo("ABC-1234")
+                    .acesso("123")
+                    .especialidade("GERAL")
+                    .statusDisponibilidade(
+                        com.ufcg.psoft.commerce.model.StatusDisponibilidade.ATIVO
+                    )
+                    .build()
             );
 
             empresaService.aprovarTecnico(
-                    empresa.getId(),
-                    tecnico.getId(),
-                    empresa.getCodigoAcesso()
+                empresa.getId(),
+                tecnico.getId(),
+                empresa.getCodigoAcesso()
             );
 
-            driver.perform(
-                            put("/empresas/" + empresa.getId()
-                                    + "/chamados/" + chamado.getId()
-                                    + "/tecnicos/" + tecnico.getId())
-                                    .header("codigoAcesso", empresa.getCodigoAcesso())
-                                    .param("nomeTecnico", "Carlos Silva")
-                                    .param("corVeiculo", "Branco")
-                                    .param("tipoVeiculo", "CARRO")
-                                    .param("placaVeiculo", "ABC-1234")
-                                    .contentType(MediaType.APPLICATION_JSON)
+            driver
+                .perform(
+                    put(
+                        "/empresas/" +
+                            empresa.getId() +
+                            "/chamados/" +
+                            chamado.getId() +
+                            "/tecnicos/" +
+                            tecnico.getId()
                     )
-                    .andExpect(status().isOk());
+                        .header("codigoAcesso", empresa.getCodigoAcesso())
+                        .param("nomeTecnico", "Carlos Silva")
+                        .param("corVeiculo", "Branco")
+                        .param("tipoVeiculo", "CARRO")
+                        .param("placaVeiculo", "ABC-1234")
+                        .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andExpect(status().isOk());
 
-            assertTrue(output.getOut().contains(
-                    "Notificação de atendimento"
-            ));
+            assertTrue(output.getOut().contains("Notificação de atendimento"));
         }
     }
 

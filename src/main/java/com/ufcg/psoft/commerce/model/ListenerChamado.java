@@ -5,4 +5,6 @@ public interface ListenerChamado {
 
     default void notificarConclusao(Chamado chamado) {
     }
+    default void notificarFaltaDeTecnicos(){
+    }
 }
