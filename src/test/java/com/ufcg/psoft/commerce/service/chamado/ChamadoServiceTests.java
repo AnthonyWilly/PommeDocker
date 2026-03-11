@@ -9,6 +9,7 @@ import com.ufcg.psoft.commerce.exception.ClienteNaoExisteException;
 import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
 import com.ufcg.psoft.commerce.exception.PlanoInvalidoException;
 import com.ufcg.psoft.commerce.model.*;
+import com.ufcg.psoft.commerce.model.ListenerChamado;
 import com.ufcg.psoft.commerce.repository.*;
 import com.ufcg.psoft.commerce.service.empresa.EmpresaService;
 

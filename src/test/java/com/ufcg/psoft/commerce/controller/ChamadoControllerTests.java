@@ -19,8 +19,8 @@ import com.ufcg.psoft.commerce.exception.ChamadoNaoPodeSerCancelado;
 import com.ufcg.psoft.commerce.exception.PlanoInvalidoException;
 import com.ufcg.psoft.commerce.model.*;
 import com.ufcg.psoft.commerce.repository.*;
-import com.ufcg.psoft.commerce.service.empresa.EmpresaServiceImpl;
-import com.ufcg.psoft.commerce.service.notificacao.EmpresaNotificacaoObserver; // Veio da us15
+import com.ufcg.psoft.commerce.service.empresa.EmpresaService;
+import com.ufcg.psoft.commerce.service.notificacao.EmpresaNotificacaoObserver;
 
 import jakarta.servlet.ServletException;
 import java.math.BigDecimal;
@@ -49,12 +49,10 @@ public class ChamadoControllerTests {
 
     final String URI_CHAMADOS = "/chamados";
 
-    // MANTIVE OS DOIS, MAS COM NOMES DIFERENTES PARA O JAVA NÃO RECLAMAR
-    @SpyBean
-    private EmpresaNotificacaoObserver empresaNotificacaoObserver; // Da US15
 
-    @MockBean
-    private ListenerChamado listenerChamadoMock; // Da DEV
+
+    @SpyBean
+    private EmpresaNotificacaoObserver listenerChamado;
 
     @Autowired
     MockMvc driver;
@@ -75,13 +73,10 @@ public class ChamadoControllerTests {
     ServicoRepository servicoRepository;
 
     @Autowired
-    EmpresaServiceImpl empresaService;
+    EmpresaService empresaService;
 
     @Autowired
     ObjectMapper objectMapper;
-
-    @SpyBean
-    Cliente cliente;
 
     Empresa empresa;
     Cliente clienteBasico;
