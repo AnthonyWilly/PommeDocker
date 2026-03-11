@@ -1,4 +1,5 @@
 package com.ufcg.psoft.commerce.service.chamado;
+
 import com.ufcg.psoft.commerce.dto.ChamadoPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.ChamadoResponseDTO;
 import com.ufcg.psoft.commerce.dto.ServicoFiltroDTO;
@@ -10,29 +11,29 @@ import com.ufcg.psoft.commerce.exception.PlanoInvalidoException;
 import com.ufcg.psoft.commerce.model.*;
 import com.ufcg.psoft.commerce.repository.*;
 import com.ufcg.psoft.commerce.service.empresa.EmpresaService;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
-import com.ufcg.psoft.commerce.model.Plano;
-import com.ufcg.psoft.commerce.model.Urgencia;
-import com.ufcg.psoft.commerce.model.TipoServico;
-
-import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
-import org.junit.jupiter.api.Nested;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("Testes do Serviço de Chamado")
@@ -55,6 +56,12 @@ public class ChamadoServiceTests {
     @Mock
     private ModelMapper modelMapper;
 
+    @Mock
+    private ListenerChamado listenerChamadoMock;
+
+    @Mock
+    private HistoricoDisponibilidadeRepository historicoDisponibilidadeRepository;
+
     @InjectMocks
     private ChamadoServiceImpl chamadoService;
 
@@ -68,6 +75,8 @@ public class ChamadoServiceTests {
 
     @BeforeEach
     void setUp() {
+        ReflectionTestUtils.setField(chamadoService, "listenersChamado", Arrays.asList(listenerChamadoMock));
+
         lenient().when(modelMapper.map(any(), eq(ChamadoResponseDTO.class)))
                 .thenAnswer(invocation -> {
                     Chamado c = invocation.getArgument(0);
@@ -335,6 +344,7 @@ public class ChamadoServiceTests {
 
         }
     }
+
     @Nested
     @DisplayName("Conjunto de testes de listagem de chamados - US20")
     class ListagemDeChamados {
@@ -390,6 +400,7 @@ public class ChamadoServiceTests {
                     () -> verify(chamadoRepository, times(1)).findByIdAndClienteId(chamado.getId(), clienteBasico.getId())
             );
         }
+
         @Test
         @DisplayName("Listar histórico garantindo que a ordem vinda do repositorio é mantida")
         void listarHistoricoOrdenadoVeridico() {
@@ -407,6 +418,7 @@ public class ChamadoServiceTests {
                     () -> assertEquals(1L, resultado.get(0).getId())
             );
         }
+
         @Test
         @DisplayName("Filtrar por status corretamente")
         void deveRetornarApenasStatusSolicitadoIgnorandoOutros() {
@@ -426,6 +438,7 @@ public class ChamadoServiceTests {
             );
         }
     }
+
     @Nested
     @DisplayName("Testes de Cancelamento de Chamado no Service")
     class CancelamentoChamadoService {
@@ -491,6 +504,72 @@ public class ChamadoServiceTests {
                     chamadoService.cancelar(chamado.getId(), clienteBasico.getId(), "CODIGO_ERRADO")
             );
             verify(chamadoRepository, never()).deleteById(anyLong());
+        }
+    }
+
+    @Nested
+    @DisplayName("Testes de Finalização e Conclusão de Chamado")
+    class ConclusaoEFinalizacaoChamadoService {
+
+        @Test
+        @DisplayName("Técnico finaliza o serviço e chamado aguarda confirmação")
+        void tecnicoFinalizaServicoComSucesso() {
+            Tecnico tecnico = Tecnico.builder()
+                    .id(1L)
+                    .nome("Técnico Finalizador")
+                    .acesso("senha123")
+                    .especialidade("Elétrica")
+                    .corVeiculo("Preto")
+                    .tipoVeiculo(TipoVeiculo.MOTO)
+                    .placaVeiculo("ABC-1234")
+                    .statusDisponibilidade(StatusDisponibilidade.OCUPADO)
+                    .build();
+            chamado.setTecnico(tecnico);
+            ChamadoEstadoEmAtendimento estadoMock = mock(ChamadoEstadoEmAtendimento.class);
+            chamado.setEstado(estadoMock);
+
+            when(chamadoRepository.findById(chamado.getId())).thenReturn(Optional.of(chamado));
+            when(tecnicoRepository.findById(tecnico.getId())).thenReturn(Optional.of(tecnico));
+            when(chamadoRepository.save(any(Chamado.class))).thenReturn(chamado);
+
+            chamadoService.informarServicoConcluido(chamado.getId(), tecnico.getId(), "senha123");
+
+            verify(estadoMock, times(1)).avancar(chamado);
+            verify(chamadoRepository, times(1)).save(chamado);
+        }
+
+        @Test
+        @DisplayName("Cliente confirma conclusão e empresa é notificada")
+        void clienteConfirmaConclusaoComSucesso() {
+            Tecnico tecnico = Tecnico.builder()
+                    .id(1L)
+                    .nome("Técnico Finalizador")
+                    .acesso("senha123")
+                    .especialidade("Elétrica")
+                    .corVeiculo("Preto")
+                    .tipoVeiculo(TipoVeiculo.MOTO)
+                    .placaVeiculo("ABC-1234")
+                    .statusDisponibilidade(StatusDisponibilidade.OCUPADO)
+                    .build();
+            chamado.setTecnico(tecnico);
+            chamado.setEmpresa(empresa);
+            ChamadoEstadoAguardandoConfirmacao estadoMock = mock(ChamadoEstadoAguardandoConfirmacao.class);
+            chamado.setEstado(estadoMock);
+
+            when(clienteRepository.findById(clienteBasico.getId())).thenReturn(Optional.of(clienteBasico));
+            when(chamadoRepository.findById(chamado.getId())).thenReturn(Optional.of(chamado));
+            when(chamadoRepository.save(any(Chamado.class))).thenReturn(chamado);
+            lenient().when(chamadoRepository.findFirstByEmpresaIdAndStatusOrderByDataCriacaoAsc(
+                    empresa.getId(), ChamadoStatus.AGUARDANDO_TECNICO.getNome()
+            )).thenReturn(Optional.empty());
+            lenient().when(tecnicoRepository.save(any(Tecnico.class))).thenReturn(tecnico);
+            lenient().when(historicoDisponibilidadeRepository.save(any())).thenReturn(null);
+
+            chamadoService.confirmarConclusao(clienteBasico.getId(), clienteBasico.getCodigo(), chamado.getId());
+
+            verify(estadoMock, times(1)).confirmarConclusao(chamado);
+        
+            verify(listenerChamadoMock, times(1)).notificarConclusao(chamado);
         }
     }
 }

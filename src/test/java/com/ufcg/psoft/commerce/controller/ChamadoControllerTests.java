@@ -13,6 +13,7 @@ import com.ufcg.psoft.commerce.model.*;
 import com.ufcg.psoft.commerce.repository.*;
 import com.ufcg.psoft.commerce.service.empresa.EmpresaServiceImpl;
 import jakarta.servlet.ServletException;
+import com.ufcg.psoft.commerce.service.notificacao.EmpresaNotificacaoObserver;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -36,7 +37,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
-import static org.modelmapper.internal.bytebuddy.matcher.ElementMatchers.any;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -47,8 +47,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class ChamadoControllerTests {
 
     final String URI_CHAMADOS = "/chamados";
-    @MockBean
-    private ListenerChamado listenerChamado;
+    @SpyBean
+    private EmpresaNotificacaoObserver listenerChamado;
     @Autowired
     MockMvc driver;
     @Autowired
@@ -740,8 +740,8 @@ public class ChamadoControllerTests {
                     .andDo(print());
             assertTrue(chamadoRepository.findById(chamadoDoBasico.getId()).isPresent());
         }
+
         @Test
-        
         @DisplayName("Não deve cancelar chamado quando o código de acesso for inválido")
         void naoDeveCancelarChamadoComSenhaInvalida() throws Exception {
             Chamado chamado = Chamado.builder()
@@ -761,5 +761,82 @@ public class ChamadoControllerTests {
             assertTrue(chamadoRepository.findById(chamadoSalvo.getId()).isPresent());
         }
     }
-}
 
+    @Nested
+    @DisplayName("Conjunto de testes de Finalização e Confirmação")
+    class FinalizacaoEConfirmacaoChamado {
+
+        @Test
+        @DisplayName("Técnico sinaliza que serviço foi concluído")
+        void tecnicoSinalizaConclusao() throws Exception {
+            Tecnico tecnico = tecnicoRepository.save(Tecnico.builder()
+                    .nome("Técnico Teste")
+                    .acesso("senha123")
+                    .especialidade("Elétrica")
+                    .corVeiculo("Preto")
+                    .tipoVeiculo(TipoVeiculo.MOTO)
+                    .placaVeiculo("ABC-1234")
+                    .statusDisponibilidade(StatusDisponibilidade.ATIVO)
+                    .dataUltimaMudancaDisponibilidade(LocalDateTime.now())
+                    .build());
+
+            Chamado chamadoEmAtendimento = Chamado.builder()
+                    .cliente(clienteBasico)
+                    .empresa(empresa)
+                    .servico(servicoComum)
+                    .tecnico(tecnico)
+                    .status("EM_ATENDIMENTO")
+                    .build();
+            chamadoEmAtendimento.setEstado(new ChamadoEstadoEmAtendimento());
+            Chamado chamadoSalvo = chamadoRepository.save(chamadoEmAtendimento);
+
+            driver.perform(patch("/chamados/{chamadoId}/tecnicos/{tecnicoId}/finalizar",
+                                chamadoSalvo.getId(), tecnico.getId())
+                            .header("codigoAcesso", "senha123")
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andDo(print());
+
+            Chamado verificado = chamadoRepository.findById(chamadoSalvo.getId()).orElseThrow();
+            assertEquals("AGUARDANDO_CONFIRMACAO", verificado.getStatus());
+        }
+
+        @Test
+        @ExtendWith(OutputCaptureExtension.class)
+        @DisplayName("Cliente confirma conclusão do chamado e sistema printa notificação")
+        void clienteConfirmaConclusaoENotificaEmpresa(CapturedOutput output) throws Exception {
+            Tecnico tecnico = tecnicoRepository.save(Tecnico.builder()
+                    .nome("Técnico Finalizador")
+                    .acesso("senha123")
+                    .especialidade("Elétrica")
+                    .corVeiculo("Preto")
+                    .tipoVeiculo(TipoVeiculo.MOTO)
+                    .placaVeiculo("ABC-1234")
+                    .statusDisponibilidade(StatusDisponibilidade.OCUPADO)
+                    .dataUltimaMudancaDisponibilidade(LocalDateTime.now())
+                    .build());
+
+            Chamado chamadoAguardando = Chamado.builder()
+                    .cliente(clienteBasico)
+                    .empresa(empresa)
+                    .servico(servicoComum)
+                    .tecnico(tecnico)
+                    .status("AGUARDANDO_CONFIRMACAO")
+                    .build();
+            chamadoAguardando.setEstado(new ChamadoEstadoAguardandoConfirmacao());
+            Chamado chamadoSalvo = chamadoRepository.save(chamadoAguardando);
+
+            driver.perform(patch("/clientes/{clienteId}/chamados/{chamadoId}/confirmar-conclusao",
+                                clienteBasico.getId(), chamadoSalvo.getId())
+                            .header("codigoAcesso", clienteBasico.getCodigo())
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andDo(print());
+
+            Chamado verificado = chamadoRepository.findById(chamadoSalvo.getId()).orElseThrow();
+            assertEquals("CONCLUIDO", verificado.getStatus());
+
+            assertTrue(output.getOut().contains("mudou o status para CONCLUÍDO"));
+        }
+    }
+}

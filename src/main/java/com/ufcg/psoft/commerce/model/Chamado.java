@@ -28,7 +28,8 @@ public class Chamado {
 
     private String enderecoAtendimento;
     
-    private LocalDateTime dataCriacao;
+    @Builder.Default
+    private LocalDateTime dataCriacao = LocalDateTime.now();
 
     @ManyToOne
     @JoinColumn(name = "tecnico_id")
