@@ -1,6 +1,7 @@
 package com.ufcg.psoft.commerce.controller;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -12,9 +13,16 @@ import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
 import com.ufcg.psoft.commerce.exception.CustomErrorType;
 import com.ufcg.psoft.commerce.model.*;
 import com.ufcg.psoft.commerce.repository.*;
+
+import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
+
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -41,6 +49,8 @@ public class GerenciamentoStatusControllerTests {
     MockMvc driver;
 
     @Autowired
+    EntityManager entityManager;
+    @Autowired
     EmpresaRepository empresaRepository;
 
     @Autowired
@@ -61,6 +71,7 @@ public class GerenciamentoStatusControllerTests {
     Empresa empresaPadrao;
     Cliente clientePadrao;
     Servico servicoPadrao;
+    Tecnico tecnicoPadrao;
     Chamado chamado;
 
     @BeforeEach
@@ -99,14 +110,25 @@ public class GerenciamentoStatusControllerTests {
                 .build()
         );
 
+        tecnicoPadrao = Tecnico.builder()
+                .nome("Carlos")
+                .acesso("654321")
+                .tipoVeiculo(TipoVeiculo.CARRO)
+                .placaVeiculo("ABC-9999")
+                .corVeiculo("Preto")
+                .especialidade("Geral")
+                .build();
+
         chamado = Chamado.builder()
-            .empresa(empresaPadrao)
-            .cliente(clientePadrao)
-            .servico(servicoPadrao)
-            .enderecoAtendimento("Rua Base, 100")
-            .dataCriacao(LocalDateTime.now())
-            .status("CHAMADO_RECEBIDO")
-            .build();
+                .empresa(empresaPadrao)
+                .cliente(clientePadrao)
+                .servico(servicoPadrao)
+                .enderecoAtendimento("Rua Base, 100")
+                .dataCriacao(LocalDateTime.now())
+                .status("CHAMADO_RECEBIDO")
+                .build();
+
+        tecnicoPadrao = tecnicoRepository.save(tecnicoPadrao);
         chamado = chamadoRepository.save(chamado);
     }
 
@@ -268,7 +290,6 @@ public class GerenciamentoStatusControllerTests {
                 .andDo(print());
         }
     }
-}
 
     @Nested
     @DisplayName("Testes de notificação por falta de técnicos (US19)")
@@ -318,4 +339,141 @@ public class GerenciamentoStatusControllerTests {
             assertFalse(output.getOut().contains("Não há técnicos ativos"));
         }
     }
+
+    @Nested
+    @DisplayName("Testes de atribuição automática de técnicos a chamadas")
+    @Transactional
+    class AtribuicaoAutomaticaTecnicosChamadas {
+
+        private Tecnico tecnicoAntigoDisponivel;
+        private Tecnico tecnicoNovoDisponivel;
+
+        @BeforeEach
+        void setupTecnicos() {
+            chamado.setStatus(ChamadoStatus.EM_ANALISE.getNome());
+            chamadoRepository.save(chamado);
+
+            tecnicoAntigoDisponivel = tecnicoRepository.save(Tecnico.builder()
+                .nome("Tecnico Um da Silva")
+                .acesso("654321")
+                .tipoVeiculo(TipoVeiculo.CARRO)
+                .placaVeiculo("ABC-9999")
+                .corVeiculo("Preto")
+                .empresasAprovadoras(new ArrayList<>(List.of(empresaPadrao)))
+                .statusDisponibilidade(StatusDisponibilidade.ATIVO)
+                .dataUltimaMudancaDisponibilidade(LocalDateTime.now().minusHours(5))
+                .especialidade("Geral")
+                .build());
+
+            tecnicoNovoDisponivel = tecnicoRepository.save(Tecnico.builder()
+                .nome("Tecnico Dois da Silva")
+                .acesso("123456")
+                .tipoVeiculo(TipoVeiculo.CARRO)
+                .placaVeiculo("ABC-1111")
+                .corVeiculo("Preto")
+                .empresasAprovadoras(new ArrayList<>(List.of(empresaPadrao)))
+                .statusDisponibilidade(StatusDisponibilidade.ATIVO)
+                .dataUltimaMudancaDisponibilidade(LocalDateTime.now().minusHours(1))
+                .especialidade("Geral")
+                .build());
+        }
+
+
+        @Test
+        @DisplayName("Atribui técnico à chamada imediatamente e prioriza o técnico disponível a mais tempo") 
+        void priorizaTecnicoDisponivelAMaisTempo() throws Exception {
+
+            // Act
+            driver.perform(put(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/" + chamado.getId() + "/avancar-status")
+                            .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                            .contentType(MediaType.APPLICATION_JSON))
+                        .andExpect(status().isOk())
+                        .andDo(print());
+
+            entityManager.flush();
+            entityManager.clear();
+
+            // Assert
+            Chamado chamadaAtualizada = chamadoRepository.findById(chamado.getId()).get();
+            Tecnico tecnicoAtualizado = tecnicoRepository.findById(tecnicoAntigoDisponivel.getId()).get();
+
+            assertAll(
+                    () -> assertEquals(ChamadoStatus.EM_ATENDIMENTO.getNome(), chamadaAtualizada.getStatus()),
+                    () -> assertEquals(tecnicoAntigoDisponivel.getId(), chamadaAtualizada.getTecnico().getId()),
+                    () -> assertEquals(StatusDisponibilidade.OCUPADO, tecnicoAtualizado.getStatusDisponibilidade())
+            );
+
+        }                    
+
+        @Test
+        @DisplayName("Deixa a chamada no status aguardando_tecnico se não houver técnico disponviel")
+        void deixaChamadaAguardandoTecnico() throws Exception {
+
+            // Arrange
+            tecnicoAntigoDisponivel.setStatusDisponibilidade(StatusDisponibilidade.OCUPADO);
+            tecnicoNovoDisponivel.setStatusDisponibilidade(StatusDisponibilidade.OCUPADO);
+            tecnicoRepository.saveAll(List.of(tecnicoAntigoDisponivel, tecnicoNovoDisponivel));
+
+            // Act
+            driver.perform(put(URI_EMPRESAS + "/" + empresaPadrao.getId() + "/chamados/" + chamado.getId() + "/avancar-status")
+                    .header("codigoAcesso", CODIGO_ACESSO_PADRAO)
+                    .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andDo(print());
+
+            //Assert
+            Chamado chamadoAtualizado = chamadoRepository.findById(chamado.getId()).get();
+
+            assertAll(
+                () -> assertEquals(ChamadoStatus.AGUARDANDO_TECNICO.getNome(), chamadoAtualizado.getStatus()),
+                () -> assertNull(chamadoAtualizado.getTecnico())
+            );
+        }
+
+        @Test
+        @DisplayName("Quando técnico fica disponivel, deve assumir o chamado que está mais tempo aguardando técnico")
+        void chamadoDeveAvancarQuandoTecnicoFicaDisponivel() throws Exception {
+
+            // Arrange
+            tecnicoAntigoDisponivel.setStatusDisponibilidade(StatusDisponibilidade.OCUPADO);
+            tecnicoNovoDisponivel.setStatusDisponibilidade(StatusDisponibilidade.OCUPADO);
+            tecnicoRepository.saveAll(List.of(tecnicoAntigoDisponivel, tecnicoNovoDisponivel));
+
+            chamado.setStatus(ChamadoStatus.AGUARDANDO_CONFIRMACAO.getNome());
+            chamado.setTecnico(tecnicoNovoDisponivel);
+            chamadoRepository.save(chamado);
+
+            Chamado chamadoAguardandoTecnico = chamadoRepository.save(Chamado.builder()
+                    .empresa(empresaPadrao)
+                    .cliente(clientePadrao)
+                    .servico(servicoPadrao)
+                    .enderecoAtendimento("Rua Base, 100")
+                    .dataCriacao(LocalDateTime.now().minusMinutes(30))
+                    .status(ChamadoStatus.AGUARDANDO_TECNICO.getNome())
+                    .build());
+
+            // Act
+            driver.perform(patch("/clientes/" + clientePadrao.getId() + "/chamados/" + chamado.getId() + "/confirmar-conclusao")
+                    .header("codigoAcesso", clientePadrao.getCodigo())
+                    .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+            entityManager.flush();
+
+            // Assert
+
+            Chamado chamadoAtualizado = chamadoRepository.findById(chamado.getId()).get();
+            Chamado chamadoAguardandoTecnicoAtualizado = chamadoRepository.findById(chamadoAguardandoTecnico.getId()).get();
+            Tecnico tecnicoAtualizado = tecnicoRepository.findById(tecnicoNovoDisponivel.getId()).get();
+
+            assertAll(
+                () -> assertEquals(ChamadoStatus.CONCLUIDO.getNome(), chamadoAtualizado.getStatus()),
+                () -> assertEquals(tecnicoNovoDisponivel.getId(), chamadoAguardandoTecnicoAtualizado.getTecnico().getId()),
+                () -> assertEquals(StatusDisponibilidade.OCUPADO, tecnicoAtualizado.getStatusDisponibilidade())
+            );
+
+        }
+
+    }
+    
 }

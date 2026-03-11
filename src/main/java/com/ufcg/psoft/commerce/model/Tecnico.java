@@ -1,11 +1,23 @@
 package com.ufcg.psoft.commerce.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -69,7 +81,7 @@ public class Tecnico {
     private List<Empresa> empresasAprovadoras = new ArrayList<>();
 
     @Builder.Default
-    private StatusTecnico statusTecnico = StatusTecnico.ATIVO;
+    private StatusTecnico statusTecnico = StatusTecnico.INATIVO;
 
     public boolean isAprovado() {
         return !empresasAprovadoras.isEmpty();

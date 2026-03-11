@@ -1,18 +1,42 @@
 package com.ufcg.psoft.commerce.service.chamado;
 
-import com.ufcg.psoft.commerce.dto.ChamadoPostPutRequestDTO;
-import com.ufcg.psoft.commerce.dto.ChamadoResponseDTO;
-import com.ufcg.psoft.commerce.exception.*;
-import com.ufcg.psoft.commerce.model.*;
-import com.ufcg.psoft.commerce.repository.*;
-import jakarta.persistence.Transient;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
+import com.ufcg.psoft.commerce.dto.ChamadoPostPutRequestDTO;
+import com.ufcg.psoft.commerce.dto.ChamadoResponseDTO;
+import com.ufcg.psoft.commerce.exception.ChamadoNaoPodeSerCancelado;
+import com.ufcg.psoft.commerce.exception.ClienteNaoExisteException;
+import com.ufcg.psoft.commerce.exception.CodigoDeAcessoInvalidoException;
+import com.ufcg.psoft.commerce.exception.CommerceException;
+import com.ufcg.psoft.commerce.exception.EmpresaNaoExisteException;
+import com.ufcg.psoft.commerce.exception.PlanoInvalidoException;
+import com.ufcg.psoft.commerce.exception.ServicoNaoExisteException;
+import com.ufcg.psoft.commerce.model.Chamado;
+import com.ufcg.psoft.commerce.model.ChamadoEstado;
+import com.ufcg.psoft.commerce.model.ChamadoEstadoAguardandoConfirmacao;
+import com.ufcg.psoft.commerce.model.ChamadoEstadoAguardandoPagamento;
+import com.ufcg.psoft.commerce.model.ChamadoStatus;
+import com.ufcg.psoft.commerce.model.Cliente;
+import com.ufcg.psoft.commerce.model.Empresa;
+import com.ufcg.psoft.commerce.model.HistoricoDisponibilidade;
+import com.ufcg.psoft.commerce.model.Plano;
+import com.ufcg.psoft.commerce.model.Servico;
+import com.ufcg.psoft.commerce.model.StatusDisponibilidade;
+import com.ufcg.psoft.commerce.model.Tecnico;
+import com.ufcg.psoft.commerce.repository.ChamadoRepository;
+import com.ufcg.psoft.commerce.repository.ClienteRepository;
+import com.ufcg.psoft.commerce.repository.EmpresaRepository;
+import com.ufcg.psoft.commerce.repository.HistoricoDisponibilidadeRepository;
+import com.ufcg.psoft.commerce.repository.ServicoRepository;
+import com.ufcg.psoft.commerce.repository.TecnicoRepository;
 
 @Service
 public class ChamadoServiceImpl implements ChamadoService {
@@ -26,6 +50,10 @@ public class ChamadoServiceImpl implements ChamadoService {
     @Autowired
     private ServicoRepository servicoRepository;
     @Autowired
+    private TecnicoRepository tecnicoRepository;
+    @Autowired
+    private HistoricoDisponibilidadeRepository historicoDisponibilidadeRepository;
+    @Autowired
     private ModelMapper modelMapper;
 
 
@@ -33,10 +61,10 @@ public class ChamadoServiceImpl implements ChamadoService {
     public ChamadoResponseDTO criarChamado(Long clienteId, String codigoAcesso, ChamadoPostPutRequestDTO dto) {
         Cliente cliente = clienteRepository.findById(clienteId)
                 .orElseThrow(ClienteNaoExisteException::new);
-        
+
         Empresa empresa = empresaRepository.findById(dto.getEmpresaId())
                 .orElseThrow(EmpresaNaoExisteException::new);
-        
+
         Servico servico = servicoRepository.findById(dto.getServicoId())
                 .orElseThrow(ServicoNaoExisteException::new);
 
@@ -44,9 +72,9 @@ public class ChamadoServiceImpl implements ChamadoService {
             throw new CodigoDeAcessoInvalidoException();
         }
 
-        
+
         boolean servicoIsPremium = servico.getPlano() == Plano.PREMIUM;
-        boolean clienteIsPremium = cliente.getPlanoAtual() == Plano.PREMIUM; 
+        boolean clienteIsPremium = cliente.getPlanoAtual() == Plano.PREMIUM;
 
         if (servicoIsPremium && !clienteIsPremium) {
             throw new PlanoInvalidoException();
@@ -68,7 +96,7 @@ public class ChamadoServiceImpl implements ChamadoService {
                 .estado(estadoInicial)
                 .status(estadoInicial.getNome())
                 .build();
-        
+
         Chamado salvo = chamadoRepository.save(chamado);
         return modelMapper.map(salvo, ChamadoResponseDTO.class);
     }
@@ -83,7 +111,7 @@ public class ChamadoServiceImpl implements ChamadoService {
         }
 
         chamado.confirmarPagamento();
-        
+
         Chamado salvo = chamadoRepository.save(chamado);
         return modelMapper.map(salvo, ChamadoResponseDTO.class);
     }
@@ -102,7 +130,7 @@ public class ChamadoServiceImpl implements ChamadoService {
 
         chamadoRepository.delete(chamado);
     }
-    
+
     @Override
     public List<ChamadoResponseDTO> listarChamados(Long clienteId, String codigoAcesso) {
         Cliente cliente = clienteRepository.findById(clienteId)
@@ -124,4 +152,121 @@ public class ChamadoServiceImpl implements ChamadoService {
                 .orElseThrow(() -> new CommerceException("Chamado não encontrado"));
         return modelMapper.map(chamado, ChamadoResponseDTO.class);
     }
+
+    @Override
+    public ChamadoResponseDTO buscarChamadoPorCliente(Long chamadoId, Long idCliente,  String codigoAcesso) {
+        Cliente cliente = clienteRepository.findById(idCliente)
+                .orElseThrow(ClienteNaoExisteException::new);
+
+        if (!cliente.getCodigo().equals(codigoAcesso)) {
+            throw new CodigoDeAcessoInvalidoException();
+        }
+
+        Chamado chamado = chamadoRepository.findByIdAndClienteId(chamadoId,idCliente)
+                .orElseThrow(() -> new CommerceException("Chamado não encontrado"));
+
+        return modelMapper.map(chamado, ChamadoResponseDTO.class);
+    }
+    
+    @Override
+    public List<ChamadoResponseDTO> listarChamadosCliente(Long idCliente, String codigoAcesso) {
+        Cliente cliente = clienteRepository.findById(idCliente)
+                .orElseThrow(ClienteNaoExisteException::new);
+
+        if (!cliente.getCodigo().equals(codigoAcesso)) {
+            throw new CodigoDeAcessoInvalidoException();
+        }
+        List<Chamado> chamados = chamadoRepository.findByClienteIdOrderByStatusEData(idCliente);
+        return chamados.stream()
+                .map(c -> modelMapper.map(c, ChamadoResponseDTO.class))
+                .collect(Collectors.toList());
+    }
+    
+    @Override
+    public List<ChamadoResponseDTO> listarChamadosClientePorStatus(Long idCliente, ChamadoStatus chamadoStatus, String codigoAcesso) {
+        Cliente cliente = clienteRepository.findById(idCliente)
+                .orElseThrow(ClienteNaoExisteException::new);
+
+        if (!cliente.getCodigo().equals(codigoAcesso)) {
+            throw new CodigoDeAcessoInvalidoException();
+        }
+        List<Chamado> chamados = chamadoRepository.findByClienteIdAndStatusOrderByDataCriacaoDesc(
+                idCliente,
+                chamadoStatus.name()
+        );
+        return chamados.stream()
+                .map(c -> modelMapper.map(c, ChamadoResponseDTO.class))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public void cancelar(Long id, Long idCliente, String codigoAcesso) {
+        Chamado chamado = chamadoRepository.findById(id)
+                .orElseThrow(() -> new CommerceException("O chamado não existe!"));
+        if (chamado.getStatus().equals("EM_ATENDIMENTO") || chamado.getStatus().equals("CONCLUIDO")) {
+            throw new ChamadoNaoPodeSerCancelado();
+        }
+        if (!chamado.getCliente().getId().equals(idCliente)) {
+            throw new ClienteNaoExisteException();        }
+        if (!chamado.getCliente().getCodigo().equals(codigoAcesso)) {
+            throw new CodigoDeAcessoInvalidoException();
+        }
+        chamadoRepository.deleteById(id);
+    }
+
+    @Override
+    @Transactional
+    public ChamadoResponseDTO confirmarConclusao(Long clienteId, String codigoAcesso, Long chamadoId) {
+        Cliente cliente = clienteRepository.findById(clienteId)
+                .orElseThrow(ClienteNaoExisteException::new);
+        Chamado chamado = chamadoRepository.findById(chamadoId)
+                .orElseThrow(() -> new CommerceException("Chamado não encontrado"));
+
+        if (!chamado.getCliente().getId().equals(cliente.getId())) {
+            throw new CodigoDeAcessoInvalidoException();
+        }
+
+        if (!(chamado.getEstado() instanceof ChamadoEstadoAguardandoConfirmacao estado)) {
+            throw new CommerceException("Chamado não está aguardando confirmação do cliente. Status atual: "
+                    + chamado.getEstado().getNome());
+        }
+
+        estado.confirmarConclusao(chamado);
+
+        realocarOuLiberarTecnico(chamado.getTecnico(), chamado.getEmpresa().getId());
+
+        return modelMapper.map(chamadoRepository.save(chamado), ChamadoResponseDTO.class);
+    }
+    
+    private void realocarOuLiberarTecnico(Tecnico tecnico, Long empresaId) {
+        if (tecnico == null)
+            return; 
+
+        Optional<Chamado> proximoChamado = chamadoRepository.findFirstByEmpresaIdAndStatusOrderByDataCriacaoAsc(empresaId, ChamadoStatus.AGUARDANDO_TECNICO.getNome());
+
+        if (proximoChamado.isPresent()) {
+            Chamado proximo = proximoChamado.get();
+            proximo.atribuirTecnico(tecnico);
+            proximo.mudaEstado(ChamadoStatus.EM_ATENDIMENTO.getInstancia());
+            chamadoRepository.save(proximo);
+        }
+        else {
+            mudarStatusTecnico(tecnico, StatusDisponibilidade.ATIVO);
+        }
+    }
+
+    private void mudarStatusTecnico(Tecnico tecnico, StatusDisponibilidade novoStatus) {
+        tecnico.setStatusDisponibilidade(novoStatus);
+        tecnico.setDataUltimaMudancaDisponibilidade(LocalDateTime.now());
+        tecnicoRepository.save(tecnico);
+
+        HistoricoDisponibilidade historico = HistoricoDisponibilidade.builder()
+                .tecnicoId(tecnico.getId())
+                .novoStatus(novoStatus)
+                .dataHora(LocalDateTime.now())
+                .build();
+
+        historicoDisponibilidadeRepository.save(historico);
+    }
+
 }

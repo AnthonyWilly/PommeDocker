@@ -11,9 +11,9 @@ public enum ChamadoStatus {
     EM_ANALISE("EM_ANALISE", ChamadoEstadoEmAnalise::new),
     AGUARDANDO_TECNICO("AGUARDANDO_TECNICO", ChamadoEstadoAguardandoTecnico::new),
     EM_ATENDIMENTO("EM_ATENDIMENTO", ChamadoEstadoEmAtendimento::new),
-    CONCLUIDO("CONCLUIDO", ChamadoEstadoConcluido::new),
-    CANCELADO("CANCELADO", ChamadoEstadoCancelado::new);
-
+    AGUARDANDO_CONFIRMACAO("AGUARDANDO_CONFIRMACAO", ChamadoEstadoAguardandoConfirmacao::new),
+    CONCLUIDO("CONCLUIDO", ChamadoEstadoConcluido::new);
+    
     private final String nome;
     private final Supplier<ChamadoEstado> factory;
 

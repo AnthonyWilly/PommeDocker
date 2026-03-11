@@ -1,5 +1,7 @@
 package com.ufcg.psoft.commerce.service.tecnico;
 
+import java.util.List;
+
 import com.ufcg.psoft.commerce.dto.TecnicoPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.TecnicoResponseDTO;
 import com.ufcg.psoft.commerce.model.StatusDisponibilidade;

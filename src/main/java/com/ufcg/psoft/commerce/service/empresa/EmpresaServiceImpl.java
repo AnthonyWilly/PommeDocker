@@ -1,5 +1,8 @@
 package com.ufcg.psoft.commerce.service.empresa;
 
+import java.time.LocalDateTime;
+import java.util.Optional;
+
 import com.ufcg.psoft.commerce.dto.ChamadoResponseDTO;
 import com.ufcg.psoft.commerce.dto.EmpresaPostPutRequestDTO;
 import com.ufcg.psoft.commerce.dto.EmpresaResponseDTO;
@@ -15,6 +18,7 @@ import com.ufcg.psoft.commerce.exception.TecnicoNaoExisteException;
 import com.ufcg.psoft.commerce.model.*;
 import com.ufcg.psoft.commerce.repository.ChamadoRepository;
 import com.ufcg.psoft.commerce.repository.EmpresaRepository;
+import com.ufcg.psoft.commerce.repository.HistoricoDisponibilidadeRepository ;
 import com.ufcg.psoft.commerce.repository.ServicoRepository;
 import com.ufcg.psoft.commerce.repository.TecnicoRepository;
 import com.ufcg.psoft.commerce.service.tecnico.TecnicoService;
@@ -43,6 +47,9 @@ public class EmpresaServiceImpl implements EmpresaService {
 
     @Autowired
     private TecnicoService tecnicoService;
+
+    @Autowired
+    private HistoricoDisponibilidadeRepository historicoDisponibilidadeRepository;
 
     private static final String SENHA_ADMIN_PADRAO = "admin123";
 
@@ -241,6 +248,7 @@ public class EmpresaServiceImpl implements EmpresaService {
                 "O chamado não pertence à empresa informada."
             );
         }
+      
         String statusAntes = chamado.getStatus();
         chamado.getEstado().avancar(chamado);
         if ("AGUARDANDO_TECNICO".equals(chamado.getStatus()) &&
@@ -248,6 +256,17 @@ public class EmpresaServiceImpl implements EmpresaService {
                 chamado.getCliente() != null) {
             chamado.getCliente().notificarFaltaDeTecnicos();
         }
+      
+        if (chamado.getStatus().equals(ChamadoStatus.AGUARDANDO_TECNICO.getNome())) {
+            Optional<Tecnico> tecnicoDisponivel = tecnicoRepository.findTecnicoAtivoMaisTempoParaEmpresa(empresaId);
+
+            if (tecnicoDisponivel.isPresent()) {
+                Tecnico tecnico = tecnicoDisponivel.get();
+                chamado.atribuirTecnico(tecnico);
+                mudarStatusTecnico(tecnico, StatusDisponibilidade.OCUPADO);
+            }
+        }
+      
         Chamado chamadoSalvo = chamadoRepository.save(chamado);
         if (
             "EM_ATENDIMENTO".equals(statusAntes) &&
@@ -327,4 +346,18 @@ public class EmpresaServiceImpl implements EmpresaService {
             .enderecoAtendimento(chamadoSalvo.getEnderecoAtendimento())
             .build();
     }
+
+    private void mudarStatusTecnico(Tecnico tecnico, StatusDisponibilidade novoStatus) {
+        tecnico.setStatusDisponibilidade(novoStatus);
+        tecnico.setDataUltimaMudancaDisponibilidade(LocalDateTime.now());
+        tecnicoRepository.save(tecnico);
+
+        HistoricoDisponibilidade historico = HistoricoDisponibilidade.builder()
+                .tecnicoId(tecnico.getId())
+                .novoStatus(novoStatus)
+                .dataHora(LocalDateTime.now())
+                .build();
+        historicoDisponibilidadeRepository.save(historico);
+    }
+
 }
