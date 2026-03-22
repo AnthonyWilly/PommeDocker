@@ -50,13 +50,53 @@ public class ErrorHandlingControllerAdvice {
         return customErrorType;
     }
 
+    @ExceptionHandler(EmpresaNaoExisteException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ResponseBody
+    public CustomErrorType onEmpresaNaoExisteException(EmpresaNaoExisteException e) {
+        return defaultCustomErrorTypeConstruct(e.getMessage());
+    }
+
+    @ExceptionHandler(TecnicoNaoExisteException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ResponseBody
+    public CustomErrorType onTecnicoNaoExisteException(TecnicoNaoExisteException e) {
+        return defaultCustomErrorTypeConstruct(e.getMessage());
+    }
+
+    @ExceptionHandler(ServicoNaoExisteException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ResponseBody
+    public CustomErrorType onServicoNaoExisteException(ServicoNaoExisteException e) {
+        return defaultCustomErrorTypeConstruct(e.getMessage());
+    }
+
+    @ExceptionHandler(ClienteNaoExisteException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ResponseBody
+    public CustomErrorType onClienteNaoExisteException(ClienteNaoExisteException e) {
+        return defaultCustomErrorTypeConstruct(e.getMessage());
+    }
+
+    @ExceptionHandler(SenhaInvalidaException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    @ResponseBody
+    public CustomErrorType onSenhaInvalidaException(SenhaInvalidaException e) {
+        return defaultCustomErrorTypeConstruct(e.getMessage());
+    }
+
+    @ExceptionHandler(EmpresaJaCadastradaException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseBody
+    public CustomErrorType onEmpresaJaCadastradaException(EmpresaJaCadastradaException e) {
+        return defaultCustomErrorTypeConstruct(e.getMessage());
+    }
+
+    // Captura genérica para outras CommerceExceptions
     @ExceptionHandler(CommerceException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ResponseBody
     public CustomErrorType onCommerceException(CommerceException e) {
-        return defaultCustomErrorTypeConstruct(
-                e.getMessage()
-        );
+        return defaultCustomErrorTypeConstruct(e.getMessage());
     }
-
 }

@@ -2,18 +2,23 @@ package com.ufcg.psoft.commerce.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.ufcg.psoft.commerce.service.notificacao.ServicoObserver;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
+import java.util.List;
+
 @Entity
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Cliente {
+@Table(name = "clientes")
+public class Cliente implements ServicoObserver, ListenerChamado {
 
     @JsonProperty("id")
     @Id
@@ -28,7 +33,55 @@ public class Cliente {
     @Column(nullable = false)
     private String endereco;
 
-    @JsonIgnore
+    @JsonProperty("planoAtual")
     @Column(nullable = false)
+    private Plano planoAtual;
+
+    @JsonProperty("proxPlano")
+    private Plano proxPlano;
+
+    @JsonProperty("dataCobranca")
+    @Column(nullable = false)
+    private LocalDate dataCobranca;
+
+    @JsonIgnore
+    @Column(nullable = false, length = 6)
     private String codigo;
+
+    public void setPlanoPremium(String senha) {
+        this.setPlano(Plano.PREMIUM, senha);
+    }
+
+    public void setPlanoBasico(String senha) {
+        this.setPlano(Plano.BASICO, senha);
+    }
+
+    private void setPlano(Plano plano, String senha) {
+        if (!this.codigo.equals(senha)) {
+            throw new IllegalArgumentException("Codigo de acesso invalido!");
+        }
+        this.proxPlano = plano;
+    }
+
+    @Override
+    public void notificar(Tecnico tecnico) {
+        System.out.println(String.format("Notificação de atendimento: o técnico %s está a caminho. Veículo: %s, cor %s, placa %s.", 
+                tecnico.getNome(), tecnico.getTipoVeiculo(), tecnico.getCorVeiculo(), tecnico.getPlacaVeiculo()));
+    }
+
+    @Override
+    public void notificar(Servico servico) {
+        System.out.println(
+                "[NOTIFICAÇÃO] Cliente '" + this.nome +
+                "' (id=" + this.id + "): " +
+                "O serviço '" + servico.getNome() +
+                "' (id=" + servico.getId() + ") que você demonstrou interesse " +
+                "voltou a estar disponível!"
+        );
+    }
+
+    @Override
+    public void notificarFaltaDeTecnicos() {
+        System.out.println("[NOTIFICAÇÃO] " + this.nome + ": Não há técnicos ativos disponíveis no momento. Seu chamado está aguardando alocação de profissional.");
+    }
 }

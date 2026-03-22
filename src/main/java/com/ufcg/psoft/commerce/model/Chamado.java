@@ -1,0 +1,79 @@
+package com.ufcg.psoft.commerce.model;
+
+import jakarta.persistence.*;
+import lombok.*;
+import java.time.LocalDateTime;
+
+@Entity
+@Data
+@Builder
+@AllArgsConstructor
+public class Chamado {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne
+    @JoinColumn(name = "cliente_id")
+    private Cliente cliente;
+
+    @ManyToOne
+    @JoinColumn(name = "empresa_id")
+    private Empresa empresa;
+
+    @ManyToOne
+    @JoinColumn(name = "servico_id")
+    private Servico servico;
+
+    private String enderecoAtendimento;
+    
+    @Builder.Default
+    private LocalDateTime dataCriacao = LocalDateTime.now();
+
+    @ManyToOne
+    @JoinColumn(name = "tecnico_id")
+    private Tecnico tecnico;
+    private String status; 
+
+    @Transient
+    private ChamadoEstado estado;
+
+    public Chamado() {
+        this.estado = ChamadoStatus.AGUARDANDO_PAGAMENTO.getInstancia();
+        this.status = ChamadoStatus.AGUARDANDO_PAGAMENTO.getNome();
+    }
+
+    public ChamadoEstado getEstado() {
+        if (this.estado == null) {
+            this.estado = ChamadoStatus.obterEstado(this.status);
+        }
+        return this.estado;
+    }
+
+    public void mudaEstado(ChamadoEstado novoEstado) {
+        if ("AGUARDANDO_TECNICO".equals(this.status) && this.cliente != null) {
+            notificarObservers();
+        }
+        this.estado = novoEstado;
+        this.status = novoEstado.getNome();
+    }
+
+    public void confirmarPagamento() {
+        this.getEstado().confirmarPagamento(this);
+    }
+
+    @PostLoad
+    private void carregarEstado() {
+        this.estado = ChamadoStatus.obterEstado(this.status);
+    }
+
+    public void notificarObservers(){
+        this.cliente.notificar(this.tecnico);
+    }
+    
+    public void atribuirTecnico(Tecnico tecnico) {
+        this.getEstado().atribuirTecnico(this, tecnico);
+    }
+
+}

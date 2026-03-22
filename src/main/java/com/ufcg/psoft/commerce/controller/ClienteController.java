@@ -1,6 +1,7 @@
 package com.ufcg.psoft.commerce.controller;
 
 import com.ufcg.psoft.commerce.dto.ClientePostPutRequestDTO;
+import com.ufcg.psoft.commerce.dto.ClienteResponseDTO;
 import com.ufcg.psoft.commerce.service.cliente.ClienteService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,4 +69,18 @@ public class ClienteController {
                 .status(HttpStatus.NO_CONTENT)
                 .body("");
     }
+
+    @PatchMapping("/{id}/plano")
+    public ResponseEntity<?> alterarPlano(
+        @PathVariable Long id,
+        @RequestParam String codigo,
+        @RequestParam String tipoPlano){
+                if ("Premium".equalsIgnoreCase(tipoPlano))
+                        return ResponseEntity.ok(clienteService.setPlanoPremium(id, codigo));
+                if ("Basico".equalsIgnoreCase(tipoPlano))
+                        return ResponseEntity.ok(clienteService.setPlanoBasico(id, codigo));
+                return ResponseEntity.badRequest().body("Plano invalido");
+        }
+
+
 }
